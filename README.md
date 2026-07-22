@@ -36,6 +36,35 @@ Run the API:
 - Liveness — http://localhost:8000/health
 - Readiness (checks Postgres) — http://localhost:8000/health/ready
 
+## Authentication
+
+Firebase Auth, email/password with mandatory verification. The client signs in
+and sends the ID token as `Authorization: Bearer <token>`; the API verifies it
+with the Admin SDK.
+
+Two rules are enforced in one dependency (`api/deps.py`), before any route
+handler runs:
+
+1. **The address must be verified.** Anyone can type someone else's email at
+   signup — until Firebase confirms the click, the token proves nothing.
+2. **The address must be `@asu.edu`.** Checked on the exact domain suffix, and
+   backed by a CHECK constraint on the table.
+
+Identity — user id and email — is only ever read from the verified token, never
+from a request body.
+
+Setup needs a service-account key at `secrets/firebase-service-account.json`
+(gitignored) and these in `.env`:
+
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CREDENTIALS_PATH=secrets/firebase-service-account.json
+```
+
+Without them the app still starts in development with authentication disabled,
+which is what lets the test suite run against a fake token issuer. In
+production, missing Firebase config is a startup failure.
+
 ## Tests
 
 ```bash

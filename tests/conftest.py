@@ -23,7 +23,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from api.config import Settings
+from api.db import session_dependency
 from api.main import create_app
+from tests.fake_auth import FakeTokenVerifier
 
 # Pick up .env so `pytest` works with no shell setup. Real environment
 # variables still win — CI sets them directly and must not be overridden.
@@ -108,10 +110,18 @@ async def db(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
 
     Tests can insert freely and never see each other's rows, with no truncation
     between tests.
+
+    ``join_transaction_mode="create_savepoint"`` is what lets request handlers
+    call commit() without escaping this transaction: their commit releases a
+    savepoint, and the outer rollback still undoes everything.
     """
     async with engine.connect() as connection:
         transaction = await connection.begin()
-        session = AsyncSession(bind=connection, expire_on_commit=False)
+        session = AsyncSession(
+            bind=connection,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        )
         try:
             yield session
         finally:
@@ -122,10 +132,35 @@ async def db(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
                 await transaction.rollback()
 
 
+@pytest.fixture
+def auth() -> FakeTokenVerifier:
+    """Issues tokens the app will accept, without Firebase or a network."""
+    return FakeTokenVerifier()
+
+
 @pytest_asyncio.fixture
-async def client(settings: Settings) -> AsyncIterator[AsyncClient]:
-    """An HTTP client wired to the app through ASGI — no network, no live port."""
-    app = create_app(settings)
+async def client(
+    settings: Settings, db: AsyncSession, auth: FakeTokenVerifier
+) -> AsyncIterator[AsyncClient]:
+    """An HTTP client wired to the app through ASGI — no network, no live port.
+
+    Requests run against the same rolled-back session as the ``db`` fixture, so
+    a test can set up rows directly and then exercise them over HTTP.
+    """
+    app = create_app(settings, token_verifier=auth)
+
+    async def _session_override() -> AsyncIterator[AsyncSession]:
+        # Mirrors the production dependency's commit/rollback semantics; both
+        # land inside the fixture's savepoint.
+        try:
+            yield db
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+
+    app.dependency_overrides[session_dependency] = _session_override
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",

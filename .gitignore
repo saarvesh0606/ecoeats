@@ -1,8 +1,13 @@
 # Environment — never commit real credentials
 .env
 .env.local
-*-service-account*.json
-firebase-adminsdk*.json
+
+# Everything in here is a credential. The whole directory is ignored so a
+# service-account file cannot be committed by accident regardless of its name
+# (Firebase names them <project-id>-firebase-adminsdk-<hash>.json).
+secrets/
+*service-account*.json
+*firebase-adminsdk*.json
 
 # Python
 __pycache__/

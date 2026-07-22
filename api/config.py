@@ -26,6 +26,12 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
 
+    # --- Firebase -------------------------------------------------------
+    # Required in production. Left optional so the test suite can run with an
+    # injected fake verifier and never needs real credentials on disk.
+    firebase_project_id: str | None = None
+    firebase_credentials_path: str | None = None
+
     # Exact-match allowlist. v1 matched by string prefix, which meant
     # http://localhost:3000.example.com passed the check.
     #
@@ -61,6 +67,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def firebase_configured(self) -> bool:
+        return bool(self.firebase_project_id and self.firebase_credentials_path)
 
 
 @lru_cache

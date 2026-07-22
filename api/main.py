@@ -6,9 +6,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from api.auth.tokens import TokenVerifier
 from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
+from api.routers import users_router
 
 
 @asynccontextmanager
@@ -22,7 +24,35 @@ async def lifespan(app: FastAPI):
         await engine.dispose()
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def _build_verifier(settings: Settings) -> TokenVerifier | None:
+    """Construct the Firebase verifier, or None when unconfigured.
+
+    Imported lazily so the firebase_admin dependency is only needed when it is
+    actually used — tests inject their own verifier and never touch it.
+    """
+    if not settings.firebase_configured:
+        if settings.is_production:
+            raise RuntimeError(
+                "FIREBASE_PROJECT_ID and FIREBASE_CREDENTIALS_PATH are required "
+                "in production — every authenticated route depends on them."
+            )
+        return None
+
+    from api.auth.firebase import FirebaseTokenVerifier
+
+    assert settings.firebase_project_id is not None
+    assert settings.firebase_credentials_path is not None
+    return FirebaseTokenVerifier(
+        project_id=settings.firebase_project_id,
+        credentials_path=settings.firebase_credentials_path,
+    )
+
+
+def create_app(
+    settings: Settings | None = None,
+    *,
+    token_verifier: TokenVerifier | None = None,
+) -> FastAPI:
     settings = settings or get_settings()
 
     app = FastAPI(
@@ -31,6 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.token_verifier = token_verifier or _build_verifier(settings)
 
     app.add_middleware(
         CORSMiddleware,
@@ -54,6 +85,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async with app.state.session_factory() as session:
             await session.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
+
+    app.include_router(users_router)
 
     return app
 
