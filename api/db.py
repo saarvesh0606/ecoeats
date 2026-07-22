@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 
+from fastapi import Request
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
     AsyncEngine,
@@ -41,11 +42,15 @@ def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSessi
     )
 
 
-async def session_dependency(request) -> AsyncIterator[AsyncSession]:
+async def session_dependency(request: Request) -> AsyncIterator[AsyncSession]:
     """FastAPI dependency yielding a session bound to the request.
 
     Commits on success, rolls back on any exception. Route handlers never
     manage the transaction boundary themselves.
+
+    The ``Request`` annotation is load-bearing: without it FastAPI reads
+    ``request`` as a query parameter and rejects every call to a route that
+    depends on this with a 422.
     """
     factory: async_sessionmaker[AsyncSession] = request.app.state.session_factory
     async with factory() as session:

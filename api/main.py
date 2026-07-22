@@ -1,6 +1,7 @@
 """FastAPI application factory."""
 
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,17 +11,35 @@ from api.auth.tokens import TokenVerifier
 from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
-from api.routers import listings_router, users_router
+from api.routers import claims_router, listings_router, users_router
+from api.services.scheduler import sweep_forever
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    engine = create_engine(app.state.settings)
+    settings: Settings = app.state.settings
+    engine = create_engine(settings)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+
+    sweeper: asyncio.Task[None] | None = None
+    if settings.scheduler_enabled:
+        sweeper = asyncio.create_task(
+            sweep_forever(
+                app.state.session_factory,
+                interval_seconds=settings.sweep_interval_seconds,
+            )
+        )
+
     try:
         yield
     finally:
+        if sweeper is not None:
+            sweeper.cancel()
+            # Await the cancellation so shutdown does not race the task still
+            # holding a database connection.
+            with suppress(asyncio.CancelledError):
+                await sweeper
         await engine.dispose()
 
 
@@ -88,6 +107,7 @@ def create_app(
 
     app.include_router(users_router)
     app.include_router(listings_router)
+    app.include_router(claims_router)
 
     return app
 

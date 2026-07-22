@@ -60,6 +60,9 @@ def settings(test_database_url: str) -> Settings:
         database_url=test_database_url,
         app_env="test",
         allowed_origins=["http://localhost:8081"],
+        # Sweeps are driven explicitly in tests. A loop running in the
+        # background would mutate rows underneath assertions.
+        scheduler_enabled=False,
     )
 
 
@@ -170,6 +173,39 @@ async def client(
             yield ac
 
 
+@pytest_asyncio.fixture
+async def live_client(
+    settings: Settings, auth: FakeTokenVerifier, engine: AsyncEngine
+) -> AsyncIterator[AsyncClient]:
+    """A client whose requests get real, independent database sessions.
+
+    The ordinary ``client`` fixture shares one rolled-back transaction, which
+    is fast and isolating but useless for testing locks: concurrent requests
+    would all be the same connection and could never contend.
+
+    Here each request takes its own connection and commits for real, so
+    ``SELECT ... FOR UPDATE`` does what it does in production. The cost is that
+    rows persist, so the table is truncated afterwards.
+    """
+    app = create_app(settings, token_verifier=auth)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        async with app.router.lifespan_context(app):
+            try:
+                yield ac
+            finally:
+                async with engine.begin() as conn:
+                    await conn.execute(
+                        text(
+                            "TRUNCATE users, listings, listing_photos, claims "
+                            "RESTART IDENTITY CASCADE"
+                        )
+                    )
+
+
 @dataclass(frozen=True)
 class Account:
     """A registered user plus the headers to act as them."""
@@ -179,7 +215,7 @@ class Account:
     headers: dict[str, str]
 
 
-async def _register(
+async def register_account(
     client: AsyncClient, auth: FakeTokenVerifier, role: str, name: str
 ) -> Account:
     token = auth.issue(name=name)
@@ -192,14 +228,22 @@ async def _register(
 
 @pytest_asyncio.fixture
 async def organizer(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
-    return await _register(client, auth, "organizer", "Wrigley Hall Front Desk")
+    return await register_account(client, auth, "organizer", "Wrigley Hall Front Desk")
 
 
 @pytest_asyncio.fixture
 async def other_organizer(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
-    return await _register(client, auth, "organizer", "Memorial Union Staff")
+    return await register_account(client, auth, "organizer", "Memorial Union Staff")
 
 
 @pytest_asyncio.fixture
 async def recipient(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
-    return await _register(client, auth, "recipient", "Hungry Student")
+    return await register_account(client, auth, "recipient", "Hungry Student")
+
+
+@pytest_asyncio.fixture
+async def client_recipient_two(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> Account:
+    """A second recipient, for tests about one user acting on another's data."""
+    return await register_account(client, auth, "recipient", "Second Student")

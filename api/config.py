@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     firebase_project_id: str | None = None
     firebase_credentials_path: str | None = None
 
+    # --- background sweeps ----------------------------------------------
+    # Releases lapsed reservations and marks finished listings expired.
+    # Wants to be well under the reservation window, or a portion nobody
+    # collected sits unavailable longer than it should.
+    scheduler_enabled: bool = True
+    sweep_interval_seconds: int = 60
+
     # Exact-match allowlist. v1 matched by string prefix, which meant
     # http://localhost:3000.example.com passed the check.
     #
