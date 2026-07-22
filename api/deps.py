@@ -11,7 +11,7 @@ from api.auth.tokens import InvalidTokenError, TokenVerifier, VerifiedIdentity
 from api.db import session_dependency
 from api.errors import ForbiddenError, NotFoundError, UnauthorizedError
 from api.models import User
-from api.models.enums import ALLOWED_EMAIL_DOMAIN
+from api.models.enums import ALLOWED_EMAIL_DOMAIN, UserRole
 
 # auto_error=False so a missing header raises our own UnauthorizedError with a
 # consistent body, rather than FastAPI's differently-shaped 403.
@@ -78,6 +78,23 @@ async def current_user(identity: CurrentIdentity, db: DbSession) -> User:
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def current_organizer(user: CurrentUser) -> User:
+    """Restricts a route to accounts that post food.
+
+    v1 had organizer and student roles in the schema and never checked either,
+    so any account could create a listing.
+    """
+    if user.role is not UserRole.ORGANIZER:
+        raise ForbiddenError(
+            "Only organizer accounts can post food. This account is set up to "
+            "claim it."
+        )
+    return user
+
+
+CurrentOrganizer = Annotated[User, Depends(current_organizer)]
 
 
 async def find_user_by_email(db: AsyncSession, email: str) -> User | None:

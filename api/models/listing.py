@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    ARRAY,
     CheckConstraint,
     DateTime,
     Enum,
@@ -17,6 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base
@@ -60,6 +60,10 @@ class Listing(Base):
     allergens: Mapped[str | None] = mapped_column(Text)
 
     # Filter facets only — "vegetarian", "halal", "gluten-free".
+    #
+    # The PostgreSQL ARRAY type, not the generic one: only the dialect version
+    # implements containment (`@>`), which is how the feed's dietary filter
+    # asks for "carries every one of these tags".
     dietary_tags: Mapped[list[str]] = mapped_column(
         ARRAY(String(50)), nullable=False, server_default="{}"
     )

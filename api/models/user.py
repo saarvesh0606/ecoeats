@@ -2,7 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import ARRAY, CheckConstraint, DateTime, String, func
+from sqlalchemy import CheckConstraint, DateTime, String, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base

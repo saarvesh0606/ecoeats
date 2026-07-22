@@ -10,7 +10,7 @@ from api.auth.tokens import TokenVerifier
 from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
-from api.routers import users_router
+from api.routers import listings_router, users_router
 
 
 @asynccontextmanager
@@ -87,6 +87,7 @@ def create_app(
         return {"status": "ready", "database": "connected"}
 
     app.include_router(users_router)
+    app.include_router(listings_router)
 
     return app
 

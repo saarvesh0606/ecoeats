@@ -11,6 +11,7 @@ explanation of how to fix it.
 
 import os
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from api.config import Settings
 from api.db import session_dependency
 from api.main import create_app
-from tests.fake_auth import FakeTokenVerifier
+from tests.fake_auth import FakeTokenVerifier, bearer
 
 # Pick up .env so `pytest` works with no shell setup. Real environment
 # variables still win — CI sets them directly and must not be overridden.
@@ -167,3 +168,38 @@ async def client(
     ) as ac:
         async with app.router.lifespan_context(app):
             yield ac
+
+
+@dataclass(frozen=True)
+class Account:
+    """A registered user plus the headers to act as them."""
+
+    id: str
+    email: str
+    headers: dict[str, str]
+
+
+async def _register(
+    client: AsyncClient, auth: FakeTokenVerifier, role: str, name: str
+) -> Account:
+    token = auth.issue(name=name)
+    headers = bearer(token)
+    response = await client.post("/users/me", headers=headers, json={"role": role})
+    assert response.status_code == 201, response.text
+    body = response.json()
+    return Account(id=body["id"], email=body["email"], headers=headers)
+
+
+@pytest_asyncio.fixture
+async def organizer(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
+    return await _register(client, auth, "organizer", "Wrigley Hall Front Desk")
+
+
+@pytest_asyncio.fixture
+async def other_organizer(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
+    return await _register(client, auth, "organizer", "Memorial Union Staff")
+
+
+@pytest_asyncio.fixture
+async def recipient(client: AsyncClient, auth: FakeTokenVerifier) -> Account:
+    return await _register(client, auth, "recipient", "Hungry Student")
