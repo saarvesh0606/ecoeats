@@ -3,6 +3,7 @@
 from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
@@ -13,8 +14,13 @@ from sqlalchemy.orm import DeclarativeBase
 from api.config import Settings
 
 
-class Base(DeclarativeBase):
-    """Declarative base for all ORM models."""
+class Base(AsyncAttrs, DeclarativeBase):
+    """Declarative base for all ORM models.
+
+    AsyncAttrs provides ``awaitable_attrs``, so a lazy relationship can be
+    loaded explicitly (``await obj.awaitable_attrs.photos``) instead of raising
+    the greenlet error that unguarded lazy loading produces under asyncio.
+    """
 
 
 def create_engine(settings: Settings) -> AsyncEngine:
