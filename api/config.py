@@ -6,6 +6,7 @@ request path.
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import field_validator
@@ -31,6 +32,15 @@ class Settings(BaseSettings):
     # injected fake verifier and never needs real credentials on disk.
     firebase_project_id: str | None = None
     firebase_credentials_path: str | None = None
+
+    # --- Cloudinary (listing photos) -----------------------------------
+    # cloud_name and api_key are not secret — they appear in delivery URLs and
+    # client uploads. The secret signs uploads and is loaded from a file
+    # (kept in secrets/, gitignored) rather than sitting inline in .env.
+    cloudinary_cloud_name: str | None = None
+    cloudinary_api_key: str | None = None
+    cloudinary_api_secret: str | None = None
+    cloudinary_api_secret_file: str | None = None
 
     # --- background sweeps ----------------------------------------------
     # Releases lapsed reservations and marks finished listings expired.
@@ -78,6 +88,32 @@ class Settings(BaseSettings):
     @property
     def firebase_configured(self) -> bool:
         return bool(self.firebase_project_id and self.firebase_credentials_path)
+
+    def resolve_cloudinary_secret(self) -> str | None:
+        """The signing secret, from the inline value or the secret file.
+
+        Read on demand rather than at load time so the file is only touched
+        when uploads are actually used, and the raw secret never lives on the
+        settings object as a plain attribute.
+        """
+        if self.cloudinary_api_secret:
+            return self.cloudinary_api_secret
+        if self.cloudinary_api_secret_file:
+            path = Path(self.cloudinary_api_secret_file)
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"Cloudinary secret file not found at {path}."
+                )
+            return path.read_text(encoding="utf-8").strip()
+        return None
+
+    @property
+    def cloudinary_configured(self) -> bool:
+        return bool(
+            self.cloudinary_cloud_name
+            and self.cloudinary_api_key
+            and (self.cloudinary_api_secret or self.cloudinary_api_secret_file)
+        )
 
 
 @lru_cache
