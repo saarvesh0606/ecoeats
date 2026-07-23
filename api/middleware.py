@@ -44,6 +44,48 @@ def _client_ip(scope: Scope, headers: Headers) -> str:
     return client[0] if client else "unknown"
 
 
+class SecurityHeadersMiddleware:
+    """Adds standard hardening headers to every response.
+
+    Modest for a JSON API, but expected by security reviews and cheap: block
+    MIME sniffing, forbid framing, don't leak referrers, isolate the browsing
+    context. HSTS is production-only — sending it over local HTTP would pin the
+    browser to HTTPS for a host that doesn't serve it.
+    """
+
+    def __init__(self, app: ASGIApp, *, hsts: bool) -> None:
+        self.app = app
+        self._headers: list[tuple[bytes, bytes]] = [
+            (b"x-content-type-options", b"nosniff"),
+            (b"x-frame-options", b"DENY"),
+            (b"referrer-policy", b"no-referrer"),
+            (b"cross-origin-opener-policy", b"same-origin"),
+        ]
+        if hsts:
+            self._headers.append(
+                (
+                    b"strict-transport-security",
+                    b"max-age=31536000; includeSubDomains",
+                )
+            )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = message.setdefault("headers", [])
+                present = {key.lower() for key, _ in headers}
+                for key, value in self._headers:
+                    if key not in present:
+                        headers.append((key, value))
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 class RequestContextMiddleware:
     """Assigns a correlation id, times the request, logs the outcome."""
 

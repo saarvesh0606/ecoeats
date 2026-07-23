@@ -1,8 +1,13 @@
 """User profile routes."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 
-from api.deps import CurrentIdentity, CurrentUser, DbSession
+from api.deps import (
+    CurrentIdentity,
+    CurrentUser,
+    DbSession,
+    rate_limited_by_identity,
+)
 from api.errors import ConflictError
 from api.models import User
 from api.schemas.user import RegisterProfile, UpdateProfile, UserProfile
@@ -24,7 +29,14 @@ async def read_me(user: CurrentUser) -> User:
     return user
 
 
-@router.post("/me", response_model=UserProfile, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/me",
+    response_model=UserProfile,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(rate_limited_by_identity("register", limit=10, window_seconds=60))
+    ],
+)
 async def register_me(
     body: RegisterProfile, identity: CurrentIdentity, db: DbSession
 ) -> User:

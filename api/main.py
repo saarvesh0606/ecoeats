@@ -12,7 +12,7 @@ from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
 from api.logging_config import configure_logging
-from api.middleware import RequestContextMiddleware
+from api.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 from api.ratelimit import RateLimitMiddleware, build_limiter
 from api.routers import (
     claims_router,
@@ -110,10 +110,16 @@ def create_app(
     if settings.app_env != "test":
         configure_logging(level=settings.log_level, json_output=settings.log_as_json)
 
+    # Interactive docs and the OpenAPI schema expose the full API surface;
+    # serve them in development only.
+    docs_on = not settings.is_production
     app = FastAPI(
         title="EcoEats API",
         version="0.1.0",
         lifespan=lifespan,
+        docs_url="/docs" if docs_on else None,
+        redoc_url="/redoc" if docs_on else None,
+        openapi_url="/openapi.json" if docs_on else None,
     )
     app.state.settings = settings
     app.state.token_verifier = token_verifier or _build_verifier(settings)
@@ -135,6 +141,8 @@ def create_app(
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
         expose_headers=["X-Request-ID"],
     )
+
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
 
     # Added last so it wraps everything else: the correlation id is assigned and
     # timing starts before any other middleware runs, and the access log sees

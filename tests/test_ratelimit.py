@@ -120,6 +120,11 @@ def _rate_limited_settings(**overrides) -> Settings:
         app_env="test",
         scheduler_enabled=False,
         rate_limit_enabled=True,
+        # In-memory (a fresh limiter per app) so these wiring tests are isolated
+        # and deterministic. The Redis backend has its own tests above; sharing
+        # the real Redis here would let counters bleed across tests and runs
+        # within the fixed window. Explicit None overrides REDIS_URL from .env.
+        redis_url=None,
         **overrides,
     )
 

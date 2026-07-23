@@ -116,14 +116,29 @@ def rate_limited(name: str, *, limit: int, window_seconds: int):
     """
 
     async def dependency(request: Request, user: CurrentUser) -> None:
-        settings = request.app.state.settings
-        if not settings.rate_limit_enabled:
-            return
-        limiter = request.app.state.limiter
-        result = await limiter.check(
-            f"{name}:user:{user.id}", limit=limit, window_seconds=window_seconds
-        )
-        if not result.allowed:
-            raise TooManyRequestsError(retry_after=result.retry_after)
+        await _enforce(request, f"{name}:user:{user.id}", limit, window_seconds)
 
     return dependency
+
+
+def rate_limited_by_identity(name: str, *, limit: int, window_seconds: int):
+    """Like rate_limited, but keyed on the verified token identity rather than a
+    profile — for endpoints that run before a profile exists (registration)."""
+
+    async def dependency(request: Request, identity: CurrentIdentity) -> None:
+        await _enforce(request, f"{name}:id:{identity.uid}", limit, window_seconds)
+
+    return dependency
+
+
+async def _enforce(
+    request: Request, key: str, limit: int, window_seconds: int
+) -> None:
+    settings = request.app.state.settings
+    if not settings.rate_limit_enabled:
+        return
+    result = await request.app.state.limiter.check(
+        key, limit=limit, window_seconds=window_seconds
+    )
+    if not result.allowed:
+        raise TooManyRequestsError(retry_after=result.retry_after)
