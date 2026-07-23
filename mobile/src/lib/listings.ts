@@ -103,6 +103,18 @@ export async function fetchMyListings(): Promise<Listing[]> {
 	return feed.items;
 }
 
+/** Mark a listing out of stock (status → claimed) or back active. */
+export async function setListingStatus(
+	id: string,
+	status: "active" | "claimed",
+): Promise<Listing> {
+	return api.patch<Listing>(`/listings/${id}`, { status });
+}
+
+export async function cancelListing(id: string): Promise<Listing> {
+	return api.post<Listing>(`/listings/${id}/cancel`);
+}
+
 export const EXPIRY_CHOICES = [15, 20, 30, 45, 60] as const;
 
 export const DIETARY_TAGS = [

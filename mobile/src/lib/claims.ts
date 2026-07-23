@@ -50,3 +50,17 @@ export async function fetchMyClaims(): Promise<Claim[]> {
 export async function cancelClaim(claimId: string): Promise<Claim> {
 	return api.post<Claim>(`/claims/${claimId}/cancel`);
 }
+
+/** Claims on a listing — the organizer's view of who is collecting. */
+export async function fetchListingClaims(listingId: string): Promise<Claim[]> {
+	const list = await api.get<ClaimList>(`/listings/${listingId}/claims`);
+	return list.items;
+}
+
+export async function confirmPickup(claimId: string): Promise<Claim> {
+	return api.post<Claim>(`/claims/${claimId}/pickup`);
+}
+
+export async function markNoShow(claimId: string): Promise<Claim> {
+	return api.post<Claim>(`/claims/${claimId}/no-show`);
+}

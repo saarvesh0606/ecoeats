@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
@@ -73,7 +73,12 @@ export function OrganizerHome() {
 				contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
 				renderItem={({ item }) => (
-					<View className="bg-white rounded-card p-4 border border-gray-100">
+					<Pressable
+						onPress={() => router.push(`/manage/${item.id}`)}
+						className="bg-white rounded-card p-4 border border-gray-100 active:opacity-90"
+						accessibilityRole="button"
+						accessibilityLabel={`Manage ${item.title}`}
+					>
 						<View className="flex-row items-start justify-between gap-3">
 							<Text className="font-display font-bold text-base text-gray-900 flex-1">
 								{item.title}
@@ -93,7 +98,10 @@ export function OrganizerHome() {
 								{formatTimeLeft(item.expires_at, now)}
 							</Text>
 						)}
-					</View>
+						<Text className="font-body text-forest-700 text-xs mt-2">
+							Manage claims →
+						</Text>
+					</Pressable>
 				)}
 				ListEmptyComponent={
 					<View className="items-center justify-center px-8 pt-16">
