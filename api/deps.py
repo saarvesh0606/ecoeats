@@ -40,9 +40,18 @@ async def current_identity(
     """
     if credentials is None or not credentials.credentials:
         raise UnauthorizedError("Sign in to continue")
+    return verify_token(credentials.credentials, verifier)
 
+
+def verify_token(token: str, verifier: TokenVerifier) -> VerifiedIdentity:
+    """Verify a token and apply the two rules every account must pass.
+
+    Shared by the header-based dependency and the stream endpoint (which reads
+    its token from a query parameter, since EventSource can't send headers), so
+    both enforce the rules identically.
+    """
     try:
-        identity = verifier.verify(credentials.credentials)
+        identity = verifier.verify(token)
     except InvalidTokenError as exc:
         raise UnauthorizedError(str(exc)) from exc
 
@@ -61,6 +70,22 @@ async def current_identity(
         )
 
     return identity
+
+
+def identity_from_request(request: Request) -> VerifiedIdentity:
+    """Resolve an identity from an Authorization header or a `token` query param.
+
+    For the SSE stream: browser EventSource can't set headers, so the web client
+    passes the token in the query string; native clients can still use the
+    header.
+    """
+    header = request.headers.get("authorization", "")
+    token = header[7:].strip() if header.lower().startswith("bearer ") else ""
+    if not token:
+        token = request.query_params.get("token", "")
+    if not token:
+        raise UnauthorizedError("Sign in to continue")
+    return verify_token(token, request.app.state.token_verifier)
 
 
 CurrentIdentity = Annotated[VerifiedIdentity, Depends(current_identity)]

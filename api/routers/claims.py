@@ -2,12 +2,13 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from api.deps import CurrentUser, DbSession, rate_limited
 from api.errors import ForbiddenError, NotFoundError, ValidationError
+from api.events import listing_event
 from api.models import Claim, Listing
 from api.models.enums import ClaimStatus, UserRole
 from api.schemas.claim import ClaimedListing, ClaimList, ClaimOut, CreateClaim
@@ -16,6 +17,14 @@ from api.services import claims as service
 router = APIRouter(tags=["claims"])
 
 MAX_CLAIMS_RETURNED = 50
+
+
+def _publish_listing(
+    request: Request, background_tasks: BackgroundTasks, listing: Listing
+) -> None:
+    """Broadcast the listing's new state after the response (post-commit)."""
+    event = listing_event(listing)
+    background_tasks.add_task(request.app.state.event_bus.publish, event)
 
 
 def _serialise(claim: Claim, *, listing: Listing | None = None) -> ClaimOut:
@@ -55,7 +64,13 @@ def _serialise(claim: Claim, *, listing: Listing | None = None) -> ClaimOut:
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(rate_limited("claim", limit=20, window_seconds=60))],
 )
-async def claim_food(body: CreateClaim, db: DbSession, user: CurrentUser) -> ClaimOut:
+async def claim_food(
+    body: CreateClaim,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> ClaimOut:
     """Reserve one portion.
 
     Organizers are excluded — they post food, they do not compete for it.
@@ -76,6 +91,8 @@ async def claim_food(body: CreateClaim, db: DbSession, user: CurrentUser) -> Cla
     await db.flush()
 
     full = await _load_claim_with_relations(db, claim.id)
+    if full.listing is not None:
+        _publish_listing(request, background_tasks, full.listing)
     return _serialise(full, listing=full.listing)
 
 
@@ -144,6 +161,8 @@ async def _resolve(
     claim_id: uuid.UUID,
     db: DbSession,
     user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
     *,
     target: ClaimStatus,
     actor: str,
@@ -163,33 +182,62 @@ async def _resolve(
     service.resolve_claim(claim, listing, status=target)
     await db.flush()
 
+    # no-show and cancel return a portion to the pool; pickup doesn't change the
+    # listing, but re-broadcasting the same values is harmless and keeps this
+    # simple.
+    _publish_listing(request, background_tasks, listing)
+
     full = await _load_claim_with_relations(db, claim_id)
     return _serialise(full, listing=full.listing)
 
 
 @router.post("/claims/{claim_id}/pickup", response_model=ClaimOut)
 async def confirm_pickup(
-    claim_id: uuid.UUID, db: DbSession, user: CurrentUser
+    claim_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ClaimOut:
     """Organizer confirms the food was collected. Portions are not returned."""
     return await _resolve(
-        claim_id, db, user, target=ClaimStatus.PICKED_UP, actor="organizer"
+        claim_id,
+        db,
+        user,
+        request,
+        background_tasks,
+        target=ClaimStatus.PICKED_UP,
+        actor="organizer",
     )
 
 
 @router.post("/claims/{claim_id}/no-show", response_model=ClaimOut)
 async def mark_no_show(
-    claim_id: uuid.UUID, db: DbSession, user: CurrentUser
+    claim_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ClaimOut:
     """Organizer releases a reservation nobody collected."""
     return await _resolve(
-        claim_id, db, user, target=ClaimStatus.NO_SHOW, actor="organizer"
+        claim_id,
+        db,
+        user,
+        request,
+        background_tasks,
+        target=ClaimStatus.NO_SHOW,
+        actor="organizer",
     )
 
 
 @router.post("/claims/{claim_id}/cancel", response_model=ClaimOut)
 async def cancel_claim(
-    claim_id: uuid.UUID, db: DbSession, user: CurrentUser
+    claim_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ClaimOut:
     """Recipient releases their own claim.
 
@@ -198,5 +246,11 @@ async def cancel_claim(
     a listing permanently while the food sits there.
     """
     return await _resolve(
-        claim_id, db, user, target=ClaimStatus.CANCELLED, actor="recipient"
+        claim_id,
+        db,
+        user,
+        request,
+        background_tasks,
+        target=ClaimStatus.CANCELLED,
+        actor="recipient",
     )

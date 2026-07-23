@@ -1,16 +1,25 @@
 """Listing routes: the organizer's posting panel and the recipient's feed."""
 
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from api.deps import CurrentOrganizer, CurrentUser, DbSession, rate_limited
+from api.deps import (
+    CurrentOrganizer,
+    CurrentUser,
+    DbSession,
+    identity_from_request,
+    rate_limited,
+)
 from api.errors import ForbiddenError, NotFoundError, ValidationError
+from api.events import listing_event
 from api.geo import bounding_box, haversine_miles
 from api.models import Listing, ListingPhoto
 from api.models.enums import ListingStatus
@@ -78,6 +87,15 @@ async def _load(db: AsyncSession, listing_id: uuid.UUID) -> Listing:
 def _assert_owner(listing: Listing, user_id: str) -> None:
     if listing.organizer_id != user_id:
         raise ForbiddenError("Only the organizer who posted this can change it")
+
+
+def _publish_change(
+    request: Request, background_tasks: BackgroundTasks, listing: Listing
+) -> None:
+    """Broadcast a listing change to connected clients — after the response, so
+    it runs post-commit and never delays the request."""
+    event = listing_event(listing)
+    background_tasks.add_task(request.app.state.event_bus.publish, event)
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +192,42 @@ async def my_listings(db: DbSession, organizer: CurrentOrganizer) -> ListingFeed
     )
 
 
+@router.get("/stream")
+async def stream(request: Request) -> StreamingResponse:
+    """Server-Sent Events: live listing changes, so the feed never polls.
+
+    Auth is resolved from a header or a `token` query parameter (EventSource
+    can't send headers). Each connected client gets a subscription to the event
+    bus; a heartbeat keeps idle connections open through proxies.
+    """
+    identity_from_request(request)  # authorise; the id itself isn't needed here
+    bus = request.app.state.event_bus
+
+    async def events() -> "asyncio.AsyncIterator[str]":
+        async with bus.subscribe() as queue:
+            # An initial comment opens the stream and defeats proxy buffering.
+            yield ": connected\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=20)
+                except (TimeoutError, asyncio.TimeoutError):
+                    yield ": keepalive\n\n"  # heartbeat keeps idle links open
+                    continue
+                yield f"data: {event.to_json()}\n\n"
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # tell nginx not to buffer the stream
+        },
+    )
+
+
 @router.get("/{listing_id}", response_model=ListingOut)
 async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ListingOut:
     return _serialise(await _load(db, listing_id))
@@ -191,7 +245,11 @@ async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Listi
     dependencies=[Depends(rate_limited("listing", limit=20, window_seconds=60))],
 )
 async def create(
-    body: CreateListing, db: DbSession, organizer: CurrentOrganizer
+    body: CreateListing,
+    db: DbSession,
+    organizer: CurrentOrganizer,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ListingOut:
     """Post surplus food.
 
@@ -226,12 +284,18 @@ async def create(
         db.add(ListingPhoto(listing_id=listing.id, url=url, position=position))
 
     await db.flush()
+    _publish_change(request, background_tasks, listing)
     return _serialise(await _load(db, listing.id))
 
 
 @router.patch("/{listing_id}", response_model=ListingOut)
 async def update(
-    listing_id: uuid.UUID, body: UpdateListing, db: DbSession, user: CurrentUser
+    listing_id: uuid.UUID,
+    body: UpdateListing,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ListingOut:
     """Edit a live post.
 
@@ -263,12 +327,17 @@ async def update(
         listing.status = target
 
     await db.flush()
+    _publish_change(request, background_tasks, listing)
     return _serialise(listing)
 
 
 @router.post("/{listing_id}/cancel", response_model=ListingOut)
 async def cancel(
-    listing_id: uuid.UUID, db: DbSession, user: CurrentUser
+    listing_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    request: Request,
+    background_tasks: BackgroundTasks,
 ) -> ListingOut:
     """Withdraw a post. Idempotent — cancelling twice is not an error."""
     listing = await _load(db, listing_id)
@@ -280,4 +349,5 @@ async def cancel(
     rules.assert_can_transition(listing.status, ListingStatus.CANCELLED)
     listing.status = ListingStatus.CANCELLED
     await db.flush()
+    _publish_change(request, background_tasks, listing)
     return _serialise(listing)

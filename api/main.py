@@ -11,6 +11,7 @@ from api.auth.tokens import TokenVerifier
 from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
+from api.events import build_event_bus
 from api.logging_config import configure_logging
 from api.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 from api.ratelimit import RateLimitMiddleware, build_limiter
@@ -32,6 +33,8 @@ async def lifespan(app: FastAPI):
 
     sweeper: asyncio.Task[None] | None = None
     limiter = app.state.limiter
+    event_bus = app.state.event_bus
+    await event_bus.start()
     if settings.scheduler_enabled:
         sweeper = asyncio.create_task(
             sweep_forever(
@@ -49,6 +52,7 @@ async def lifespan(app: FastAPI):
             # holding a database connection.
             with suppress(asyncio.CancelledError):
                 await sweeper
+        await event_bus.close()
         await limiter.close()
         await engine.dispose()
 
@@ -124,6 +128,7 @@ def create_app(
     app.state.settings = settings
     app.state.token_verifier = token_verifier or _build_verifier(settings)
     app.state.limiter = build_limiter(settings.redis_url)
+    app.state.event_bus = build_event_bus(settings.redis_url)
 
     if settings.rate_limit_enabled:
         app.add_middleware(

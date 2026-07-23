@@ -66,6 +66,9 @@ def settings(test_database_url: str) -> Settings:
         # Rate limiting is off for the general suite (it would add noise and
         # coupling); test_ratelimit.py enables it explicitly.
         rate_limit_enabled=False,
+        # In-memory limiter and event bus — no shared Redis state bleeding
+        # across tests. The Redis backends have their own dedicated tests.
+        redis_url=None,
         # Fixed, fake Cloudinary credentials so the signing endpoint can be
         # tested without reaching the network or reading the real secret.
         cloudinary_cloud_name="test-cloud",
@@ -150,16 +153,14 @@ def auth() -> FakeTokenVerifier:
     return FakeTokenVerifier()
 
 
-@pytest_asyncio.fixture
-async def client(
-    settings: Settings, db: AsyncSession, auth: FakeTokenVerifier
-) -> AsyncIterator[AsyncClient]:
-    """An HTTP client wired to the app through ASGI — no network, no live port.
+@pytest.fixture
+def app(settings: Settings, db: AsyncSession, auth: FakeTokenVerifier):
+    """The application, wired to the rolled-back ``db`` session.
 
-    Requests run against the same rolled-back session as the ``db`` fixture, so
-    a test can set up rows directly and then exercise them over HTTP.
+    Exposed so tests can reach ``app.state`` (the event bus, the limiter) when
+    they need to observe more than the HTTP surface.
     """
-    app = create_app(settings, token_verifier=auth)
+    application = create_app(settings, token_verifier=auth)
 
     async def _session_override() -> AsyncIterator[AsyncSession]:
         # Mirrors the production dependency's commit/rollback semantics; both
@@ -171,8 +172,17 @@ async def client(
             await db.rollback()
             raise
 
-    app.dependency_overrides[session_dependency] = _session_override
+    application.dependency_overrides[session_dependency] = _session_override
+    return application
 
+
+@pytest_asyncio.fixture
+async def client(app) -> AsyncIterator[AsyncClient]:
+    """An HTTP client wired to the app through ASGI — no network, no live port.
+
+    Requests run against the same rolled-back session as the ``db`` fixture, so
+    a test can set up rows directly and then exercise them over HTTP.
+    """
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
