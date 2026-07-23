@@ -71,3 +71,52 @@ export async function fetchFeed(filters: FeedFilters = {}): Promise<Listing[]> {
 export async function fetchListing(id: string): Promise<Listing> {
 	return api.get<Listing>(`/listings/${id}`);
 }
+
+export interface NewListing {
+	title: string;
+	description: string;
+	description_source: "voice" | "manual";
+	allergens: string | null;
+	dietary_tags: string[];
+	quantity_total: number;
+	expiry_minutes: 15 | 20 | 30 | 45 | 60;
+	location: {
+		campus: string;
+		building: string;
+		room: string | null;
+		placement_note: string | null;
+		lat: number;
+		lng: number;
+	};
+	photo_urls: string[];
+}
+
+export async function createListing(body: NewListing): Promise<Listing> {
+	return api.post<Listing>("/listings", body);
+}
+
+/** An organizer's own posts, including finished ones. */
+export async function fetchMyListings(): Promise<Listing[]> {
+	const feed = await api.get<{ items: Listing[]; count: number }>(
+		"/listings/mine",
+	);
+	return feed.items;
+}
+
+export const EXPIRY_CHOICES = [15, 20, 30, 45, 60] as const;
+
+export const DIETARY_TAGS = [
+	"vegetarian",
+	"vegan",
+	"halal",
+	"kosher",
+	"gluten-free",
+] as const;
+
+/** Campus centres, used until a map picker lets organizers drop a precise pin. */
+export const CAMPUSES: Record<string, { lat: number; lng: number }> = {
+	Tempe: { lat: 33.4242, lng: -111.9281 },
+	Downtown: { lat: 33.4517, lng: -112.0741 },
+	West: { lat: 33.6119, lng: -112.2601 },
+	Polytechnic: { lat: 33.3062, lng: -111.6757 },
+};
