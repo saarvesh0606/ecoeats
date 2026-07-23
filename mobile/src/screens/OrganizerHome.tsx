@@ -18,7 +18,7 @@ const STATUS_STYLE: Record<Listing["status"], string> = {
 
 export function OrganizerHome() {
 	const router = useRouter();
-	const { profile, signOut } = useAuth();
+	const { profile } = useAuth();
 	const now = useNow();
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -39,21 +39,12 @@ export function OrganizerHome() {
 
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-			<View className="px-5 pt-2 pb-4 flex-row items-end justify-between">
-				<View>
-					<Text className="font-body text-forest-600 text-xs uppercase tracking-wide">
-						Organizer
-					</Text>
-					<Text className="font-display font-bold text-2xl text-gray-900">
-						Hi {profile?.name?.split(" ")[0]}
-					</Text>
-				</View>
-				<Text
-					onPress={signOut}
-					className="font-body text-sm text-gray-400 pb-1"
-					accessibilityRole="button"
-				>
-					Sign out
+			<View className="px-5 pt-2 pb-4">
+				<Text className="font-body text-forest-600 text-xs uppercase tracking-wide">
+					Organizer
+				</Text>
+				<Text className="font-display font-bold text-2xl text-gray-900">
+					Hi {profile?.name?.split(" ")[0]}
 				</Text>
 			</View>
 

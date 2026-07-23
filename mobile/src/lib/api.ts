@@ -107,3 +107,10 @@ export async function registerProfile(
 ): Promise<UserProfile> {
 	return api.post<UserProfile>("/users/me", { role, name });
 }
+
+export async function updateProfile(patch: {
+	name?: string;
+	dietary_prefs?: string[];
+}): Promise<UserProfile> {
+	return api.patch<UserProfile>("/users/me", patch);
+}

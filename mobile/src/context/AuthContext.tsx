@@ -45,6 +45,8 @@ interface AuthValue {
 	refresh: () => Promise<void>;
 	/** Record a freshly created profile and move to the ready state. */
 	completeProfile: (profile: UserProfile) => void;
+	/** Replace the cached profile after an edit (status unchanged). */
+	applyProfile: (profile: UserProfile) => void;
 	/** Dev-only: authenticate with a `dev:<slug>` stand-in token. */
 	devSignIn: (slug: string) => Promise<void>;
 	signOut: () => Promise<void>;
@@ -128,6 +130,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setStatus("ready");
 	}, []);
 
+	const applyProfile = useCallback((updated: UserProfile) => {
+		setProfile(updated);
+	}, []);
+
 	const signOut = useCallback(async () => {
 		devActive.current = false;
 		setDevToken(null);
@@ -144,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				profile,
 				refresh,
 				completeProfile,
+				applyProfile,
 				devSignIn,
 				signOut,
 			}}
