@@ -13,7 +13,7 @@ import "../global.css";
  * one place routing decisions live, so no individual screen has to guard.
  */
 function Gate() {
-	const { status } = useAuth();
+	const { status, profile } = useAuth();
 	const segments = useSegments();
 	const router = useRouter();
 
@@ -30,9 +30,10 @@ function Gate() {
 		} else if (status === "needs-profile" && current !== "role") {
 			router.replace("/role");
 		} else if (status === "ready" && !inApp) {
-			router.replace("/home");
+			// Land each role on its own home tab.
+			router.replace(profile?.role === "organizer" ? "/posts" : "/feed");
 		}
-	}, [status, segments, router]);
+	}, [status, profile, segments, router]);
 
 	if (status === "loading") {
 		return (

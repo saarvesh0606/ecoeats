@@ -104,7 +104,7 @@ export default function ManageListing() {
 				<Text className="font-body text-gray-600 text-center mb-4">
 					{error ?? "Post not found."}
 				</Text>
-				<Button variant="outline" onPress={() => router.replace("/home")}>
+				<Button variant="outline" onPress={() => router.replace("/posts")}>
 					Back to your posts
 				</Button>
 			</SafeAreaView>
@@ -118,7 +118,7 @@ export default function ManageListing() {
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3">
 				<Text
-					onPress={() => router.replace("/home")}
+					onPress={() => router.replace("/posts")}
 					className="font-body text-forest-700 mb-2"
 					accessibilityRole="button"
 				>

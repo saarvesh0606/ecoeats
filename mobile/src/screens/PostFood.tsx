@@ -25,7 +25,7 @@ import { uploadPhoto } from "@/lib/uploads";
 
 const MAX_PHOTOS = 5;
 
-export default function PostScreen() {
+export function PostFood() {
 	const router = useRouter();
 
 	const [title, setTitle] = useState("");
@@ -112,7 +112,7 @@ export default function PostScreen() {
 				},
 				photo_urls: photos,
 			});
-			router.replace("/home");
+			router.replace("/posts");
 		} catch (err) {
 			setError(err instanceof ApiError ? err.message : "Couldn't post. Try again.");
 		} finally {
@@ -126,16 +126,9 @@ export default function PostScreen() {
 				className="flex-1"
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
 			>
-				<View className="px-5 pt-2 pb-3 flex-row items-center justify-between">
+				<View className="px-5 pt-2 pb-3">
 					<Text className="font-display font-bold text-2xl text-gray-900">
 						Post food
-					</Text>
-					<Text
-						onPress={() => router.replace("/home")}
-						className="font-body text-gray-400"
-						accessibilityRole="button"
-					>
-						Cancel
 					</Text>
 				</View>
 
@@ -183,7 +176,9 @@ export default function PostScreen() {
 							</Text>
 							{speech.supported && (
 								<Pressable
-									onPress={() => (speech.listening ? speech.stop() : speech.start())}
+									onPress={() =>
+										speech.listening ? speech.stop() : speech.start()
+									}
 									className={`rounded-full px-3 py-1 ${speech.listening ? "bg-red-100" : "bg-forest-50"}`}
 								>
 									<Text

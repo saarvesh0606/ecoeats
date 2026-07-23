@@ -23,7 +23,7 @@ const STATUS_STYLE: Record<Claim["status"], string> = {
 	cancelled: "bg-gray-100 text-gray-500",
 };
 
-export default function MyClaims() {
+export function MyClaims() {
 	const router = useRouter();
 	const now = useNow();
 	const [claims, setClaims] = useState<Claim[]>([]);
@@ -34,7 +34,7 @@ export default function MyClaims() {
 		try {
 			setClaims(await fetchMyClaims());
 		} catch {
-			// Leave whatever we had; the list simply won't refresh.
+			// Keep whatever we had; the list simply won't refresh.
 		} finally {
 			setLoading(false);
 		}
@@ -60,16 +60,9 @@ export default function MyClaims() {
 
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-			<View className="px-5 pt-2 pb-4 flex-row items-center justify-between">
+			<View className="px-5 pt-2 pb-4">
 				<Text className="font-display font-bold text-2xl text-gray-900">
 					My claims
-				</Text>
-				<Text
-					onPress={() => router.replace("/home")}
-					className="font-body text-forest-700"
-					accessibilityRole="button"
-				>
-					Browse food
 				</Text>
 			</View>
 
@@ -107,7 +100,8 @@ export default function MyClaims() {
 
 							{isPending && (
 								<Text className="font-body text-forest-700 text-sm font-semibold mt-2">
-									Pick up within {formatTimeLeft(item.reservation_expires_at, now)}
+									Pick up within{" "}
+									{formatTimeLeft(item.reservation_expires_at, now)}
 								</Text>
 							)}
 
@@ -144,6 +138,11 @@ export default function MyClaims() {
 						<Text className="font-body text-gray-500 text-center mt-2">
 							When you claim food, it shows up here with pickup details.
 						</Text>
+						<View className="mt-6">
+							<Button variant="outline" onPress={() => router.replace("/feed")}>
+								Browse food
+							</Button>
+						</View>
 					</View>
 				}
 			/>
