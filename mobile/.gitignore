@@ -1,0 +1,14 @@
+# Expo / Metro
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Env — the Firebase web config values are public, but keep .env local anyway
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
