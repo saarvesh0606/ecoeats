@@ -49,27 +49,48 @@ async def lifespan(app: FastAPI):
 
 
 def _build_verifier(settings: Settings) -> TokenVerifier | None:
-    """Construct the Firebase verifier, or None when unconfigured.
+    """Construct the token verifier for this environment.
 
     Imported lazily so the firebase_admin dependency is only needed when it is
     actually used — tests inject their own verifier and never touch it.
     """
-    if not settings.firebase_configured:
-        if settings.is_production:
-            raise RuntimeError(
-                "FIREBASE_PROJECT_ID and FIREBASE_CREDENTIALS_PATH are required "
-                "in production — every authenticated route depends on them."
-            )
-        return None
+    # A dev bypass in production would let anyone authenticate as anyone. Fail
+    # to start rather than serve traffic in that state.
+    if settings.dev_auth_bypass and settings.is_production:
+        raise RuntimeError(
+            "DEV_AUTH_BYPASS must never be enabled in production — it accepts "
+            "stand-in tokens that impersonate any user."
+        )
 
-    from api.auth.firebase import FirebaseTokenVerifier
+    firebase: TokenVerifier | None = None
+    if settings.firebase_configured:
+        from api.auth.firebase import FirebaseTokenVerifier
 
-    assert settings.firebase_project_id is not None
-    assert settings.firebase_credentials_path is not None
-    return FirebaseTokenVerifier(
-        project_id=settings.firebase_project_id,
-        credentials_path=settings.firebase_credentials_path,
-    )
+        assert settings.firebase_project_id is not None
+        assert settings.firebase_credentials_path is not None
+        firebase = FirebaseTokenVerifier(
+            project_id=settings.firebase_project_id,
+            credentials_path=settings.firebase_credentials_path,
+        )
+    elif settings.is_production:
+        raise RuntimeError(
+            "FIREBASE_PROJECT_ID and FIREBASE_CREDENTIALS_PATH are required "
+            "in production — every authenticated route depends on them."
+        )
+
+    if settings.dev_auth_bypass:
+        import logging
+
+        from api.auth.dev import DevTokenVerifier
+
+        logging.getLogger(__name__).warning(
+            "DEV_AUTH_BYPASS is ON — dev:<slug> tokens are accepted. "
+            "This must never run in production."
+        )
+        # Real Firebase tokens still work through the fallback.
+        return DevTokenVerifier(fallback=firebase)
+
+    return firebase
 
 
 def create_app(

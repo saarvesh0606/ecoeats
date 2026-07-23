@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = True
     sweep_interval_seconds: int = 60
 
+    # --- development only ------------------------------------------------
+    # Accept `dev:<slug>` stand-in tokens so the client can be built and tested
+    # before real ASU accounts exist. Off by default; the app refuses to start
+    # if this is true while APP_ENV is production. See api.auth.dev.
+    dev_auth_bypass: bool = False
+
     # Exact-match allowlist. v1 matched by string prefix, which meant
     # http://localhost:3000.example.com passed the check.
     #

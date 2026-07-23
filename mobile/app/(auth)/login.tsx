@@ -3,10 +3,13 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { DEV_AUTH } from "@/config";
+import { useAuth } from "@/context/AuthContext";
 import { authErrorMessage, signInWithEmail } from "@/lib/firebase";
 import { validateAsuEmail } from "@/lib/validation";
 
 export default function LoginScreen() {
+	const { devSignIn } = useAuth();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,34 @@ export default function LoginScreen() {
 						Create an account
 					</Link>
 				</View>
+
+				{DEV_AUTH && (
+					<View className="mt-10 pt-6 border-t border-gray-200">
+						<Text className="font-body text-gray-400 text-xs text-center mb-3 uppercase tracking-wide">
+							Dev — no real account needed
+						</Text>
+						<View className="flex-row gap-3">
+							<View className="flex-1">
+								<Button
+									variant="outline"
+									size="sm"
+									onPress={() => devSignIn("organizer")}
+								>
+									Dev organizer
+								</Button>
+							</View>
+							<View className="flex-1">
+								<Button
+									variant="outline"
+									size="sm"
+									onPress={() => devSignIn("recipient")}
+								>
+									Dev recipient
+								</Button>
+							</View>
+						</View>
+					</View>
+				)}
 			</View>
 		</KeyboardAvoidingView>
 	);

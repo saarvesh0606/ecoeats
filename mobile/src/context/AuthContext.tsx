@@ -14,6 +14,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import {
@@ -27,6 +28,7 @@ import {
 	ProfileNotFoundError,
 	type UserProfile,
 } from "@/lib/api";
+import { setDevToken } from "@/lib/session";
 
 export type AuthStatus =
 	| "loading" // still resolving Firebase + profile
@@ -41,7 +43,10 @@ interface AuthValue {
 	profile: UserProfile | null;
 	/** Re-check Firebase verification and reload the profile. */
 	refresh: () => Promise<void>;
-	setProfile: (profile: UserProfile) => void;
+	/** Record a freshly created profile and move to the ready state. */
+	completeProfile: (profile: UserProfile) => void;
+	/** Dev-only: authenticate with a `dev:<slug>` stand-in token. */
+	devSignIn: (slug: string) => Promise<void>;
 	signOut: () => Promise<void>;
 }
 
@@ -52,43 +57,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [status, setStatus] = useState<AuthStatus>("loading");
 
-	/** Resolve the full status for a given Firebase user. */
-	const resolve = useCallback(async (user: FirebaseUser | null) => {
-		if (!user) {
-			setProfile(null);
-			setStatus("signed-out");
-			return;
-		}
+	// While a dev session is active, Firebase auth changes are ignored so they
+	// can't knock the user back to signed-out. A ref because the watchAuth
+	// callback closes over it and must see the current value.
+	const devActive = useRef(false);
 
-		if (!user.emailVerified) {
-			setProfile(null);
-			setStatus("unverified");
-			return;
-		}
-
+	/** Fetch the profile for an already-verified identity. */
+	const resolveProfile = useCallback(async () => {
 		try {
 			const loaded = await fetchProfile();
 			setProfile(loaded);
 			setStatus("ready");
-		} catch (error) {
-			if (error instanceof ProfileNotFoundError) {
-				setProfile(null);
-				setStatus("needs-profile");
-			} else {
-				// A network or server error shouldn't strand a verified user on a
-				// blank screen — send them to role selection, which retries.
-				setProfile(null);
-				setStatus("needs-profile");
-			}
+		} catch {
+			// 404 means no profile yet; any other error shouldn't strand a
+			// verified user on a blank screen. Both send them to role selection,
+			// which retries.
+			setProfile(null);
+			setStatus("needs-profile");
 		}
 	}, []);
 
+	/** Resolve status for a given Firebase user. */
+	const resolve = useCallback(
+		async (user: FirebaseUser | null) => {
+			if (!user) {
+				setProfile(null);
+				setStatus("signed-out");
+				return;
+			}
+			if (!user.emailVerified) {
+				setProfile(null);
+				setStatus("unverified");
+				return;
+			}
+			await resolveProfile();
+		},
+		[resolveProfile],
+	);
+
 	useEffect(() => {
 		return watchAuth((user) => {
+			if (devActive.current) return; // dev session owns the state
 			setFirebaseUser(user);
 			void resolve(user);
 		});
 	}, [resolve]);
+
+	const devSignIn = useCallback(
+		async (slug: string) => {
+			devActive.current = true;
+			setDevToken(`dev:${slug}`);
+			setFirebaseUser(null);
+			setStatus("loading");
+			await resolveProfile();
+		},
+		[resolveProfile],
+	);
 
 	const refresh = useCallback(async () => {
 		const user = await reloadUser();
@@ -96,7 +120,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		await resolve(user);
 	}, [resolve]);
 
+	/** Called after role selection creates the profile. Advances to ready —
+	 * setting the profile alone would leave status at needs-profile and strand
+	 * the user on the role screen. */
+	const completeProfile = useCallback((created: UserProfile) => {
+		setProfile(created);
+		setStatus("ready");
+	}, []);
+
 	const signOut = useCallback(async () => {
+		devActive.current = false;
+		setDevToken(null);
 		await fbSignOut();
 		setProfile(null);
 		setStatus("signed-out");
@@ -109,7 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				firebaseUser,
 				profile,
 				refresh,
-				setProfile,
+				completeProfile,
+				devSignIn,
 				signOut,
 			}}
 		>

@@ -18,7 +18,7 @@ const CHOICES: { role: UserRole; title: string; blurb: string }[] = [
 ];
 
 export default function RoleScreen() {
-	const { setProfile, signOut } = useAuth();
+	const { completeProfile, signOut } = useAuth();
 	const [selected, setSelected] = useState<UserRole | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export default function RoleScreen() {
 		setLoading(true);
 		try {
 			const profile = await registerProfile(selected);
-			setProfile(profile); // flips status to "ready"; gate routes to home
+			completeProfile(profile); // flips status to "ready"; gate routes to home
 		} catch (err) {
 			setError(
 				err instanceof ApiError ? err.message : "Couldn't save. Try again.",

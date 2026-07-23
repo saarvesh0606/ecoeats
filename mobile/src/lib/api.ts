@@ -8,6 +8,7 @@
  */
 
 import { auth } from "@/lib/firebase";
+import { getDevToken } from "@/lib/session";
 import { config } from "@/config";
 
 export class ApiError extends Error {
@@ -24,6 +25,10 @@ export class ApiError extends Error {
 export class ProfileNotFoundError extends ApiError {}
 
 async function authHeader(): Promise<Record<string, string>> {
+	// Dev bypass wins when active — it stands in for Firebase entirely.
+	const dev = getDevToken();
+	if (dev) return { Authorization: `Bearer ${dev}` };
+
 	const user = auth.currentUser;
 	if (!user) return {};
 	const token = await user.getIdToken();

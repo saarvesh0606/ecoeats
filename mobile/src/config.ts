@@ -40,3 +40,10 @@ export const config = {
 
 /** The only email domain allowed to hold an account. Mirrors the backend. */
 export const ALLOWED_EMAIL_DOMAIN = "asu.edu";
+
+/**
+ * When true, the login screen offers one-tap dev sign-in that skips Firebase.
+ * Only works if the backend also has DEV_AUTH_BYPASS on. For building and
+ * testing before real ASU accounts exist — never enable in a real build.
+ */
+export const DEV_AUTH = process.env.EXPO_PUBLIC_DEV_AUTH === "true";
