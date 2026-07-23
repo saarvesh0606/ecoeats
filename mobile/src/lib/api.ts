@@ -24,15 +24,19 @@ export class ApiError extends Error {
 /** Raised on a 404 from the profile endpoint: valid token, no profile yet. */
 export class ProfileNotFoundError extends ApiError {}
 
-async function authHeader(): Promise<Record<string, string>> {
-	// Dev bypass wins when active — it stands in for Firebase entirely.
+/** The current bearer token — dev stand-in or a fresh Firebase ID token. */
+export async function currentBearerToken(): Promise<string | null> {
 	const dev = getDevToken();
-	if (dev) return { Authorization: `Bearer ${dev}` };
+	if (dev) return dev;
 
 	const user = auth.currentUser;
-	if (!user) return {};
-	const token = await user.getIdToken();
-	return { Authorization: `Bearer ${token}` };
+	if (!user) return null;
+	return user.getIdToken();
+}
+
+async function authHeader(): Promise<Record<string, string>> {
+	const token = await currentBearerToken();
+	return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function request<T>(

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
+import { subscribeToListings } from "@/lib/listingStream";
 
 // "Expiring soon" — surfaces food about to be wasted, the whole point.
 const SOON_MINUTES = 20;
@@ -49,12 +50,54 @@ export function RecipientFeed() {
 		void load();
 	}, [load]);
 
-	// Light polling keeps quantities roughly fresh until a realtime channel
-	// replaces it. The countdown itself ticks locally via `now`.
+	// Live updates over SSE, replacing polling. Refs let the mount-only
+	// subscription always see the current listings and the latest `load`
+	// (which closes over the active filters) without reconnecting on every
+	// filter change.
+	const listingsRef = useRef(listings);
+	listingsRef.current = listings;
+	const loadRef = useRef(load);
+	loadRef.current = load;
+
 	useEffect(() => {
-		const id = setInterval(() => void load(), 20000);
-		return () => clearInterval(id);
-	}, [load]);
+		let close = () => {};
+		let cancelled = false;
+
+		void subscribeToListings((event) => {
+			const known = listingsRef.current.some(
+				(l) => l.id === event.listing_id,
+			);
+			// A change to a listing we don't have is almost always a new post;
+			// refetch so server-side filters decide whether it belongs here.
+			if (!known) {
+				void loadRef.current();
+				return;
+			}
+			const available =
+				event.status === "active" && event.quantity_remaining > 0;
+			setListings((prev) =>
+				available
+					? prev.map((l) =>
+							l.id === event.listing_id
+								? {
+										...l,
+										quantity_remaining: event.quantity_remaining,
+										status: event.status as Listing["status"],
+									}
+								: l,
+						)
+					: prev.filter((l) => l.id !== event.listing_id),
+			);
+		}).then((fn) => {
+			if (cancelled) fn();
+			else close = fn;
+		});
+
+		return () => {
+			cancelled = true;
+			close();
+		};
+	}, []);
 
 	function toggleDietary(tag: string) {
 		setDietary((prev) =>
