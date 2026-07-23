@@ -9,16 +9,31 @@
 		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "com.ecoeats.app"
+			"bundleIdentifier": "com.ecoeats.app",
+			"infoPlist": {
+				"NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
+				"NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting."
+			}
 		},
 		"android": {
-			"package": "com.ecoeats.app"
+			"package": "com.ecoeats.app",
+			"permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
 		},
 		"web": {
 			"bundler": "metro",
 			"output": "single"
 		},
-		"plugins": ["expo-router", "expo-secure-store"],
+		"plugins": [
+			"expo-router",
+			"expo-secure-store",
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
+					"cameraPermission": "EcoEats uses the camera so you can take a photo of the food you're posting."
+				}
+			]
+		],
 		"experiments": {
 			"typedRoutes": true
 		}
