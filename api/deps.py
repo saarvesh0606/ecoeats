@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.tokens import InvalidTokenError, TokenVerifier, VerifiedIdentity
 from api.db import session_dependency
-from api.errors import ForbiddenError, NotFoundError, UnauthorizedError
+from api.errors import (
+    ForbiddenError,
+    NotFoundError,
+    TooManyRequestsError,
+    UnauthorizedError,
+)
 from api.models import User
 from api.models.enums import ALLOWED_EMAIL_DOMAIN, UserRole
 
@@ -100,3 +105,25 @@ CurrentOrganizer = Annotated[User, Depends(current_organizer)]
 async def find_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.scalars(select(User).where(User.email == email.lower()))
     return result.one_or_none()
+
+
+def rate_limited(name: str, *, limit: int, window_seconds: int):
+    """A per-user rate limit for one action, as a route dependency.
+
+    Keyed on the authenticated user id, not the client IP — so it's precise
+    even when hundreds of users share a campus-NAT address. Use it on expensive
+    or abusable actions (claiming, posting, upload signing).
+    """
+
+    async def dependency(request: Request, user: CurrentUser) -> None:
+        settings = request.app.state.settings
+        if not settings.rate_limit_enabled:
+            return
+        limiter = request.app.state.limiter
+        result = await limiter.check(
+            f"{name}:user:{user.id}", limit=limit, window_seconds=window_seconds
+        )
+        if not result.allowed:
+            raise TooManyRequestsError(retry_after=result.retry_after)
+
+    return dependency

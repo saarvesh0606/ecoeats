@@ -63,6 +63,9 @@ def settings(test_database_url: str) -> Settings:
         # Sweeps are driven explicitly in tests. A loop running in the
         # background would mutate rows underneath assertions.
         scheduler_enabled=False,
+        # Rate limiting is off for the general suite (it would add noise and
+        # coupling); test_ratelimit.py enables it explicitly.
+        rate_limit_enabled=False,
         # Fixed, fake Cloudinary credentials so the signing endpoint can be
         # tested without reaching the network or reading the real secret.
         cloudinary_cloud_name="test-cloud",

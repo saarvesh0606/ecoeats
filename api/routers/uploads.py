@@ -4,11 +4,11 @@ One endpoint: it hands a signed-in organizer a ticket to upload a photo
 directly to Cloudinary. The image never passes through this API.
 """
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from api.config import Settings
-from api.deps import CurrentOrganizer
+from api.deps import CurrentOrganizer, rate_limited
 from api.errors import AppError
 from api.services.uploads import build_upload_ticket
 
@@ -30,7 +30,11 @@ class UploadTicketOut(BaseModel):
     signature: str
 
 
-@router.post("/signature", response_model=UploadTicketOut)
+@router.post(
+    "/signature",
+    response_model=UploadTicketOut,
+    dependencies=[Depends(rate_limited("upload", limit=40, window_seconds=60))],
+)
 async def create_upload_signature(
     request: Request, organizer: CurrentOrganizer
 ) -> UploadTicketOut:

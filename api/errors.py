@@ -26,7 +26,19 @@ class AppError(Exception):
 
     def __init__(self, message: str | None = None) -> None:
         self.message = message or self.message
+        self.headers: dict[str, str] = {}
         super().__init__(self.message)
+
+
+class TooManyRequestsError(AppError):
+    """429 — the caller exceeded a rate limit. Carries Retry-After."""
+
+    status_code = 429
+    message = "Too many requests. Please slow down."
+
+    def __init__(self, *, retry_after: int, message: str | None = None) -> None:
+        super().__init__(message)
+        self.headers = {"Retry-After": str(retry_after)}
 
 
 class NotFoundError(AppError):
@@ -62,6 +74,7 @@ def register_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"message": exc.message},
+            headers=exc.headers or None,
         )
 
     @app.exception_handler(Exception)

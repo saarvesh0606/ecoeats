@@ -54,6 +54,16 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = True
     sweep_interval_seconds: int = 60
 
+    # --- rate limiting ---------------------------------------------------
+    # Redis is the shared store for multi-instance production; without a URL the
+    # limiter falls back to in-memory (single process only — dev and tests).
+    redis_url: str | None = None
+    rate_limit_enabled: bool = True
+    # Generous blanket per-IP budget. Loose on purpose: campus NAT means many
+    # students share one public IP. Precise limits are per-user, per-route.
+    rate_limit_ip_requests: int = 600
+    rate_limit_ip_window_seconds: int = 60
+
     # --- development only ------------------------------------------------
     # Accept `dev:<slug>` stand-in tokens so the client can be built and tested
     # before real ASU accounts exist. Off by default; the app refuses to start

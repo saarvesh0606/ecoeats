@@ -12,6 +12,7 @@ dependencies = [
     "asyncpg>=0.30",
     "pydantic-settings>=2.6",
     "firebase-admin>=6.5",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]

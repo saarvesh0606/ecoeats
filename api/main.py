@@ -13,6 +13,7 @@ from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
 from api.logging_config import configure_logging
 from api.middleware import RequestContextMiddleware
+from api.ratelimit import RateLimitMiddleware, build_limiter
 from api.routers import (
     claims_router,
     listings_router,
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI):
     app.state.session_factory = create_session_factory(engine)
 
     sweeper: asyncio.Task[None] | None = None
+    limiter = app.state.limiter
     if settings.scheduler_enabled:
         sweeper = asyncio.create_task(
             sweep_forever(
@@ -47,6 +49,7 @@ async def lifespan(app: FastAPI):
             # holding a database connection.
             with suppress(asyncio.CancelledError):
                 await sweeper
+        await limiter.close()
         await engine.dispose()
 
 
@@ -114,6 +117,15 @@ def create_app(
     )
     app.state.settings = settings
     app.state.token_verifier = token_verifier or _build_verifier(settings)
+    app.state.limiter = build_limiter(settings.redis_url)
+
+    if settings.rate_limit_enabled:
+        app.add_middleware(
+            RateLimitMiddleware,
+            limiter=app.state.limiter,
+            limit=settings.rate_limit_ip_requests,
+            window_seconds=settings.rate_limit_ip_window_seconds,
+        )
 
     app.add_middleware(
         CORSMiddleware,

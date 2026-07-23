@@ -2,11 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from api.deps import CurrentUser, DbSession
+from api.deps import CurrentUser, DbSession, rate_limited
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.models import Claim, Listing
 from api.models.enums import ClaimStatus, UserRole
@@ -49,7 +49,12 @@ def _serialise(claim: Claim, *, listing: Listing | None = None) -> ClaimOut:
     )
 
 
-@router.post("/claims", response_model=ClaimOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/claims",
+    response_model=ClaimOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limited("claim", limit=20, window_seconds=60))],
+)
 async def claim_food(body: CreateClaim, db: DbSession, user: CurrentUser) -> ClaimOut:
     """Reserve one portion.
 

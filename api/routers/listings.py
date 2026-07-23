@@ -4,12 +4,12 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from api.deps import CurrentOrganizer, CurrentUser, DbSession
+from api.deps import CurrentOrganizer, CurrentUser, DbSession, rate_limited
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.geo import bounding_box, haversine_miles
 from api.models import Listing, ListingPhoto
@@ -184,7 +184,12 @@ async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Listi
 # ---------------------------------------------------------------------------
 
 
-@router.post("", response_model=ListingOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ListingOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limited("listing", limit=20, window_seconds=60))],
+)
 async def create(
     body: CreateListing, db: DbSession, organizer: CurrentOrganizer
 ) -> ListingOut:
