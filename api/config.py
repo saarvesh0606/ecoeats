@@ -27,6 +27,11 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
 
+    # --- observability ---------------------------------------------------
+    log_level: str = "INFO"
+    # None → JSON in production, readable console lines otherwise.
+    log_json: bool | None = None
+
     # --- Firebase -------------------------------------------------------
     # Required in production. Left optional so the test suite can run with an
     # injected fake verifier and never needs real credentials on disk.
@@ -90,6 +95,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def log_as_json(self) -> bool:
+        return self.log_json if self.log_json is not None else self.is_production
 
     @property
     def firebase_configured(self) -> bool:

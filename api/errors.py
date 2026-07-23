@@ -13,6 +13,8 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from api.logging_config import request_id_var
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,10 +66,25 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
+        # This handler runs in Starlette's outermost layer, after the request
+        # middleware has unwound, so the ContextVar is already cleared — read
+        # the id from request.state (backed by the shared scope) instead, and
+        # pass it explicitly into the log so the stack trace carries it too.
+        request_id = getattr(request.state, "request_id", None) or request_id_var.get()
         logger.exception(
-            "Unhandled error on %s %s", request.method, request.url.path
+            "Unhandled error on %s %s",
+            request.method,
+            request.url.path,
+            extra={"request_id": request_id} if request_id else {},
         )
-        return JSONResponse(
-            status_code=500,
-            content={"message": "Internal server error"},
-        )
+        # Hand the id back so a user's report ("I got an error, id abc123") maps
+        # straight to the logged trace. The message stays generic — internal
+        # detail never reaches the client.
+        body: dict[str, str] = {"message": "Internal server error"}
+        headers: dict[str, str] = {}
+        if request_id:
+            body["request_id"] = request_id
+            # This response is emitted by Starlette's outermost error layer,
+            # which bypasses the request middleware — so set the id header here.
+            headers["X-Request-ID"] = request_id
+        return JSONResponse(status_code=500, content=body, headers=headers)

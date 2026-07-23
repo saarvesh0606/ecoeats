@@ -24,7 +24,11 @@ from api.models import Base
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False, or Alembic's logging config silently
+    # disables every logger that already existed — including the application's
+    # own (api.access, etc.) when migrations run in-process, e.g. from tests or
+    # an app-managed migration step.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 

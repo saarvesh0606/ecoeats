@@ -11,6 +11,8 @@ from api.auth.tokens import TokenVerifier
 from api.config import Settings, get_settings
 from api.db import create_engine, create_session_factory
 from api.errors import register_error_handlers
+from api.logging_config import configure_logging
+from api.middleware import RequestContextMiddleware
 from api.routers import (
     claims_router,
     listings_router,
@@ -100,6 +102,11 @@ def create_app(
 ) -> FastAPI:
     settings = settings or get_settings()
 
+    # Configure logging for real processes; skip under tests so pytest's caplog
+    # keeps ownership of the root logger.
+    if settings.app_env != "test":
+        configure_logging(level=settings.log_level, json_output=settings.log_as_json)
+
     app = FastAPI(
         title="EcoEats API",
         version="0.1.0",
@@ -113,8 +120,14 @@ def create_app(
         allow_origins=settings.allowed_origins,  # exact match, not prefix
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
     )
+
+    # Added last so it wraps everything else: the correlation id is assigned and
+    # timing starts before any other middleware runs, and the access log sees
+    # the final status.
+    app.add_middleware(RequestContextMiddleware)
 
     register_error_handlers(app)
 
