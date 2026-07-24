@@ -14,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from api.logging_config import request_id_var
+from api.monitoring import capture_exception
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,8 @@ def register_error_handlers(app: FastAPI) -> None:
             request.url.path,
             extra={"request_id": request_id} if request_id else {},
         )
+        # Report to Sentry (no-op when unconfigured), tagged with the same id.
+        capture_exception(exc, request_id=request_id)
         # Hand the id back so a user's report ("I got an error, id abc123") maps
         # straight to the logged trace. The message stays generic — internal
         # detail never reaches the client.

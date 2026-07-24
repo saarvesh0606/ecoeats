@@ -14,6 +14,7 @@ from api.errors import register_error_handlers
 from api.events import build_event_bus
 from api.logging_config import configure_logging
 from api.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
+from api.monitoring import init_sentry
 from api.ratelimit import RateLimitMiddleware, build_limiter
 from api.routers import (
     claims_router,
@@ -128,6 +129,7 @@ def create_app(
     # keeps ownership of the root logger.
     if settings.app_env != "test":
         configure_logging(level=settings.log_level, json_output=settings.log_as_json)
+        init_sentry(settings)
 
     # Interactive docs and the OpenAPI schema expose the full API surface;
     # serve them in development only.

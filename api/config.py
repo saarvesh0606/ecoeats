@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     # None → JSON in production, readable console lines otherwise.
     log_json: bool | None = None
 
+    # Error tracking. Inactive until a DSN is set, so dev and tests are
+    # unaffected. Trace sampling is off by default — turn it up in production
+    # for performance monitoring.
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.0
+
     # --- Firebase -------------------------------------------------------
     # Required in production. Left optional so the test suite can run with an
     # injected fake verifier and never needs real credentials on disk.
