@@ -1,5 +1,6 @@
 """Firebase implementation of TokenVerifier."""
 
+import json
 import logging
 from pathlib import Path
 
@@ -20,14 +21,14 @@ class FirebaseTokenVerifier:
     valid until it expires on its own.
     """
 
-    def __init__(self, *, project_id: str, credentials_path: str | Path) -> None:
-        path = Path(credentials_path)
-        if not path.is_file():
-            raise FileNotFoundError(
-                f"Firebase service account not found at {path}. "
-                "Download it from Firebase console → Project settings → "
-                "Service accounts → Generate new private key."
-            )
+    def __init__(
+        self,
+        *,
+        project_id: str,
+        credentials_path: str | Path | None = None,
+        credentials_json: str | None = None,
+    ) -> None:
+        cert = self._load_certificate(credentials_path, credentials_json)
 
         # firebase_admin keeps a process-global app registry, so re-initialising
         # raises. Reuse the existing app when there is one.
@@ -35,9 +36,37 @@ class FirebaseTokenVerifier:
             self._app = firebase_admin.get_app()
         except ValueError:
             self._app = firebase_admin.initialize_app(
-                credentials.Certificate(str(path)),
-                {"projectId": project_id},
+                cert, {"projectId": project_id}
             )
+
+    @staticmethod
+    def _load_certificate(
+        credentials_path: str | Path | None, credentials_json: str | None
+    ) -> credentials.Certificate:
+        # JSON in an env var takes precedence — it's how production containers
+        # inject the secret, without a file on disk.
+        if credentials_json:
+            try:
+                return credentials.Certificate(json.loads(credentials_json))
+            except (ValueError, json.JSONDecodeError) as exc:
+                raise ValueError(
+                    "FIREBASE_CREDENTIALS_JSON is not valid service-account JSON"
+                ) from exc
+
+        if credentials_path:
+            path = Path(credentials_path)
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"Firebase service account not found at {path}. "
+                    "Download it from Firebase console → Project settings → "
+                    "Service accounts → Generate new private key."
+                )
+            return credentials.Certificate(str(path))
+
+        raise ValueError(
+            "Firebase needs either FIREBASE_CREDENTIALS_PATH or "
+            "FIREBASE_CREDENTIALS_JSON."
+        )
 
     def verify(self, token: str) -> VerifiedIdentity:
         try:

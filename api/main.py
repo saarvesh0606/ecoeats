@@ -76,10 +76,10 @@ def _build_verifier(settings: Settings) -> TokenVerifier | None:
         from api.auth.firebase import FirebaseTokenVerifier
 
         assert settings.firebase_project_id is not None
-        assert settings.firebase_credentials_path is not None
         firebase = FirebaseTokenVerifier(
             project_id=settings.firebase_project_id,
             credentials_path=settings.firebase_credentials_path,
+            credentials_json=settings.firebase_credentials_json,
         )
     elif settings.is_production:
         raise RuntimeError(
@@ -100,6 +100,21 @@ def _build_verifier(settings: Settings) -> TokenVerifier | None:
         return DevTokenVerifier(fallback=firebase)
 
     return firebase
+
+
+def _assert_production_ready(settings: Settings) -> None:
+    """Fail fast on config that would silently misbehave at scale.
+
+    Without Redis, rate limiting and real-time fall back to in-memory — which is
+    per-process, so with multiple workers or instances one client's limit is
+    multiplied and an event published on one instance never reaches clients on
+    another. Fine for dev; wrong for production.
+    """
+    if settings.is_production and not settings.redis_url:
+        raise RuntimeError(
+            "REDIS_URL is required in production — rate limiting and real-time "
+            "events must be shared across instances, not per-process."
+        )
 
 
 def create_app(
@@ -125,6 +140,8 @@ def create_app(
         redoc_url="/redoc" if docs_on else None,
         openapi_url="/openapi.json" if docs_on else None,
     )
+    _assert_production_ready(settings)
+
     app.state.settings = settings
     app.state.token_verifier = token_verifier or _build_verifier(settings)
     app.state.limiter = build_limiter(settings.redis_url)

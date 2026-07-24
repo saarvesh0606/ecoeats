@@ -38,6 +38,8 @@ def _production_app(test_database_url: str):
         scheduler_enabled=False,
         dev_auth_bypass=False,  # overrides the dev .env; never on in production
         rate_limit_enabled=False,
+        # Production requires Redis (cross-instance limiter + real-time).
+        redis_url="redis://localhost:6379/1",
     )
     return create_app(settings)
 

@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     # Required. No default — a missing DATABASE_URL is a startup failure.
     database_url: str
 
+    # Connection pool, per process. Total connections to Postgres are
+    # (pool_size + max_overflow) x workers x instances, so behind a shared
+    # database keep these modest and put a pooler (PgBouncer / Neon / Supabase)
+    # in front. Set db_statement_cache off for a transaction-mode pooler, where
+    # asyncpg's prepared-statement cache would break across pooled connections.
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_statement_cache: bool = True
+
     app_env: str = "development"
 
     # --- observability ---------------------------------------------------
@@ -36,7 +45,10 @@ class Settings(BaseSettings):
     # Required in production. Left optional so the test suite can run with an
     # injected fake verifier and never needs real credentials on disk.
     firebase_project_id: str | None = None
+    # Either a path to the service-account JSON (local dev) or the JSON itself
+    # (production containers, where you inject secrets as env vars, not files).
     firebase_credentials_path: str | None = None
+    firebase_credentials_json: str | None = None
 
     # --- Cloudinary (listing photos) -----------------------------------
     # cloud_name and api_key are not secret — they appear in delivery URLs and
@@ -112,7 +124,10 @@ class Settings(BaseSettings):
 
     @property
     def firebase_configured(self) -> bool:
-        return bool(self.firebase_project_id and self.firebase_credentials_path)
+        return bool(
+            self.firebase_project_id
+            and (self.firebase_credentials_path or self.firebase_credentials_json)
+        )
 
     def resolve_cloudinary_secret(self) -> str | None:
         """The signing secret, from the inline value or the secret file.

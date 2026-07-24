@@ -1,0 +1,27 @@
+# Keep the image small and secrets out of it.
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
+
+# Not needed at runtime
+tests/
+mobile/
+docs/
+*.md
+!README.md
+
+# Never ship these
+.env
+.env.*
+secrets/
+*service-account*.json
+*firebase-adminsdk*.json

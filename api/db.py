@@ -25,12 +25,19 @@ class Base(AsyncAttrs, DeclarativeBase):
 
 
 def create_engine(settings: Settings) -> AsyncEngine:
+    connect_args: dict[str, object] = {}
+    if not settings.db_statement_cache:
+        # Required behind a transaction-mode pooler: each query may land on a
+        # different backend, so a prepared-statement cache would miss or error.
+        connect_args["statement_cache_size"] = 0
+
     return create_async_engine(
         settings.database_url,
-        pool_size=5,
-        max_overflow=5,
-        pool_pre_ping=True,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_pre_ping=True,  # recycle connections a pooler/DB closed under us
         echo=False,
+        connect_args=connect_args,
     )
 
 
