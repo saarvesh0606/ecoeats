@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
@@ -25,6 +26,7 @@ const SOON_MINUTES = 20;
 export function RecipientFeed() {
 	const router = useRouter();
 	const now = useNow();
+	const toast = useToast();
 
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -178,6 +180,7 @@ export function RecipientFeed() {
 				<Pressable
 					hitSlop={8}
 					className="mt-1"
+					onPress={() => toast.show("You're all caught up — no new notifications.")}
 					accessibilityRole="button"
 					accessibilityLabel="Notifications"
 				>

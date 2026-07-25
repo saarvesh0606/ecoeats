@@ -5,6 +5,7 @@ import { FlatList, Image, Linking, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { cancelClaim, type Claim, fetchMyClaims } from "@/lib/claims";
@@ -60,6 +61,7 @@ function PickupChecklist() {
 
 export function MyClaims() {
 	const router = useRouter();
+	const toast = useToast();
 	// Tick every second — this screen shows a live MM:SS reservation countdown,
 	// so the default (coarser) interval would make the seconds look frozen.
 	const now = useNow(1000);
@@ -87,6 +89,7 @@ export function MyClaims() {
 		try {
 			await cancelClaim(claim.id);
 			await load();
+			toast.show("Claim cancelled.");
 		} catch (err) {
 			if (!(err instanceof ApiError)) throw err;
 		} finally {

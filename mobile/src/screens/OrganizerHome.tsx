@@ -5,6 +5,7 @@ import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { fetchMyListings, type Listing } from "@/lib/listings";
 import { formatLocation } from "@/lib/format";
@@ -31,6 +32,7 @@ function Stat({ n, label }: { n: number; label: string }) {
 export function OrganizerHome() {
 	const router = useRouter();
 	const { profile } = useAuth();
+	const toast = useToast();
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [tab, setTab] = useState<Tab>("active");
@@ -86,6 +88,7 @@ export function OrganizerHome() {
 				<Pressable
 					hitSlop={8}
 					className="mt-1"
+					onPress={() => toast.show("You're all caught up — no new notifications.")}
 					accessibilityRole="button"
 					accessibilityLabel="Notifications"
 				>

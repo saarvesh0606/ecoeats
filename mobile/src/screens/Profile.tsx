@@ -3,12 +3,14 @@ import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, updateProfile } from "@/lib/api";
 import { DIETARY_TAGS } from "@/lib/listings";
 
 export function Profile() {
 	const { profile, applyProfile, signOut } = useAuth();
+	const toast = useToast();
 
 	const [name, setName] = useState(profile?.name ?? "");
 	const [prefs, setPrefs] = useState<string[]>(profile?.dietary_prefs ?? []);
@@ -44,6 +46,7 @@ export function Profile() {
 			});
 			applyProfile(updated);
 			setSaved(true);
+			toast.show("Profile saved.");
 		} catch (err) {
 			setError(err instanceof ApiError ? err.message : "Couldn't save. Try again.");
 		} finally {

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import {
@@ -68,6 +69,7 @@ export default function ManageListing() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const now = useNow();
+	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
 	const [claims, setClaims] = useState<Claim[]>([]);
@@ -95,16 +97,42 @@ export default function ManageListing() {
 		void load();
 	}, [load]);
 
-	async function act(key: string, fn: () => Promise<unknown>, confirm?: string) {
-		if (confirm && !(await confirmAction(confirm))) return;
+	async function act(
+		key: string,
+		fn: () => Promise<unknown>,
+		opts: { confirm?: string; success?: string } = {},
+	) {
+		if (opts.confirm && !(await confirmAction(opts.confirm))) return;
 		setBusyId(key);
 		setError(null);
 		try {
 			await fn();
 			await load();
+			if (opts.success) toast.show(opts.success);
 		} catch (err) {
 			setError(err instanceof ApiError ? err.message : "Something went wrong.");
 		} finally {
+			setBusyId(null);
+		}
+	}
+
+	async function endPostEarly() {
+		if (
+			!(await confirmAction(
+				"End this post early? It will disappear for everyone.",
+			))
+		) {
+			return;
+		}
+		setBusyId("cancel");
+		setError(null);
+		try {
+			await cancelListing(listing?.id ?? "");
+			toast.show("Post ended.");
+			// Land back on the dashboard so the change is visible where it matters.
+			router.replace("/posts");
+		} catch (err) {
+			setError(err instanceof ApiError ? err.message : "Something went wrong.");
 			setBusyId(null);
 		}
 	}
@@ -195,8 +223,11 @@ export default function ManageListing() {
 							variant="outline"
 							loading={busyId === "stock"}
 							onPress={() =>
-								act("stock", () =>
-									setListingStatus(listing.id, live ? "claimed" : "active"),
+								act(
+									"stock",
+									() =>
+										setListingStatus(listing.id, live ? "claimed" : "active"),
+									{ success: live ? "Marked out of stock." : "Post reopened." },
 								)
 							}
 						>
@@ -207,13 +238,7 @@ export default function ManageListing() {
 						<Button
 							variant="ghost"
 							loading={busyId === "cancel"}
-							onPress={() =>
-								act(
-									"cancel",
-									() => cancelListing(listing.id),
-									"End this post early? It will disappear for everyone.",
-								)
-							}
+							onPress={endPostEarly}
 						>
 							End Post Early
 						</Button>
@@ -286,7 +311,9 @@ export default function ManageListing() {
 										size="sm"
 										loading={busyId === `pickup-${item.id}`}
 										onPress={() =>
-											act(`pickup-${item.id}`, () => confirmPickup(item.id))
+											act(`pickup-${item.id}`, () => confirmPickup(item.id), {
+												success: "Pickup confirmed.",
+											})
 										}
 									>
 										Confirm pickup
@@ -298,11 +325,11 @@ export default function ManageListing() {
 										variant="outline"
 										loading={busyId === `noshow-${item.id}`}
 										onPress={() =>
-											act(
-												`noshow-${item.id}`,
-												() => markNoShow(item.id),
-												"Mark as no-show? Their portion goes back into the pool.",
-											)
+											act(`noshow-${item.id}`, () => markNoShow(item.id), {
+												confirm:
+													"Mark as no-show? Their portion goes back into the pool.",
+												success: "Marked as no-show.",
+											})
 										}
 									>
 										No-show

@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Spinner } from "@/components/ui/Spinner";
+import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import "../global.css";
 
@@ -81,10 +82,12 @@ export default function RootLayout() {
 
 	return (
 		<SafeAreaProvider>
-			<AuthProvider>
-				<StatusBar style="dark" />
-				<Gate />
-			</AuthProvider>
+			<ToastProvider>
+				<AuthProvider>
+					<StatusBar style="dark" />
+					<Gate />
+				</AuthProvider>
+			</ToastProvider>
 		</SafeAreaProvider>
 	);
 }

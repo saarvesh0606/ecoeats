@@ -5,6 +5,7 @@ import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
@@ -41,6 +42,7 @@ export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const now = useNow();
+	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -75,6 +77,7 @@ export default function ListingDetail() {
 		try {
 			await createClaim(listing.id);
 			setClaimed(true);
+			toast.show("Reserved! Confirm pickup within 15 minutes.");
 			// Land on the user's claims, where the pickup details live.
 			router.replace("/claims");
 		} catch (err) {
@@ -88,16 +91,24 @@ export default function ListingDetail() {
 
 	async function onShare() {
 		if (!listing) return;
+		const message = `${listing.title} — free on EcoEats at ${formatLocation(
+			listing.building,
+			listing.room,
+		)}.`;
 		try {
-			await Share.share({
-				message: `${listing.title} — free on EcoEats at ${formatLocation(
-					listing.building,
-					listing.room,
-				)}.`,
-			});
+			await Share.share({ message });
 		} catch {
-			// Sharing is best-effort; a dismissed sheet or an unsupported platform
-			// is not an error worth surfacing.
+			// Desktop web has no share sheet — fall back to the clipboard so the
+			// button still does something useful.
+			const nav = (globalThis as { navigator?: Navigator }).navigator;
+			if (nav?.clipboard) {
+				try {
+					await nav.clipboard.writeText(message);
+					toast.show("Copied to clipboard.");
+				} catch {
+					// Nothing more we can do; stay silent rather than error.
+				}
+			}
 		}
 	}
 
