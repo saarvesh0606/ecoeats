@@ -2,6 +2,13 @@ import { fireEvent, render } from "@testing-library/react-native";
 import type { Listing } from "@/lib/listings";
 import { ListingCard } from "./ListingCard";
 
+// ListingCard imports save/unsave from @/lib/listings, which pulls in the API
+// client (and Firebase) at load. Stub the API so the card renders in isolation
+// without a real Firebase/env setup.
+jest.mock("@/lib/api", () => ({
+	api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), del: jest.fn() },
+}));
+
 function makeListing(overrides: Partial<Listing> = {}): Listing {
 	return {
 		id: "listing-1",
@@ -25,6 +32,7 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 		distance_miles: null,
 		seconds_remaining: 1800,
 		is_claimable: true,
+		is_saved: false,
 		...overrides,
 	};
 }

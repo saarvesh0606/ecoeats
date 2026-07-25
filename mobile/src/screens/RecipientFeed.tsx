@@ -37,16 +37,23 @@ export function RecipientFeed() {
 
 	const [dietary, setDietary] = useState<string[]>([]);
 	const [soonOnly, setSoonOnly] = useState(false);
-	// Client-side text search over the loaded page. Server-side search across the
-	// whole catalogue is a Phase 2 backend feature.
+	// Server-side search: `query` is what the user is typing, `debouncedQuery` is
+	// what we actually send — so we re-fetch after they pause, not per keystroke.
 	const [query, setQuery] = useState("");
+	const [debouncedQuery, setDebouncedQuery] = useState("");
+
+	useEffect(() => {
+		const t = setTimeout(() => setDebouncedQuery(query.trim()), 350);
+		return () => clearTimeout(t);
+	}, [query]);
 
 	const filters = useCallback(
 		() => ({
 			dietary: dietary.length ? dietary : undefined,
 			maxMinutes: soonOnly ? SOON_MINUTES : undefined,
+			q: debouncedQuery || undefined,
 		}),
-		[dietary, soonOnly],
+		[dietary, soonOnly, debouncedQuery],
 	);
 
 	const load = useCallback(async () => {
@@ -151,18 +158,7 @@ export function RecipientFeed() {
 	}
 
 	const filtersActive = dietary.length > 0 || soonOnly;
-
-	const q = query.trim().toLowerCase();
-	const visible = q
-		? listings.filter(
-				(l) =>
-					l.title.toLowerCase().includes(q) ||
-					l.building.toLowerCase().includes(q) ||
-					(l.room ?? "").toLowerCase().includes(q) ||
-					l.campus.toLowerCase().includes(q),
-			)
-		: listings;
-
+	const searching = debouncedQuery.length > 0;
 	const chips = ["all", "soon", ...DIETARY_TAGS];
 
 	return (
@@ -273,7 +269,7 @@ export function RecipientFeed() {
 				</View>
 			) : (
 				<FlatList
-					data={visible}
+					data={listings}
 					keyExtractor={(item) => item.id}
 					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 					showsVerticalScrollIndicator={false}
@@ -293,27 +289,27 @@ export function RecipientFeed() {
 						<ListingCard
 							listing={item}
 							now={now}
-							featured={index === 0 && !q}
+							featured={index === 0 && !searching}
 							onPress={() => router.push(`/listing/${item.id}`)}
 						/>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">
 							<Text className="font-display-bold text-xl text-gray-900 text-center">
-								{q
-									? `No matches for "${query.trim()}"`
+								{searching
+									? `No matches for "${debouncedQuery}"`
 									: filtersActive
 										? "Nothing matches those filters"
 										: "Nothing available right now"}
 							</Text>
 							<Text className="font-body text-gray-500 text-center mt-2">
-								{q
+								{searching
 									? "Try a different search."
 									: filtersActive
 										? "Try clearing a filter to see more."
 										: "Food gets posted throughout the day — check back soon."}
 							</Text>
-							{filtersActive && !q && (
+							{filtersActive && !searching && (
 								<View className="mt-6">
 									<Button
 										variant="outline"

@@ -33,6 +33,7 @@ export interface Listing {
 	distance_miles: number | null;
 	seconds_remaining: number;
 	is_claimable: boolean;
+	is_saved: boolean;
 }
 
 interface ListingFeed {
@@ -53,6 +54,7 @@ export interface FeedFilters {
 	lng?: number;
 	radiusMiles?: number;
 	maxMinutes?: number;
+	q?: string;
 }
 
 function toQuery(filters: FeedFilters, cursor?: string): string {
@@ -66,9 +68,10 @@ function toQuery(filters: FeedFilters, cursor?: string): string {
 	if (filters.maxMinutes !== undefined) {
 		params.set("max_minutes", String(filters.maxMinutes));
 	}
+	if (filters.q) params.set("q", filters.q);
 	if (cursor) params.set("cursor", cursor);
-	const q = params.toString();
-	return q ? `?${q}` : "";
+	const query = params.toString();
+	return query ? `?${query}` : "";
 }
 
 /**
@@ -85,6 +88,22 @@ export async function fetchFeed(
 
 export async function fetchListing(id: string): Promise<Listing> {
 	return api.get<Listing>(`/listings/${id}`);
+}
+
+/** Bookmark a listing. Idempotent on the server. */
+export async function saveListing(id: string): Promise<void> {
+	await api.post<void>(`/listings/${id}/save`);
+}
+
+/** Remove a bookmark. Idempotent on the server. */
+export async function unsaveListing(id: string): Promise<void> {
+	await api.del<void>(`/listings/${id}/save`);
+}
+
+/** The current user's bookmarked listings, most recently saved first. */
+export async function fetchSaved(): Promise<Listing[]> {
+	const feed = await api.get<ListingFeed>("/listings/saved");
+	return feed.items;
 }
 
 export interface NewListing {

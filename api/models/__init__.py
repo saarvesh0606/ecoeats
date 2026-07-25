@@ -16,6 +16,7 @@ from api.models.enums import (
     UserRole,
 )
 from api.models.listing import Listing, ListingPhoto
+from api.models.saved import SavedListing
 from api.models.user import User
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
     "Listing",
     "ListingPhoto",
     "ListingStatus",
+    "SavedListing",
     "User",
     "UserRole",
 ]

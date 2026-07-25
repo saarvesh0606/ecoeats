@@ -134,6 +134,9 @@ class ListingOut(BaseModel):
     #: supplied a location.
     distance_miles: float | None = None
 
+    #: Whether the requesting user has bookmarked this listing.
+    is_saved: bool = False
+
     @computed_field
     @property
     def seconds_remaining(self) -> int:

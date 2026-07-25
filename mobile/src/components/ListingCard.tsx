@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
-import type { Listing } from "@/lib/listings";
+import { type Listing, saveListing, unsaveListing } from "@/lib/listings";
 
 interface ListingCardProps {
 	listing: Listing;
@@ -22,8 +22,18 @@ export function ListingCard({
 	const timeLeft = formatTimeLeft(listing.expires_at, now);
 	const distance = formatDistance(listing.distance_miles);
 	const cover = listing.photo_urls[0];
-	// Local-only for now; a persisted "saved" list is a Phase 2 backend feature.
-	const [saved, setSaved] = useState(false);
+	const [saved, setSaved] = useState(listing.is_saved);
+
+	async function toggleSave() {
+		const next = !saved;
+		setSaved(next); // optimistic — the server call is idempotent
+		try {
+			if (next) await saveListing(listing.id);
+			else await unsaveListing(listing.id);
+		} catch {
+			setSaved(!next); // put it back if the request failed
+		}
+	}
 
 	return (
 		<Pressable
@@ -74,7 +84,7 @@ export function ListingCard({
 						{listing.title}
 					</Text>
 					<Pressable
-						onPress={() => setSaved((s) => !s)}
+						onPress={toggleSave}
 						hitSlop={8}
 						accessibilityRole="button"
 						accessibilityLabel={saved ? "Remove bookmark" : "Save for later"}

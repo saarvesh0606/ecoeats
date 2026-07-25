@@ -7,7 +7,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import Select, select, tuple_
+from sqlalchemy import Select, delete, or_, select, tuple_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,7 +22,7 @@ from api.deps import (
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.events import listing_event
 from api.geo import bounding_box, haversine_miles
-from api.models import Listing, ListingPhoto
+from api.models import Listing, ListingPhoto, SavedListing
 from api.models.enums import ListingStatus
 from api.pagination import decode_cursor, encode_cursor
 from api.schemas.listing import (
@@ -54,7 +55,12 @@ def _with_relations(stmt: Select) -> Select:
     )
 
 
-def _serialise(listing: Listing, *, distance_miles: float | None = None) -> ListingOut:
+def _serialise(
+    listing: Listing,
+    *,
+    distance_miles: float | None = None,
+    is_saved: bool = False,
+) -> ListingOut:
     return ListingOut(
         id=str(listing.id),
         title=listing.title,
@@ -75,7 +81,23 @@ def _serialise(listing: Listing, *, distance_miles: float | None = None) -> List
         organizer=Organizer(id=listing.organizer.id, name=listing.organizer.name),
         photo_urls=[photo.url for photo in listing.photos],
         distance_miles=distance_miles,
+        is_saved=is_saved,
     )
+
+
+async def _saved_ids(
+    db: AsyncSession, user_id: str, listing_ids: list[uuid.UUID]
+) -> set[uuid.UUID]:
+    """Which of these listings the given user has bookmarked."""
+    if not listing_ids:
+        return set()
+    result = await db.scalars(
+        select(SavedListing.listing_id).where(
+            SavedListing.user_id == user_id,
+            SavedListing.listing_id.in_(listing_ids),
+        )
+    )
+    return set(result.all())
 
 
 async def _load(db: AsyncSession, listing_id: uuid.UUID) -> Listing:
@@ -122,6 +144,13 @@ async def browse(
         int | None,
         Query(gt=0, le=60, description="Only listings expiring within N minutes."),
     ] = None,
+    q: Annotated[
+        str | None,
+        Query(
+            max_length=100,
+            description="Free-text search over title, description and location.",
+        ),
+    ] = None,
     limit: Annotated[
         int, Query(ge=1, le=MAX_FEED_RESULTS, description="Page size.")
     ] = DEFAULT_FEED_LIMIT,
@@ -160,6 +189,20 @@ async def browse(
 
     if max_minutes is not None:
         stmt = stmt.where(Listing.expires_at <= now + timedelta(minutes=max_minutes))
+
+    if q and q.strip():
+        # Case-insensitive substring match across the fields a student would
+        # search by. ILIKE is enough here; a campus feed is small and this stays
+        # index-simple. (% and _ act as wildcards — acceptable for search.)
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                Listing.title.ilike(term),
+                Listing.description.ilike(term),
+                Listing.building.ilike(term),
+                Listing.campus.ilike(term),
+            )
+        )
 
     located = lat is not None and lng is not None
     if radius_miles is not None and not located:
@@ -200,6 +243,8 @@ async def browse(
         encode_cursor(page[-1].expires_at, page[-1].id) if has_more and page else None
     )
 
+    saved = await _saved_ids(db, user.id, [listing.id for listing in page])
+
     items: list[ListingOut] = []
     for listing in page:
         distance = None
@@ -207,7 +252,13 @@ async def browse(
             distance = haversine_miles(lat, lng, listing.lat, listing.lng)
             if radius_miles is not None and distance > radius_miles:
                 continue  # inside the box, outside the circle
-        items.append(_serialise(listing, distance_miles=distance))
+        items.append(
+            _serialise(
+                listing,
+                distance_miles=distance,
+                is_saved=listing.id in saved,
+            )
+        )
 
     return ListingFeed(items=items, count=len(items), next_cursor=next_cursor)
 
@@ -227,6 +278,26 @@ async def my_listings(db: DbSession, organizer: CurrentOrganizer) -> ListingFeed
     rows = (await db.scalars(stmt)).all()
     return ListingFeed(
         items=[_serialise(listing) for listing in rows], count=len(rows)
+    )
+
+
+@router.get("/saved", response_model=ListingFeed)
+async def saved_feed(db: DbSession, user: CurrentUser) -> ListingFeed:
+    """The user's bookmarked listings, most recently saved first.
+
+    Declared before /{listing_id} so "saved" is not parsed as an id.
+    """
+    stmt = (
+        _with_relations(select(Listing))
+        .join(SavedListing, SavedListing.listing_id == Listing.id)
+        .where(SavedListing.user_id == user.id)
+        .order_by(SavedListing.created_at.desc())
+        .limit(MAX_FEED_RESULTS)
+    )
+    rows = (await db.scalars(stmt)).all()
+    return ListingFeed(
+        items=[_serialise(listing, is_saved=True) for listing in rows],
+        count=len(rows),
     )
 
 
@@ -268,7 +339,38 @@ async def stream(request: Request) -> StreamingResponse:
 
 @router.get("/{listing_id}", response_model=ListingOut)
 async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ListingOut:
-    return _serialise(await _load(db, listing_id))
+    listing = await _load(db, listing_id)
+    saved = await _saved_ids(db, user.id, [listing.id])
+    return _serialise(listing, is_saved=listing.id in saved)
+
+
+@router.post("/{listing_id}/save", status_code=status.HTTP_204_NO_CONTENT)
+async def save_listing(
+    listing_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> None:
+    """Bookmark a listing. Idempotent — saving one already saved is a no-op."""
+    listing = await db.get(Listing, listing_id)
+    if listing is None:
+        raise NotFoundError("That listing no longer exists")
+    # ON CONFLICT DO NOTHING so a double-tap can't 500 on the unique constraint.
+    await db.execute(
+        pg_insert(SavedListing)
+        .values(id=uuid.uuid4(), user_id=user.id, listing_id=listing_id)
+        .on_conflict_do_nothing(constraint="uq_saved_per_user")
+    )
+
+
+@router.delete("/{listing_id}/save", status_code=status.HTTP_204_NO_CONTENT)
+async def unsave_listing(
+    listing_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> None:
+    """Remove a bookmark. Idempotent — removing one that isn't saved is fine."""
+    await db.execute(
+        delete(SavedListing).where(
+            SavedListing.user_id == user.id,
+            SavedListing.listing_id == listing_id,
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
