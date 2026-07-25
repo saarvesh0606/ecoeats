@@ -1,6 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
@@ -9,6 +10,32 @@ import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
 import { formatLocation, formatTimeLeft } from "@/lib/format";
 import { fetchListing, type Listing } from "@/lib/listings";
+
+/** One line of the pickup-details card: an icon, a caption, and its value. */
+function DetailRow({
+	icon,
+	label,
+	value,
+	sub,
+}: {
+	icon: keyof typeof Ionicons.glyphMap;
+	label: string;
+	value: string;
+	sub?: string | null;
+}) {
+	return (
+		<View className="flex-row gap-3 py-2">
+			<Ionicons name={icon} size={18} color="#1B4332" style={{ marginTop: 1 }} />
+			<View className="flex-1">
+				<Text className="font-body-semibold text-gray-900 text-sm">{label}</Text>
+				<Text className="font-body text-gray-600 text-sm mt-0.5">{value}</Text>
+				{sub ? (
+					<Text className="font-body text-gray-400 text-xs mt-0.5">{sub}</Text>
+				) : null}
+			</View>
+		</View>
+	);
+}
 
 export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,6 +86,21 @@ export default function ListingDetail() {
 		}
 	}
 
+	async function onShare() {
+		if (!listing) return;
+		try {
+			await Share.share({
+				message: `${listing.title} — free on EcoEats at ${formatLocation(
+					listing.building,
+					listing.room,
+				)}.`,
+			});
+		} catch {
+			// Sharing is best-effort; a dismissed sheet or an unsupported platform
+			// is not an error worth surfacing.
+		}
+	}
+
 	if (loading) return <Spinner className="flex-1 bg-cream" />;
 
 	if (loadError || !listing) {
@@ -77,45 +119,71 @@ export default function ListingDetail() {
 	const timeLeft = formatTimeLeft(listing.expires_at, now);
 	const cover = listing.photo_urls[0];
 	const canClaim = listing.is_claimable && !claimed;
+	const expiresAt = new Date(listing.expires_at).toLocaleTimeString([], {
+		hour: "numeric",
+		minute: "2-digit",
+	});
 
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["bottom"]}>
 			<ScrollView showsVerticalScrollIndicator={false}>
-				{cover ? (
-					<Image source={{ uri: cover }} className="w-full h-64 bg-gray-100" />
-				) : (
-					<View className="w-full h-40 bg-forest-50 items-center justify-center">
-						<Text className="font-display text-forest-300 text-2xl">EcoEats</Text>
-					</View>
-				)}
+				{/* Photo with overlay controls */}
+				<View className="relative">
+					{cover ? (
+						<Image source={{ uri: cover }} className="w-full h-72 bg-gray-100" />
+					) : (
+						<View className="w-full h-72 bg-forest-50 items-center justify-center">
+							<Text className="font-display text-forest-300 text-2xl">
+								EcoEats
+							</Text>
+						</View>
+					)}
 
-				<View className="px-5 pt-5">
-					<Text
+					<Pressable
 						onPress={() => router.back()}
-						className="font-body text-forest-700 mb-3"
+						hitSlop={8}
+						className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
 						accessibilityRole="button"
+						accessibilityLabel="Go back"
 					>
-						← Back
-					</Text>
-
-					<View className="flex-row items-start justify-between gap-3">
-						<Text className="font-display font-bold text-2xl text-gray-900 flex-1">
-							{listing.title}
-						</Text>
-						<Text className="font-body font-semibold text-forest-700">
+						<Ionicons name="chevron-back" size={22} color="#163827" />
+					</Pressable>
+					<Pressable
+						onPress={onShare}
+						hitSlop={8}
+						className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+						accessibilityRole="button"
+						accessibilityLabel="Share this listing"
+					>
+						<Ionicons name="share-outline" size={20} color="#163827" />
+					</Pressable>
+					<View className="absolute bottom-4 left-4 bg-forest-900 rounded-full px-3 py-1">
+						<Text className="font-body-semibold text-xs text-white">
 							{timeLeft}
 						</Text>
 					</View>
+				</View>
 
-					<Text className="font-body text-gray-700 mt-3 leading-6">
+				<View className="px-5 pt-5">
+					<Text className="font-display-bold text-2xl text-gray-900">
+						{listing.title}
+					</Text>
+					<Text className="font-body text-gray-500 mt-1">
+						{formatLocation(listing.building, listing.room)}
+					</Text>
+
+					<Text className="font-body text-gray-700 mt-4 leading-6">
 						{listing.description}
 					</Text>
 
 					{listing.dietary_tags.length > 0 && (
 						<View className="flex-row flex-wrap gap-2 mt-4">
 							{listing.dietary_tags.map((tag) => (
-								<View key={tag} className="bg-forest-50 rounded-full px-3 py-1">
-									<Text className="font-body text-sm text-forest-700 capitalize">
+								<View
+									key={tag}
+									className="border border-gray-200 rounded-full px-3 py-1"
+								>
+									<Text className="font-body text-sm text-gray-600 capitalize">
 										{tag}
 									</Text>
 								</View>
@@ -125,7 +193,7 @@ export default function ListingDetail() {
 
 					{listing.allergens && (
 						<View className="bg-amber-50 border border-amber-200 rounded-card p-4 mt-4">
-							<Text className="font-body font-semibold text-amber-800 text-sm">
+							<Text className="font-body-semibold text-amber-800 text-sm">
 								Allergens & ingredients
 							</Text>
 							<Text className="font-body text-amber-800 text-sm mt-1">
@@ -134,31 +202,46 @@ export default function ListingDetail() {
 						</View>
 					)}
 
-					<View className="bg-white rounded-card p-4 mt-4 border border-gray-100">
-						<Text className="font-body font-semibold text-gray-900">
-							Where to pick up
-						</Text>
-						<Text className="font-body text-gray-700 mt-1">
-							{listing.campus} · {formatLocation(listing.building, listing.room)}
-						</Text>
-						{listing.placement_note && (
-							<Text className="font-body text-gray-500 text-sm mt-1">
-								{listing.placement_note}
-							</Text>
-						)}
+					{/* Pickup details */}
+					<Text className="font-display-bold text-lg text-gray-900 mt-6 mb-1">
+						Pickup Details
+					</Text>
+					<View className="bg-white rounded-card p-4 border border-gray-100">
+						<DetailRow
+							icon="location-outline"
+							label="Where"
+							value={`${listing.campus} · ${formatLocation(listing.building, listing.room)}`}
+							sub={listing.placement_note}
+						/>
+						<DetailRow
+							icon="time-outline"
+							label="When"
+							value="Ready for pickup now"
+							sub={`Expires in ${timeLeft} (by ${expiresAt})`}
+						/>
 					</View>
 
-					<View className="flex-row items-center justify-between mt-4">
-						<Text className="font-body text-gray-600">
-							Shared by {listing.organizer.name}
-						</Text>
-						<Text className="font-body font-semibold text-forest-700">
-							{listing.quantity_remaining} of {listing.quantity_total} left
-						</Text>
+					{/* Shared by */}
+					<View className="flex-row items-center gap-3 mt-5 mb-2">
+						<View className="w-10 h-10 rounded-full bg-forest-100 items-center justify-center">
+							<Ionicons name="person-outline" size={20} color="#1B4332" />
+						</View>
+						<View>
+							<Text className="font-body text-gray-400 text-xs">Shared by</Text>
+							<Text className="font-body-semibold text-gray-900">
+								{listing.organizer.name}
+							</Text>
+						</View>
+						<View className="ml-auto bg-maroon-50 rounded-full px-3 py-1">
+							<Text className="font-body-semibold text-xs text-maroon">
+								ASU Host
+							</Text>
+						</View>
 					</View>
 				</View>
 			</ScrollView>
 
+			{/* Sticky claim bar */}
 			<View className="px-5 py-4 border-t border-gray-100 bg-cream">
 				{claimError && (
 					<Text className="font-body text-red-500 text-sm mb-2 text-center">
@@ -167,11 +250,16 @@ export default function ListingDetail() {
 				)}
 				<Button onPress={onClaim} loading={claiming} disabled={!canClaim} size="lg">
 					{canClaim
-						? "Claim a portion"
+						? "Claim This Food"
 						: listing.quantity_remaining === 0
 							? "All claimed"
 							: "No longer available"}
 				</Button>
+				{canClaim && (
+					<Text className="font-body text-gray-400 text-xs text-center mt-2">
+						You'll have 15 minutes to confirm pickup.
+					</Text>
+				)}
 			</View>
 		</SafeAreaView>
 	);
