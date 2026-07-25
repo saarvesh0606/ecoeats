@@ -8,9 +8,8 @@ import { useAuth } from "@/context/AuthContext";
  * route file exists for both roles, but `href: null` hides the ones that don't
  * belong to the current role, so nobody can even navigate to them.
  *
- * The Map tab (recipient) and Activity tab (host) from the mockups are deferred:
- * Map needs react-native-maps (native, ships with the device build), and
- * Activity is a Phase 2 feature.
+ * The host also gets an Activity tab. The recipient Map tab from the mockups is
+ * deferred: react-native-maps is native and ships with the device build.
  */
 export default function TabsLayout() {
 	const { profile } = useAuth();
@@ -82,6 +81,20 @@ export default function TabsLayout() {
 					tabBarIcon: ({ color, size, focused }) => (
 						<Ionicons
 							name={focused ? "add-circle" : "add-circle-outline"}
+							size={size}
+							color={color}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="activity"
+				options={{
+					href: isOrganizer ? "/activity" : null,
+					title: "Activity",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "notifications" : "notifications-outline"}
 							size={size}
 							color={color}
 						/>
