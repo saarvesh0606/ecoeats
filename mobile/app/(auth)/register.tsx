@@ -38,10 +38,10 @@ export default function RegisterScreen() {
 			behavior={Platform.OS === "ios" ? "padding" : undefined}
 		>
 			<View className="flex-1 justify-center px-6">
-				<Text className="font-display font-bold text-3xl text-forest-700 text-center">
+				<Text className="font-display-bold text-3xl text-forest-800 text-center">
 					Create your account
 				</Text>
-				<Text className="font-body text-gray-600 text-center mt-2 mb-10">
+				<Text className="font-body text-gray-500 text-center mt-2 mb-10">
 					An ASU email is required. We'll send a link to confirm it.
 				</Text>
 
@@ -72,8 +72,8 @@ export default function RegisterScreen() {
 				</Button>
 
 				<View className="flex-row justify-center mt-6">
-					<Text className="font-body text-gray-600">Already have one? </Text>
-					<Link href="/login" className="font-body font-semibold text-forest-700">
+					<Text className="font-body text-gray-500">Already have one? </Text>
+					<Link href="/login" className="font-body-semibold text-forest-700">
 						Sign in
 					</Link>
 				</View>

@@ -86,7 +86,7 @@ export function Button({
 				/>
 			) : (
 				<Text
-					className={`font-body font-semibold ${textVariantStyles[variant]} ${textSizeStyles[size]}`}
+					className={`font-body-semibold ${textVariantStyles[variant]} ${textSizeStyles[size]}`}
 				>
 					{children}
 				</Text>

@@ -37,13 +37,13 @@ export default function VerifyEmailScreen() {
 
 	return (
 		<View className="flex-1 bg-cream justify-center px-6">
-			<Text className="font-display font-bold text-3xl text-forest-700 text-center">
+			<Text className="font-display-bold text-3xl text-forest-800 text-center">
 				Confirm your email
 			</Text>
-			<Text className="font-body text-gray-600 text-center mt-3 mb-2">
+			<Text className="font-body text-gray-500 text-center mt-3 mb-2">
 				We sent a verification link to
 			</Text>
-			<Text className="font-body font-semibold text-gray-900 text-center mb-10">
+			<Text className="font-body-semibold text-gray-900 text-center mb-10">
 				{firebaseUser?.email}
 			</Text>
 

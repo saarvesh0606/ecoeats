@@ -1,3 +1,15 @@
+import {
+	DMSans_400Regular,
+	DMSans_500Medium,
+	DMSans_600SemiBold,
+	DMSans_700Bold,
+} from "@expo-google-fonts/dm-sans";
+import {
+	PlayfairDisplay_500Medium,
+	PlayfairDisplay_600SemiBold,
+	PlayfairDisplay_700Bold,
+} from "@expo-google-fonts/playfair-display";
+import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -47,6 +59,26 @@ function Gate() {
 }
 
 export default function RootLayout() {
+	// Hold the app behind a cream splash until the editorial fonts are ready, so
+	// headings never flash in a fallback face first.
+	const [fontsLoaded] = useFonts({
+		PlayfairDisplay_500Medium,
+		PlayfairDisplay_600SemiBold,
+		PlayfairDisplay_700Bold,
+		DMSans_400Regular,
+		DMSans_500Medium,
+		DMSans_600SemiBold,
+		DMSans_700Bold,
+	});
+
+	if (!fontsLoaded) {
+		return (
+			<View className="flex-1 bg-cream items-center justify-center">
+				<Spinner />
+			</View>
+		);
+	}
+
 	return (
 		<SafeAreaProvider>
 			<AuthProvider>

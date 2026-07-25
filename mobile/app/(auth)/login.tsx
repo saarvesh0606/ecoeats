@@ -39,12 +39,30 @@ export default function LoginScreen() {
 			behavior={Platform.OS === "ios" ? "padding" : undefined}
 		>
 			<View className="flex-1 justify-center px-6">
-				<Text className="font-display font-bold text-4xl text-forest-700 text-center">
-					EcoEats
+				{/* ASU mark. TODO: swap for <Image source={require("../../assets/asu-logo.png")} />
+				    once the official logo file is dropped into mobile/assets. */}
+				<View className="items-center mb-6">
+					<Text className="font-display-bold text-2xl text-maroon">ASU</Text>
+					<Text className="font-body-medium text-[10px] text-maroon tracking-widest mt-0.5">
+						ARIZONA STATE UNIVERSITY
+					</Text>
+				</View>
+
+				<Text className="font-display-bold text-4xl text-forest-800 text-center">
+					Welcome to EcoEats
 				</Text>
-				<Text className="font-body text-gray-600 text-center mt-2 mb-10">
-					Rescue campus food before it's gone.
+				<Text className="font-body text-gray-500 text-center mt-2 mb-8">
+					Share more. Waste less. Impact together.
 				</Text>
+
+				<View className="items-center mb-6">
+					<Text className="font-body-semibold text-[11px] text-maroon tracking-widest">
+						ASU COMMUNITY ONLY
+					</Text>
+					<Text className="font-body text-gray-500 text-xs mt-1">
+						Use your asu.edu email to continue.
+					</Text>
+				</View>
 
 				<Input
 					label="ASU email"

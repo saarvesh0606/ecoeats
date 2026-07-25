@@ -23,11 +23,31 @@ module.exports = {
 					DEFAULT: "#52B788",
 					accent: "#74C69D",
 				},
+				// ASU brand. Maroon is the primary mark colour; gold is the ASU
+				// accent, with a muted bronze for the editorial subtitle rule.
+				maroon: {
+					DEFAULT: "#8C1D40",
+					50: "#f7e9ee",
+					600: "#7a1938",
+					700: "#6b1230",
+				},
+				gold: {
+					DEFAULT: "#FFC627",
+					muted: "#B08D3F",
+				},
 				cream: "#F8F6F0",
 			},
+			// Editorial pairing: Playfair Display (serif) for headings, DM Sans for
+			// body. Weight variants are explicit families because custom fonts do
+			// not synthesise weight on native — use font-display-bold etc.
 			fontFamily: {
-				display: ["Syne", "sans-serif"],
-				body: ["DM Sans", "sans-serif"],
+				display: ["PlayfairDisplay_600SemiBold"],
+				"display-medium": ["PlayfairDisplay_500Medium"],
+				"display-bold": ["PlayfairDisplay_700Bold"],
+				body: ["DMSans_400Regular"],
+				"body-medium": ["DMSans_500Medium"],
+				"body-semibold": ["DMSans_600SemiBold"],
+				"body-bold": ["DMSans_700Bold"],
 			},
 			borderRadius: {
 				card: "16px",
