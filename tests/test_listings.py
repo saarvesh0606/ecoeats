@@ -321,6 +321,75 @@ async def test_countdown_is_returned_for_the_client(
 
 
 # ---------------------------------------------------------------------------
+# Feed pagination
+# ---------------------------------------------------------------------------
+
+
+async def test_feed_pages_through_with_a_cursor(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """Two pages cover every listing exactly once, in expiry order."""
+    await post_listing(client, organizer, title="Soonest", expiry_minutes=15)
+    await post_listing(client, organizer, title="Middle", expiry_minutes=20)
+    await post_listing(client, organizer, title="Latest", expiry_minutes=30)
+
+    first = (
+        await client.get(
+            "/listings", headers=recipient.headers, params={"limit": 2}
+        )
+    ).json()
+    assert [item["title"] for item in first["items"]] == ["Soonest", "Middle"]
+    assert first["count"] == 2
+    assert first["next_cursor"]
+
+    second = (
+        await client.get(
+            "/listings",
+            headers=recipient.headers,
+            params={"limit": 2, "cursor": first["next_cursor"]},
+        )
+    ).json()
+    assert [item["title"] for item in second["items"]] == ["Latest"]
+    assert second["next_cursor"] is None
+
+
+async def test_feed_reports_no_cursor_when_the_page_exhausts_the_feed(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """Exactly `limit` rows exist: the page is full but there is no next one."""
+    await post_listing(client, organizer, expiry_minutes=15)
+    await post_listing(client, organizer, expiry_minutes=20)
+
+    body = (
+        await client.get(
+            "/listings", headers=recipient.headers, params={"limit": 2}
+        )
+    ).json()
+
+    assert body["count"] == 2
+    assert body["next_cursor"] is None
+
+
+async def test_feed_rejects_a_malformed_cursor(
+    client: AsyncClient, recipient: Account
+) -> None:
+    response = await client.get(
+        "/listings", headers=recipient.headers, params={"cursor": "not-a-real-cursor"}
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("bad_limit", [0, -1, 51, 1000])
+async def test_feed_limit_must_be_within_bounds(
+    client: AsyncClient, recipient: Account, bad_limit: int
+) -> None:
+    response = await client.get(
+        "/listings", headers=recipient.headers, params={"limit": bad_limit}
+    )
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # Detail
 # ---------------------------------------------------------------------------
 

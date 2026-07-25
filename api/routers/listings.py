@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,6 +23,7 @@ from api.events import listing_event
 from api.geo import bounding_box, haversine_miles
 from api.models import Listing, ListingPhoto
 from api.models.enums import ListingStatus
+from api.pagination import decode_cursor, encode_cursor
 from api.schemas.listing import (
     CreateListing,
     ListingFeed,
@@ -34,9 +35,12 @@ from api.services import listings as rules
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
-#: Upper bound on a single feed page. A campus does not produce more surplus
-#: than this inside one expiry window.
+#: Largest page a client may ask for. A guard against a single request pulling
+#: the whole table; real paging uses the cursor, not an ever-growing limit.
 MAX_FEED_RESULTS = 50
+
+#: Page size when the client doesn't specify one.
+DEFAULT_FEED_LIMIT = 20
 
 
 def _with_relations(stmt: Select) -> Select:
@@ -118,6 +122,13 @@ async def browse(
         int | None,
         Query(gt=0, le=60, description="Only listings expiring within N minutes."),
     ] = None,
+    limit: Annotated[
+        int, Query(ge=1, le=MAX_FEED_RESULTS, description="Page size.")
+    ] = DEFAULT_FEED_LIMIT,
+    cursor: Annotated[
+        str | None,
+        Query(description="Opaque token from a previous page's next_cursor."),
+    ] = None,
 ) -> ListingFeed:
     """Active food, most urgent first.
 
@@ -127,6 +138,11 @@ async def browse(
     Expiry is filtered in the query rather than trusted from `status`. v1 ran a
     sweep first and read the status column, so anything posted between sweeps
     showed up as available after it had expired.
+
+    Paged by keyset on `(expires_at, id)`: pass the `next_cursor` from one page
+    back as `cursor` to get the next. Keyset rather than offset because the feed
+    changes constantly — offset would skip or repeat rows as listings come and
+    go between requests.
     """
     now = datetime.now(UTC)
 
@@ -158,12 +174,34 @@ async def browse(
             Listing.lng.between(min_lng, max_lng),
         )
 
-    stmt = stmt.order_by(Listing.expires_at.asc()).limit(MAX_FEED_RESULTS)
+    if cursor is not None:
+        try:
+            after_expires_at, after_id = decode_cursor(cursor)
+        except ValueError as exc:
+            raise ValidationError("That page cursor is not valid") from exc
+        # Row-value comparison: resume strictly after the tuple the last page
+        # ended on, matching the (expires_at, id) sort order exactly.
+        stmt = stmt.where(
+            tuple_(Listing.expires_at, Listing.id) > (after_expires_at, after_id)
+        )
+
+    # One past the page so we can tell whether a further page exists without a
+    # second count query.
+    stmt = stmt.order_by(Listing.expires_at.asc(), Listing.id.asc()).limit(limit + 1)
 
     rows = (await db.scalars(stmt)).all()
+    has_more = len(rows) > limit
+    page = rows[:limit]
+
+    # The cursor tracks position in the ordered set, not what survives the geo
+    # filter — so paging resumes correctly even when the last row of a page is
+    # trimmed for being outside the radius.
+    next_cursor = (
+        encode_cursor(page[-1].expires_at, page[-1].id) if has_more and page else None
+    )
 
     items: list[ListingOut] = []
-    for listing in rows:
+    for listing in page:
         distance = None
         if located:
             distance = haversine_miles(lat, lng, listing.lat, listing.lng)
@@ -171,7 +209,7 @@ async def browse(
                 continue  # inside the box, outside the circle
         items.append(_serialise(listing, distance_miles=distance))
 
-    return ListingFeed(items=items, count=len(items))
+    return ListingFeed(items=items, count=len(items), next_cursor=next_cursor)
 
 
 @router.get("/mine", response_model=ListingFeed)

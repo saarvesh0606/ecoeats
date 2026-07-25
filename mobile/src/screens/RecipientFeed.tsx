@@ -1,6 +1,13 @@
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import {
+	ActivityIndicator,
+	FlatList,
+	Pressable,
+	RefreshControl,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
@@ -22,20 +29,27 @@ export function RecipientFeed() {
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const [dietary, setDietary] = useState<string[]>([]);
 	const [soonOnly, setSoonOnly] = useState(false);
 
+	const filters = useCallback(
+		() => ({
+			dietary: dietary.length ? dietary : undefined,
+			maxMinutes: soonOnly ? SOON_MINUTES : undefined,
+		}),
+		[dietary, soonOnly],
+	);
+
 	const load = useCallback(async () => {
 		try {
 			setError(null);
-			setListings(
-				await fetchFeed({
-					dietary: dietary.length ? dietary : undefined,
-					maxMinutes: soonOnly ? SOON_MINUTES : undefined,
-				}),
-			);
+			const page = await fetchFeed(filters());
+			setListings(page.items);
+			setNextCursor(page.nextCursor);
 		} catch (err) {
 			setError(
 				err instanceof ApiError ? err.message : "Couldn't load food nearby.",
@@ -44,7 +58,26 @@ export function RecipientFeed() {
 			setLoading(false);
 			setRefreshing(false);
 		}
-	}, [dietary, soonOnly]);
+	}, [filters]);
+
+	const loadMore = useCallback(async () => {
+		if (!nextCursor || loadingMore) return;
+		setLoadingMore(true);
+		try {
+			const page = await fetchFeed(filters(), nextCursor);
+			// Dedupe by id: a listing could have arrived over SSE since page one.
+			setListings((prev) => {
+				const seen = new Set(prev.map((l) => l.id));
+				return [...prev, ...page.items.filter((l) => !seen.has(l.id))];
+			});
+			setNextCursor(page.nextCursor);
+		} catch {
+			// A failed "load more" leaves the list intact; scrolling again or a
+			// pull-to-refresh retries.
+		} finally {
+			setLoadingMore(false);
+		}
+	}, [nextCursor, loadingMore, filters]);
 
 	useEffect(() => {
 		void load();
@@ -171,6 +204,15 @@ export function RecipientFeed() {
 					showsVerticalScrollIndicator={false}
 					refreshControl={
 						<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+					}
+					onEndReached={() => void loadMore()}
+					onEndReachedThreshold={0.4}
+					ListFooterComponent={
+						loadingMore ? (
+							<View className="py-6">
+								<ActivityIndicator color="#166534" />
+							</View>
+						) : null
 					}
 					renderItem={({ item }) => (
 						<ListingCard

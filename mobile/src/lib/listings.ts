@@ -38,6 +38,13 @@ export interface Listing {
 interface ListingFeed {
 	items: Listing[];
 	count: number;
+	next_cursor: string | null;
+}
+
+/** One page of the feed. `nextCursor` is null on the last page. */
+export interface FeedPage {
+	items: Listing[];
+	nextCursor: string | null;
 }
 
 export interface FeedFilters {
@@ -48,7 +55,7 @@ export interface FeedFilters {
 	maxMinutes?: number;
 }
 
-function toQuery(filters: FeedFilters): string {
+function toQuery(filters: FeedFilters, cursor?: string): string {
 	const params = new URLSearchParams();
 	for (const tag of filters.dietary ?? []) params.append("dietary", tag);
 	if (filters.lat !== undefined) params.set("lat", String(filters.lat));
@@ -59,13 +66,21 @@ function toQuery(filters: FeedFilters): string {
 	if (filters.maxMinutes !== undefined) {
 		params.set("max_minutes", String(filters.maxMinutes));
 	}
+	if (cursor) params.set("cursor", cursor);
 	const q = params.toString();
 	return q ? `?${q}` : "";
 }
 
-export async function fetchFeed(filters: FeedFilters = {}): Promise<Listing[]> {
-	const feed = await api.get<ListingFeed>(`/listings${toQuery(filters)}`);
-	return feed.items;
+/**
+ * Fetch one page of the feed. Pass the previous page's `nextCursor` to get the
+ * next; a null `nextCursor` in the result means there are no more pages.
+ */
+export async function fetchFeed(
+	filters: FeedFilters = {},
+	cursor?: string,
+): Promise<FeedPage> {
+	const feed = await api.get<ListingFeed>(`/listings${toQuery(filters, cursor)}`);
+	return { items: feed.items, nextCursor: feed.next_cursor };
 }
 
 export async function fetchListing(id: string): Promise<Listing> {

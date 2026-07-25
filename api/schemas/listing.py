@@ -160,3 +160,7 @@ class ListingOut(BaseModel):
 class ListingFeed(BaseModel):
     items: list[ListingOut]
     count: int
+
+    #: Token to fetch the next page. Null when this is the last page. Opaque —
+    #: pass it back as the ``cursor`` query parameter, don't parse it.
+    next_cursor: str | None = None
