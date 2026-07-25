@@ -60,7 +60,9 @@ function PickupChecklist() {
 
 export function MyClaims() {
 	const router = useRouter();
-	const now = useNow();
+	// Tick every second — this screen shows a live MM:SS reservation countdown,
+	// so the default (coarser) interval would make the seconds look frozen.
+	const now = useNow(1000);
 	const [claims, setClaims] = useState<Claim[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [busyId, setBusyId] = useState<string | null>(null);
