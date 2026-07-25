@@ -16,11 +16,21 @@ from api.models.enums import ListingStatus
 #: `claimed -> active` is permitted on purpose: an organizer who marks a post
 #: out of stock and then finds more food should not have to repost it.
 TRANSITIONS: dict[ListingStatus, frozenset[ListingStatus]] = {
+    # Draft and scheduled posts are published by going active, or dropped.
+    ListingStatus.DRAFT: frozenset(
+        {ListingStatus.ACTIVE, ListingStatus.CANCELLED}
+    ),
+    ListingStatus.SCHEDULED: frozenset(
+        {ListingStatus.ACTIVE, ListingStatus.CANCELLED}
+    ),
     ListingStatus.ACTIVE: frozenset({ListingStatus.CLAIMED, ListingStatus.CANCELLED}),
     ListingStatus.CLAIMED: frozenset({ListingStatus.ACTIVE, ListingStatus.CANCELLED}),
     ListingStatus.EXPIRED: frozenset(),
     ListingStatus.CANCELLED: frozenset(),
 }
+
+#: Statuses that aren't live yet — hidden from the feed, always editable.
+PRELIVE = frozenset({ListingStatus.DRAFT, ListingStatus.SCHEDULED})
 
 TERMINAL = frozenset({ListingStatus.EXPIRED, ListingStatus.CANCELLED})
 
@@ -57,6 +67,10 @@ def assert_editable(listing: Listing) -> None:
     """Terminal listings are history — they do not change."""
     if listing.status in TERMINAL:
         raise ConflictError(f"This listing is {listing.status.value} and cannot change")
+    # Drafts and scheduled posts aren't live, so their placeholder expiry doesn't
+    # gate editing — the clock only matters once they go active.
+    if listing.status in PRELIVE:
+        return
     if has_expired(listing):
         raise ConflictError("This listing has expired and cannot change")
 

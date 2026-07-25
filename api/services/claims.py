@@ -218,3 +218,33 @@ async def expire_stale_listings(
                 listing.status = ListingStatus.EXPIRED
 
     return len(stale)
+
+
+async def activate_scheduled_listings(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    now: datetime | None = None,
+) -> int:
+    """Flip scheduled posts to active once their go-live time arrives.
+
+    The expiry window starts at go-live, not at creation, so a post scheduled
+    for tomorrow still gets its full window when it appears.
+    """
+    now = now or datetime.now(UTC)
+
+    async with session_factory() as session:
+        async with session.begin():
+            due = (
+                await session.scalars(
+                    select(Listing).where(
+                        Listing.status == ListingStatus.SCHEDULED,
+                        Listing.scheduled_for <= now,
+                    )
+                )
+            ).all()
+            for listing in due:
+                listing.status = ListingStatus.ACTIVE
+                listing.expires_at = now + timedelta(minutes=listing.expiry_minutes)
+                listing.scheduled_for = None
+
+    return len(due)

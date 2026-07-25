@@ -82,6 +82,7 @@ def _serialise(
         expires_at=listing.expires_at,
         status=listing.status,
         created_at=listing.created_at,
+        scheduled_for=listing.scheduled_for,
         organizer=Organizer(
             id=listing.organizer.id,
             name=listing.organizer.name,
@@ -464,11 +465,30 @@ async def create(
 ) -> ListingOut:
     """Post surplus food.
 
-    The expiry clock starts now — the organizer picks a window, and the server
-    computes the deadline. A client-supplied `expires_at` would be trivially
-    forgeable.
+    The expiry clock starts when the post goes live — the organizer picks a
+    window, and the server computes the deadline. A client-supplied `expires_at`
+    would be trivially forgeable.
+
+    `publish` chooses the fate: go live now, save a draft, or schedule for a
+    future go-live (when a sweep flips it to active).
     """
     now = datetime.now(UTC)
+    window = timedelta(minutes=body.expiry_minutes)
+
+    if body.publish == "draft":
+        listing_status = ListingStatus.DRAFT
+        scheduled_for = None
+        expires_at = now + window  # placeholder; reset when the draft is published
+    elif body.publish == "scheduled":
+        assert body.scheduled_for is not None  # enforced by the schema validator
+        listing_status = ListingStatus.SCHEDULED
+        scheduled_for = body.scheduled_for
+        expires_at = scheduled_for + window
+    else:
+        listing_status = ListingStatus.ACTIVE
+        scheduled_for = None
+        expires_at = now + window
+
     listing = Listing(
         organizer_id=organizer.id,
         title=body.title,
@@ -485,8 +505,9 @@ async def create(
         lat=body.location.lat,
         lng=body.location.lng,
         expiry_minutes=body.expiry_minutes,
-        expires_at=now + timedelta(minutes=body.expiry_minutes),
-        status=ListingStatus.ACTIVE,
+        expires_at=expires_at,
+        scheduled_for=scheduled_for,
+        status=listing_status,
     )
     db.add(listing)
     await db.flush()
@@ -495,7 +516,9 @@ async def create(
         db.add(ListingPhoto(listing_id=listing.id, url=url, position=position))
 
     await db.flush()
-    _publish_change(request, background_tasks, listing)
+    # Only a live post belongs in the feed and on the realtime channel.
+    if listing_status is ListingStatus.ACTIVE:
+        _publish_change(request, background_tasks, listing)
     return _serialise(await _load(db, listing.id))
 
 
@@ -537,10 +560,22 @@ async def update(
     if body.status is not None:
         target = ListingStatus(body.status)
         rules.assert_can_transition(listing.status, target)
+        publishing = (
+            target is ListingStatus.ACTIVE and listing.status in rules.PRELIVE
+        )
         listing.status = target
+        if publishing:
+            # The expiry window starts now that it's actually live.
+            listing.expires_at = datetime.now(UTC) + timedelta(
+                minutes=listing.expiry_minutes
+            )
+            listing.scheduled_for = None
 
     await db.flush()
-    _publish_change(request, background_tasks, listing)
+    # Draft/scheduled edits aren't in anyone's feed, so don't wake the realtime
+    # channel; everything else broadcasts.
+    if listing.status not in rules.PRELIVE:
+        _publish_change(request, background_tasks, listing)
     return _serialise(listing)
 
 

@@ -66,6 +66,24 @@ class CreateListing(BaseModel):
     location: LocationIn
     photo_urls: list[str] = Field(default_factory=list, max_length=10)
 
+    publish: Literal["now", "draft", "scheduled"] = Field(
+        default="now",
+        description="Publish immediately, save as a draft, or schedule for later.",
+    )
+    scheduled_for: datetime | None = Field(
+        default=None,
+        description="Go-live time; required when publish is 'scheduled'.",
+    )
+
+    @model_validator(mode="after")
+    def _check_schedule(self) -> Self:
+        if self.publish == "scheduled":
+            if self.scheduled_for is None:
+                raise ValueError("scheduled_for is required when scheduling a post")
+            if self.scheduled_for <= datetime.now(UTC):
+                raise ValueError("scheduled_for must be in the future")
+        return self
+
 
 class UpdateListing(BaseModel):
     """Partial edit. The spec lets organizers change a post any time it is live.
@@ -131,6 +149,7 @@ class ListingOut(BaseModel):
     expires_at: datetime
     status: ListingStatus
     created_at: datetime
+    scheduled_for: datetime | None = None
 
     organizer: Organizer
     photo_urls: list[str] = Field(default_factory=list)

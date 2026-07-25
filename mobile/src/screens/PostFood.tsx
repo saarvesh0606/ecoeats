@@ -25,6 +25,25 @@ import { uploadPhoto } from "@/lib/uploads";
 
 const MAX_PHOTOS = 5;
 
+type ScheduleMode = "now" | "1h" | "3h" | "tomorrow";
+
+const SCHEDULE_OPTIONS: { key: ScheduleMode; label: string }[] = [
+	{ key: "now", label: "Now" },
+	{ key: "1h", label: "In 1 hour" },
+	{ key: "3h", label: "In 3 hours" },
+	{ key: "tomorrow", label: "Tomorrow 9am" },
+];
+
+function scheduledFor(mode: ScheduleMode): string | null {
+	if (mode === "now") return null;
+	const d = new Date();
+	if (mode === "1h") return new Date(d.getTime() + 3_600_000).toISOString();
+	if (mode === "3h") return new Date(d.getTime() + 3 * 3_600_000).toISOString();
+	d.setDate(d.getDate() + 1);
+	d.setHours(9, 0, 0, 0);
+	return d.toISOString();
+}
+
 export function PostFood() {
 	const router = useRouter();
 
@@ -42,6 +61,7 @@ export function PostFood() {
 	const [room, setRoom] = useState("");
 	const [placement, setPlacement] = useState("");
 	const [photos, setPhotos] = useState<string[]>([]);
+	const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("now");
 
 	const [uploading, setUploading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
@@ -86,7 +106,7 @@ export function PostFood() {
 		return null;
 	}
 
-	async function onSubmit() {
+	async function submit(publish: "now" | "draft" | "scheduled") {
 		const problem = validate();
 		if (problem) {
 			setError(problem);
@@ -111,6 +131,9 @@ export function PostFood() {
 					...CAMPUSES[campus],
 				},
 				photo_urls: photos,
+				publish,
+				scheduled_for:
+					publish === "scheduled" ? scheduledFor(scheduleMode) : null,
 			});
 			router.replace("/posts");
 		} catch (err) {
@@ -314,12 +337,44 @@ export function PostFood() {
 						onChangeText={setPlacement}
 					/>
 
+					<Text className="font-body-semibold text-gray-900 mb-2">
+						When to publish
+					</Text>
+					<View className="flex-row flex-wrap gap-2 mb-4">
+						{SCHEDULE_OPTIONS.map(({ key, label }) => {
+							const on = scheduleMode === key;
+							return (
+								<Pressable
+									key={key}
+									onPress={() => setScheduleMode(key)}
+									className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+								>
+									<Text
+										className={`font-body-medium text-sm ${on ? "text-white" : "text-gray-600"}`}
+									>
+										{label}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+
 					{error && (
 						<Text className="font-body text-red-500 text-sm mb-3">{error}</Text>
 					)}
 
-					<Button onPress={onSubmit} loading={submitting} size="lg">
-						Publish Post
+					<Button
+						onPress={() =>
+							submit(scheduleMode === "now" ? "now" : "scheduled")
+						}
+						loading={submitting}
+						size="lg"
+					>
+						{scheduleMode === "now" ? "Publish Post" : "Schedule Post"}
+					</Button>
+					<View className="h-3" />
+					<Button onPress={() => submit("draft")} variant="outline">
+						Save as Draft
 					</Button>
 				</ScrollView>
 			</KeyboardAvoidingView>

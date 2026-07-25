@@ -20,6 +20,14 @@ class UserRole(StrEnum):
 
 
 class ListingStatus(StrEnum):
+    DRAFT = "draft"
+    """Saved but not published. Hidden from the feed; the host can edit and
+    publish it later."""
+
+    SCHEDULED = "scheduled"
+    """Published to go live at a set time. Hidden from the feed until then, when
+    a sweep flips it to active."""
+
     ACTIVE = "active"
     """Visible in the feed and claimable."""
 

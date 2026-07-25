@@ -15,7 +15,11 @@ from collections.abc import Awaitable, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from api.services.claims import expire_stale_listings, sweep_expired_reservations
+from api.services.claims import (
+    activate_scheduled_listings,
+    expire_stale_listings,
+    sweep_expired_reservations,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,7 @@ Sweep = Callable[[async_sessionmaker[AsyncSession]], Awaitable[int]]
 SWEEPS: dict[str, Sweep] = {
     "expired reservations": sweep_expired_reservations,
     "finished listings": expire_stale_listings,
+    "scheduled go-lives": activate_scheduled_listings,
 }
 
 

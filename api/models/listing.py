@@ -92,6 +92,9 @@ class Listing(Base):
         DateTime(timezone=True), nullable=False
     )
 
+    #: When a SCHEDULED post should go live. Null unless status is scheduled.
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     status: Mapped[ListingStatus] = mapped_column(
         enum_column(ListingStatus, name="listingstatus"),
         nullable=False,

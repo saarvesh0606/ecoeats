@@ -11,6 +11,7 @@ import {
 	fetchMyListings,
 	type HostImpact,
 	type Listing,
+	publishListing,
 } from "@/lib/listings";
 import { formatLocation } from "@/lib/format";
 
@@ -40,6 +41,17 @@ export function OrganizerHome() {
 	const [impact, setImpact] = useState<HostImpact | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [tab, setTab] = useState<Tab>("active");
+	const [publishing, setPublishing] = useState<string | null>(null);
+
+	async function onPublish(id: string) {
+		setPublishing(id);
+		try {
+			await publishListing(id);
+			await load();
+		} finally {
+			setPublishing(null);
+		}
+	}
 
 	const load = useCallback(async () => {
 		try {
@@ -62,12 +74,12 @@ export function OrganizerHome() {
 
 	const firstName = profile?.name?.split(" ")[0] ?? "Sun Devil";
 
-	const inTab = (l: Listing): boolean =>
-		tab === "active"
-			? l.status === "active"
-			: tab === "past"
-				? l.status !== "active"
-				: false; // "scheduled" — Phase 2
+	const inTab = (l: Listing): boolean => {
+		if (tab === "active") return l.status === "active";
+		if (tab === "scheduled")
+			return l.status === "draft" || l.status === "scheduled";
+		return ["claimed", "expired", "cancelled"].includes(l.status);
+	};
 
 	const visible = listings.filter(inTab);
 
@@ -134,57 +146,98 @@ export function OrganizerHome() {
 				renderItem={({ item }) => {
 					const cover = item.photo_urls[0];
 					const live = item.status === "active";
+					const prelive =
+						item.status === "draft" || item.status === "scheduled";
 					return (
-						<Pressable
-							onPress={() => router.push(`/manage/${item.id}`)}
-							className="bg-white rounded-card p-4 border border-gray-100 active:opacity-90"
-							accessibilityRole="button"
-							accessibilityLabel={`Manage ${item.title}`}
-						>
-							<View className="flex-row gap-3 items-center">
-								{cover ? (
-									<Image
-										source={{ uri: cover }}
-										className="w-16 h-16 rounded-xl bg-gray-100"
-									/>
-								) : (
-									<View className="w-16 h-16 rounded-xl bg-forest-50 items-center justify-center">
-										<Ionicons name="fast-food-outline" size={22} color="#86d6ad" />
-									</View>
-								)}
-								<View className="flex-1">
-									<Text
-										className="font-display-bold text-base text-gray-900"
-										numberOfLines={1}
-									>
-										{item.title}
-									</Text>
-									<Text
-										className="font-body text-gray-500 text-sm"
-										numberOfLines={1}
-									>
-										{formatLocation(item.building, item.room)}
-									</Text>
-									<View className="flex-row items-center gap-2 mt-1">
-										{live && (
-											<View className="flex-row items-center gap-1">
-												<View className="w-2 h-2 rounded-full bg-lime" />
-												<Text className="font-body-medium text-forest-600 text-xs">
-													Live
-												</Text>
-											</View>
-										)}
-										<Text className="font-body text-gray-500 text-xs">
-											<Text className="font-body-semibold text-gray-900">
-												{item.quantity_remaining} left
-											</Text>{" "}
-											of {item.quantity_total} servings
+						<View>
+							<Pressable
+								onPress={() => router.push(`/manage/${item.id}`)}
+								className="bg-white rounded-card p-4 border border-gray-100 active:opacity-90"
+								accessibilityRole="button"
+								accessibilityLabel={`Manage ${item.title}`}
+							>
+								<View className="flex-row gap-3 items-center">
+									{cover ? (
+										<Image
+											source={{ uri: cover }}
+											className="w-16 h-16 rounded-xl bg-gray-100"
+										/>
+									) : (
+										<View className="w-16 h-16 rounded-xl bg-forest-50 items-center justify-center">
+											<Ionicons
+												name="fast-food-outline"
+												size={22}
+												color="#86d6ad"
+											/>
+										</View>
+									)}
+									<View className="flex-1">
+										<Text
+											className="font-display-bold text-base text-gray-900"
+											numberOfLines={1}
+										>
+											{item.title}
 										</Text>
+										<Text
+											className="font-body text-gray-500 text-sm"
+											numberOfLines={1}
+										>
+											{formatLocation(item.building, item.room)}
+										</Text>
+										<View className="flex-row items-center gap-2 mt-1">
+											{live && (
+												<View className="flex-row items-center gap-1">
+													<View className="w-2 h-2 rounded-full bg-lime" />
+													<Text className="font-body-medium text-forest-600 text-xs">
+														Live
+													</Text>
+												</View>
+											)}
+											{item.status === "draft" && (
+												<Text className="font-body-medium text-gray-500 text-xs">
+													Draft
+												</Text>
+											)}
+											{item.status === "scheduled" && item.scheduled_for && (
+												<Text className="font-body-medium text-forest-600 text-xs">
+													Scheduled ·{" "}
+													{new Date(item.scheduled_for).toLocaleString([], {
+														month: "short",
+														day: "numeric",
+														hour: "numeric",
+														minute: "2-digit",
+													})}
+												</Text>
+											)}
+											<Text className="font-body text-gray-500 text-xs">
+												{live ? (
+													<>
+														<Text className="font-body-semibold text-gray-900">
+															{item.quantity_remaining} left
+														</Text>{" "}
+														of {item.quantity_total} servings
+													</>
+												) : (
+													`${item.quantity_total} servings`
+												)}
+											</Text>
+										</View>
 									</View>
+									<Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
 								</View>
-								<Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-							</View>
-						</Pressable>
+							</Pressable>
+							{prelive && (
+								<View className="mt-2">
+									<Button
+										size="sm"
+										loading={publishing === item.id}
+										onPress={() => onPublish(item.id)}
+									>
+										Publish now
+									</Button>
+								</View>
+							)}
+						</View>
 					);
 				}}
 				ListFooterComponent={
@@ -205,7 +258,7 @@ export function OrganizerHome() {
 						</Text>
 						<Text className="font-body text-gray-500 text-center mt-2">
 							{tab === "scheduled"
-								? "Scheduling posts ahead of time is coming soon."
+								? "Drafts and scheduled posts appear here."
 								: "Share surplus food and students nearby will see it right away."}
 						</Text>
 					</View>

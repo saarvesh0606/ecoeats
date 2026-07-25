@@ -4,7 +4,13 @@
 
 import { api } from "@/lib/api";
 
-export type ListingStatus = "active" | "claimed" | "expired" | "cancelled";
+export type ListingStatus =
+	| "draft"
+	| "scheduled"
+	| "active"
+	| "claimed"
+	| "expired"
+	| "cancelled";
 
 export interface Organizer {
 	id: string;
@@ -31,6 +37,7 @@ export interface Listing {
 	expires_at: string;
 	status: ListingStatus;
 	created_at: string;
+	scheduled_for: string | null;
 	organizer: Organizer;
 	photo_urls: string[];
 	distance_miles: number | null;
@@ -127,10 +134,17 @@ export interface NewListing {
 		lng: number;
 	};
 	photo_urls: string[];
+	publish?: "now" | "draft" | "scheduled";
+	scheduled_for?: string | null;
 }
 
 export async function createListing(body: NewListing): Promise<Listing> {
 	return api.post<Listing>("/listings", body);
+}
+
+/** Publish a draft or scheduled post now (status -> active). */
+export async function publishListing(id: string): Promise<Listing> {
+	return api.patch<Listing>(`/listings/${id}`, { status: "active" });
 }
 
 /** An organizer's own posts, including finished ones. */
