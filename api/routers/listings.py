@@ -22,11 +22,12 @@ from api.deps import (
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.events import listing_event
 from api.geo import bounding_box, haversine_miles
-from api.models import Listing, ListingPhoto, Rating, SavedListing
-from api.models.enums import ListingStatus
+from api.models import Claim, Listing, ListingPhoto, Rating, SavedListing
+from api.models.enums import ClaimStatus, ListingStatus
 from api.pagination import decode_cursor, encode_cursor
 from api.schemas.listing import (
     CreateListing,
+    HostImpact,
     ListingFeed,
     ListingOut,
     Organizer,
@@ -317,6 +318,43 @@ async def saved_feed(db: DbSession, user: CurrentUser) -> ListingFeed:
     return ListingFeed(
         items=[_serialise(listing, is_saved=True) for listing in rows],
         count=len(rows),
+    )
+
+
+@router.get("/impact", response_model=HostImpact)
+async def host_impact(db: DbSession, organizer: CurrentOrganizer) -> HostImpact:
+    """A host's cumulative impact from completed pickups.
+
+    Declared before /{listing_id} so "impact" is not parsed as an id.
+    """
+    meals = await db.scalar(
+        select(func.coalesce(func.sum(Claim.quantity), 0))
+        .select_from(Claim)
+        .join(Listing, Claim.listing_id == Listing.id)
+        .where(
+            Listing.organizer_id == organizer.id,
+            Claim.status == ClaimStatus.PICKED_UP,
+        )
+    )
+    people = await db.scalar(
+        select(func.count(func.distinct(Claim.recipient_id)))
+        .select_from(Claim)
+        .join(Listing, Claim.listing_id == Listing.id)
+        .where(
+            Listing.organizer_id == organizer.id,
+            Claim.status == ClaimStatus.PICKED_UP,
+        )
+    )
+    active = await db.scalar(
+        select(func.count(Listing.id)).where(
+            Listing.organizer_id == organizer.id,
+            Listing.status == ListingStatus.ACTIVE,
+        )
+    )
+    return HostImpact(
+        meals_shared=int(meals or 0),
+        people_fed=int(people or 0),
+        active_posts=int(active or 0),
     )
 
 

@@ -5,9 +5,13 @@ import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
-import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
-import { fetchMyListings, type Listing } from "@/lib/listings";
+import {
+	fetchImpact,
+	fetchMyListings,
+	type HostImpact,
+	type Listing,
+} from "@/lib/listings";
 import { formatLocation } from "@/lib/format";
 
 type Tab = "active" | "scheduled" | "past";
@@ -32,14 +36,19 @@ function Stat({ n, label }: { n: number; label: string }) {
 export function OrganizerHome() {
 	const router = useRouter();
 	const { profile } = useAuth();
-	const toast = useToast();
 	const [listings, setListings] = useState<Listing[]>([]);
+	const [impact, setImpact] = useState<HostImpact | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [tab, setTab] = useState<Tab>("active");
 
 	const load = useCallback(async () => {
 		try {
-			setListings(await fetchMyListings());
+			const [posts, stats] = await Promise.all([
+				fetchMyListings(),
+				fetchImpact(),
+			]);
+			setListings(posts);
+			setImpact(stats);
 		} finally {
 			setLoading(false);
 		}
@@ -52,17 +61,6 @@ export function OrganizerHome() {
 	if (loading) return <Spinner className="flex-1 bg-cream" />;
 
 	const firstName = profile?.name?.split(" ")[0] ?? "Sun Devil";
-	const activeListings = listings.filter((l) => l.status === "active");
-	// Honest, derivable impact. Weight-based "lbs saved" needs data we don't
-	// collect yet — a Phase 2 backend feature.
-	const portionsShared = listings.reduce(
-		(sum, l) => sum + (l.quantity_total - l.quantity_remaining),
-		0,
-	);
-	const portionsLeft = activeListings.reduce(
-		(sum, l) => sum + l.quantity_remaining,
-		0,
-	);
 
 	const inTab = (l: Listing): boolean =>
 		tab === "active"
@@ -88,7 +86,7 @@ export function OrganizerHome() {
 				<Pressable
 					hitSlop={8}
 					className="mt-1"
-					onPress={() => toast.show("You're all caught up — no new notifications.")}
+					onPress={() => router.push("/notifications")}
 					accessibilityRole="button"
 					accessibilityLabel="Notifications"
 				>
@@ -102,9 +100,9 @@ export function OrganizerHome() {
 					Your Impact
 				</Text>
 				<View className="flex-row justify-between">
-					<Stat n={portionsShared} label="Meals Shared" />
-					<Stat n={activeListings.length} label="Active Posts" />
-					<Stat n={portionsLeft} label="Portions Left" />
+					<Stat n={impact?.meals_shared ?? 0} label="Meals Shared" />
+					<Stat n={impact?.people_fed ?? 0} label="People Fed" />
+					<Stat n={impact?.active_posts ?? 0} label="Active Posts" />
 				</View>
 			</View>
 

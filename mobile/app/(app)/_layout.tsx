@@ -10,6 +10,7 @@ export default function AppLayout() {
 			<Stack.Screen name="(tabs)" />
 			<Stack.Screen name="listing/[id]" />
 			<Stack.Screen name="manage/[id]" />
+			<Stack.Screen name="notifications" />
 		</Stack>
 	);
 }

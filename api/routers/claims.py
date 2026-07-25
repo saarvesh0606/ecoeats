@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from api.deps import CurrentUser, DbSession, rate_limited
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.events import listing_event
-from api.models import Claim, Listing, Rating
+from api.models import Claim, Listing, Notification, Rating
 from api.models.enums import ClaimStatus, UserRole
 from api.schemas.claim import ClaimedListing, ClaimList, ClaimOut, CreateClaim
 from api.schemas.rating import CreateRating
@@ -96,6 +96,13 @@ async def claim_food(
 
     full = await _load_claim_with_relations(db, claim.id)
     if full.listing is not None:
+        db.add(
+            Notification(
+                user_id=full.listing.organizer_id,
+                message=f"{user.name} claimed {full.listing.title}",
+                listing_id=full.listing.id,
+            )
+        )
         _publish_listing(request, background_tasks, full.listing)
     return _serialise(full, listing=full.listing)
 
@@ -214,6 +221,13 @@ async def rate_host(
             comment=body.comment,
         )
     )
+    db.add(
+        Notification(
+            user_id=claim.listing.organizer_id,
+            message=f"{user.name} rated you {body.stars}★",
+            listing_id=claim.listing_id,
+        )
+    )
     await db.flush()
 
     return _serialise(claim, listing=claim.listing, is_rated=True)
@@ -243,6 +257,15 @@ async def _resolve(
 
     service.resolve_claim(claim, listing, status=target)
     await db.flush()
+
+    if target is ClaimStatus.PICKED_UP:
+        db.add(
+            Notification(
+                user_id=claim.recipient_id,
+                message=f"Pickup confirmed for {listing.title}",
+                listing_id=listing.id,
+            )
+        )
 
     # no-show and cancel return a portion to the pool; pickup doesn't change the
     # listing, but re-broadcasting the same values is harmless and keeps this

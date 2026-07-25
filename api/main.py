@@ -19,6 +19,7 @@ from api.ratelimit import RateLimitMiddleware, build_limiter
 from api.routers import (
     claims_router,
     listings_router,
+    notifications_router,
     uploads_router,
     users_router,
 )
@@ -200,6 +201,7 @@ def create_app(
     v1.include_router(listings_router)
     v1.include_router(claims_router)
     v1.include_router(uploads_router)
+    v1.include_router(notifications_router)
     app.include_router(v1)
 
     return app

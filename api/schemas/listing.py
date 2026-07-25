@@ -165,6 +165,17 @@ class ListingOut(BaseModel):
         )
 
 
+class HostImpact(BaseModel):
+    """A host's real cumulative impact, computed from completed pickups."""
+
+    #: Portions actually collected (picked-up claims) across all their posts.
+    meals_shared: int
+    #: Distinct people who collected food from them.
+    people_fed: int
+    #: Posts currently live.
+    active_posts: int
+
+
 class ListingFeed(BaseModel):
     items: list[ListingOut]
     count: int

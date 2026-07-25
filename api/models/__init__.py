@@ -16,6 +16,7 @@ from api.models.enums import (
     UserRole,
 )
 from api.models.listing import Listing, ListingPhoto
+from api.models.notification import Notification
 from api.models.rating import Rating
 from api.models.saved import SavedListing
 from api.models.user import User
@@ -30,6 +31,7 @@ __all__ = [
     "Listing",
     "ListingPhoto",
     "ListingStatus",
+    "Notification",
     "Rating",
     "SavedListing",
     "User",

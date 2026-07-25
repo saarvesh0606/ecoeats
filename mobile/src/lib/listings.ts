@@ -140,6 +140,17 @@ export async function fetchMyListings(): Promise<Listing[]> {
 	return feed.items;
 }
 
+export interface HostImpact {
+	meals_shared: number;
+	people_fed: number;
+	active_posts: number;
+}
+
+/** A host's cumulative impact, computed server-side from completed pickups. */
+export async function fetchImpact(): Promise<HostImpact> {
+	return api.get<HostImpact>("/listings/impact");
+}
+
 /** Mark a listing out of stock (status → claimed) or back active. */
 export async function setListingStatus(
 	id: string,
