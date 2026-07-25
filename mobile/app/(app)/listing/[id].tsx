@@ -237,13 +237,25 @@ export default function ListingDetail() {
 						<View className="w-10 h-10 rounded-full bg-forest-100 items-center justify-center">
 							<Ionicons name="person-outline" size={20} color="#1B4332" />
 						</View>
-						<View>
+						<View className="flex-1">
 							<Text className="font-body text-gray-400 text-xs">Shared by</Text>
 							<Text className="font-body-semibold text-gray-900">
 								{listing.organizer.name}
 							</Text>
+							{listing.organizer.rating != null ? (
+								<View className="flex-row items-center gap-1 mt-0.5">
+									<Ionicons name="star" size={12} color="#FFC627" />
+									<Text className="font-body text-gray-600 text-xs">
+										{listing.organizer.rating} ({listing.organizer.rating_count})
+									</Text>
+								</View>
+							) : (
+								<Text className="font-body text-gray-400 text-xs mt-0.5">
+									New host
+								</Text>
+							)}
 						</View>
-						<View className="ml-auto bg-maroon-50 rounded-full px-3 py-1">
+						<View className="bg-maroon-50 rounded-full px-3 py-1">
 							<Text className="font-body-semibold text-xs text-maroon">
 								ASU Host
 							</Text>

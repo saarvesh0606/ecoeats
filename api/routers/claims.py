@@ -9,9 +9,10 @@ from sqlalchemy.orm import selectinload
 from api.deps import CurrentUser, DbSession, rate_limited
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.events import listing_event
-from api.models import Claim, Listing
+from api.models import Claim, Listing, Rating
 from api.models.enums import ClaimStatus, UserRole
 from api.schemas.claim import ClaimedListing, ClaimList, ClaimOut, CreateClaim
+from api.schemas.rating import CreateRating
 from api.services import claims as service
 
 router = APIRouter(tags=["claims"])
@@ -27,7 +28,9 @@ def _publish_listing(
     background_tasks.add_task(request.app.state.event_bus.publish, event)
 
 
-def _serialise(claim: Claim, *, listing: Listing | None = None) -> ClaimOut:
+def _serialise(
+    claim: Claim, *, listing: Listing | None = None, is_rated: bool = False
+) -> ClaimOut:
     return ClaimOut(
         id=str(claim.id),
         listing_id=str(claim.listing_id),
@@ -38,6 +41,7 @@ def _serialise(claim: Claim, *, listing: Listing | None = None) -> ClaimOut:
         claimed_at=claim.claimed_at,
         reservation_expires_at=claim.reservation_expires_at,
         resolved_at=claim.resolved_at,
+        is_rated=is_rated,
         listing=(
             ClaimedListing(
                 id=str(listing.id),
@@ -127,7 +131,22 @@ async def my_claims(db: DbSession, user: CurrentUser) -> ClaimList:
         )
     ).all()
 
-    items = [_serialise(claim, listing=claim.listing) for claim in rows]
+    # Which of these claims already carry a rating — so the client knows whether
+    # to offer "rate the host".
+    rated = set(
+        (
+            await db.scalars(
+                select(Rating.claim_id).where(
+                    Rating.claim_id.in_([claim.id for claim in rows])
+                )
+            )
+        ).all()
+    ) if rows else set()
+
+    items = [
+        _serialise(claim, listing=claim.listing, is_rated=claim.id in rated)
+        for claim in rows
+    ]
     return ClaimList(items=items, count=len(items))
 
 
@@ -155,6 +174,49 @@ async def claims_for_listing(
     return ClaimList(
         items=[_serialise(claim) for claim in rows], count=len(rows)
     )
+
+
+@router.post(
+    "/claims/{claim_id}/rate",
+    response_model=ClaimOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def rate_host(
+    claim_id: uuid.UUID,
+    body: CreateRating,
+    db: DbSession,
+    user: CurrentUser,
+) -> ClaimOut:
+    """Rate the host after collecting food.
+
+    Only the recipient of a confirmed pickup can rate it, and only once — the
+    rating is tied to the claim, so it can't be invented without a real handoff.
+    """
+    claim = await _load_claim_with_relations(db, claim_id)
+
+    if claim.recipient_id != user.id:
+        raise ForbiddenError("You can only rate your own pickups")
+    if claim.status is not ClaimStatus.PICKED_UP:
+        raise ValidationError("You can rate a host once the pickup is confirmed")
+    if claim.listing is None:
+        raise NotFoundError("That listing no longer exists")
+
+    already = await db.scalar(select(Rating.id).where(Rating.claim_id == claim_id))
+    if already is not None:
+        raise ValidationError("You've already rated this pickup")
+
+    db.add(
+        Rating(
+            claim_id=claim_id,
+            host_id=claim.listing.organizer_id,
+            recipient_id=user.id,
+            stars=body.stars,
+            comment=body.comment,
+        )
+    )
+    await db.flush()
+
+    return _serialise(claim, listing=claim.listing, is_rated=True)
 
 
 async def _resolve(

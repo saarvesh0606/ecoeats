@@ -8,7 +8,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
-import { cancelClaim, type Claim, fetchMyClaims } from "@/lib/claims";
+import { cancelClaim, type Claim, fetchMyClaims, rateHost } from "@/lib/claims";
 import { formatLocation } from "@/lib/format";
 
 type Tab = "active" | "picked_up" | "expired";
@@ -41,6 +41,24 @@ function mmss(target: string, now: number): string {
 	const m = Math.floor(total / 60);
 	const s = total % 60;
 	return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function StarRow({ onPick }: { onPick: (stars: number) => void }) {
+	return (
+		<View className="flex-row gap-1 mt-1">
+			{[1, 2, 3, 4, 5].map((n) => (
+				<Pressable
+					key={n}
+					onPress={() => onPick(n)}
+					hitSlop={6}
+					accessibilityRole="button"
+					accessibilityLabel={`Rate ${n} star${n > 1 ? "s" : ""}`}
+				>
+					<Ionicons name="star-outline" size={28} color="#FFC627" />
+				</Pressable>
+			))}
+		</View>
+	);
 }
 
 function PickupChecklist() {
@@ -94,6 +112,16 @@ export function MyClaims() {
 			if (!(err instanceof ApiError)) throw err;
 		} finally {
 			setBusyId(null);
+		}
+	}
+
+	async function onRate(claim: Claim, stars: number) {
+		try {
+			await rateHost(claim.id, stars);
+			await load();
+			toast.show("Thanks for rating!");
+		} catch (err) {
+			if (!(err instanceof ApiError)) throw err;
 		}
 	}
 
@@ -222,6 +250,20 @@ export function MyClaims() {
 									</View>
 								</View>
 							)}
+
+							{item.status === "picked_up" &&
+								(item.is_rated ? (
+									<Text className="font-body text-forest-700 text-sm mt-3">
+										★ You rated this host — thanks!
+									</Text>
+								) : (
+									<View className="mt-3">
+										<Text className="font-body text-gray-500 text-sm">
+											How was it? Rate the host:
+										</Text>
+										<StarRow onPick={(n) => onRate(item, n)} />
+									</View>
+								))}
 
 							{l && (
 								<Pressable

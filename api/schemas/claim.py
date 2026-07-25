@@ -59,6 +59,9 @@ class ClaimOut(BaseModel):
     #: Present on a recipient's own claims, where they need the address.
     listing: ClaimedListing | None = None
 
+    #: Whether the recipient has already rated the host for this pickup.
+    is_rated: bool = False
+
     @computed_field
     @property
     def seconds_to_collect(self) -> int:

@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import Select, delete, or_, select, tuple_
+from sqlalchemy import Select, delete, func, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,7 +22,7 @@ from api.deps import (
 from api.errors import ForbiddenError, NotFoundError, ValidationError
 from api.events import listing_event
 from api.geo import bounding_box, haversine_miles
-from api.models import Listing, ListingPhoto, SavedListing
+from api.models import Listing, ListingPhoto, Rating, SavedListing
 from api.models.enums import ListingStatus
 from api.pagination import decode_cursor, encode_cursor
 from api.schemas.listing import (
@@ -60,6 +60,8 @@ def _serialise(
     *,
     distance_miles: float | None = None,
     is_saved: bool = False,
+    organizer_rating: float | None = None,
+    organizer_rating_count: int = 0,
 ) -> ListingOut:
     return ListingOut(
         id=str(listing.id),
@@ -78,11 +80,28 @@ def _serialise(
         expires_at=listing.expires_at,
         status=listing.status,
         created_at=listing.created_at,
-        organizer=Organizer(id=listing.organizer.id, name=listing.organizer.name),
+        organizer=Organizer(
+            id=listing.organizer.id,
+            name=listing.organizer.name,
+            rating=organizer_rating,
+            rating_count=organizer_rating_count,
+        ),
         photo_urls=[photo.url for photo in listing.photos],
         distance_miles=distance_miles,
         is_saved=is_saved,
     )
+
+
+async def _host_rating(db: AsyncSession, host_id: str) -> tuple[float | None, int]:
+    """A host's average star rating and how many ratings it's based on."""
+    avg, count = (
+        await db.execute(
+            select(func.avg(Rating.stars), func.count(Rating.id)).where(
+                Rating.host_id == host_id
+            )
+        )
+    ).one()
+    return (round(float(avg), 1) if count else None), count
 
 
 async def _saved_ids(
@@ -341,7 +360,13 @@ async def stream(request: Request) -> StreamingResponse:
 async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ListingOut:
     listing = await _load(db, listing_id)
     saved = await _saved_ids(db, user.id, [listing.id])
-    return _serialise(listing, is_saved=listing.id in saved)
+    rating, rating_count = await _host_rating(db, listing.organizer_id)
+    return _serialise(
+        listing,
+        is_saved=listing.id in saved,
+        organizer_rating=rating,
+        organizer_rating_count=rating_count,
+    )
 
 
 @router.post("/{listing_id}/save", status_code=status.HTTP_204_NO_CONTENT)

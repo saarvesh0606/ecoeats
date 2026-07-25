@@ -103,6 +103,11 @@ class Organizer(BaseModel):
     id: str
     name: str
 
+    #: Average star rating and how many ratings it's based on. Populated on the
+    #: detail view; None/0 means the host hasn't been rated yet.
+    rating: float | None = None
+    rating_count: int = 0
+
 
 class ListingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

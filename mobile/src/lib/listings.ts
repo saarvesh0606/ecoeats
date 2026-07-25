@@ -9,6 +9,9 @@ export type ListingStatus = "active" | "claimed" | "expired" | "cancelled";
 export interface Organizer {
 	id: string;
 	name: string;
+	/** Average star rating, or null if the host hasn't been rated. */
+	rating: number | null;
+	rating_count: number;
 }
 
 export interface Listing {

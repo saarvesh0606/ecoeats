@@ -27,7 +27,7 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 		expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
 		status: "active",
 		created_at: new Date().toISOString(),
-		organizer: { id: "org-1", name: "Front Desk" },
+		organizer: { id: "org-1", name: "Front Desk", rating: null, rating_count: 0 },
 		photo_urls: [],
 		distance_miles: null,
 		seconds_remaining: 1800,

@@ -31,6 +31,7 @@ export interface Claim {
 	resolved_at: string | null;
 	listing: ClaimedListing | null;
 	seconds_to_collect: number;
+	is_rated: boolean;
 }
 
 interface ClaimList {
@@ -63,4 +64,13 @@ export async function confirmPickup(claimId: string): Promise<Claim> {
 
 export async function markNoShow(claimId: string): Promise<Claim> {
 	return api.post<Claim>(`/claims/${claimId}/no-show`);
+}
+
+/** Rate the host after a confirmed pickup (1–5 stars). */
+export async function rateHost(
+	claimId: string,
+	stars: number,
+	comment?: string,
+): Promise<Claim> {
+	return api.post<Claim>(`/claims/${claimId}/rate`, { stars, comment });
 }
