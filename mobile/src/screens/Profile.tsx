@@ -54,18 +54,35 @@ export function Profile() {
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			<ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-				<Text className="font-display font-bold text-2xl text-gray-900 mb-1">
+				<Text className="font-display-bold text-3xl text-forest-800 mb-4">
 					Profile
 				</Text>
-				<Text className="font-body text-gray-500 mb-6 capitalize">
-					{profile?.role} · {profile?.email}
-				</Text>
+				<View className="flex-row items-center gap-3 mb-6">
+					<View className="w-14 h-14 rounded-full bg-forest-100 items-center justify-center">
+						<Text className="font-display-bold text-xl text-forest-700">
+							{(profile?.name ?? "?").charAt(0).toUpperCase()}
+						</Text>
+					</View>
+					<View className="flex-1">
+						<Text className="font-display-bold text-lg text-gray-900">
+							{profile?.name}
+						</Text>
+						<Text className="font-body text-gray-500 text-sm">
+							{profile?.email}
+						</Text>
+					</View>
+					<View className="bg-maroon-50 rounded-full px-3 py-1">
+						<Text className="font-body-semibold text-xs text-maroon">
+							{isRecipient ? "Recipient" : "ASU Host"}
+						</Text>
+					</View>
+				</View>
 
 				<Input label="Name" value={name} onChangeText={(t) => { setName(t); setSaved(false); }} />
 
 				{isRecipient && (
 					<View className="mb-4">
-						<Text className="text-sm font-body font-medium text-gray-700 mb-2">
+						<Text className="font-body-semibold text-gray-900 mb-2">
 							Dietary preferences
 						</Text>
 						<Text className="font-body text-gray-400 text-xs mb-2">
@@ -79,7 +96,7 @@ export function Profile() {
 										key={tag}
 										onPress={() => togglePref(tag)}
 										accessibilityRole="button"
-										className={`font-body text-sm capitalize rounded-full px-3 py-1.5 border overflow-hidden ${on ? "bg-forest-700 border-forest-700 text-white" : "bg-white border-gray-300 text-gray-700"}`}
+										className={`font-body text-sm capitalize rounded-full px-3 py-1.5 border overflow-hidden ${on ? "bg-forest-800 border-forest-800 text-white" : "bg-white border-gray-300 text-gray-700"}`}
 									>
 										{tag}
 									</Text>

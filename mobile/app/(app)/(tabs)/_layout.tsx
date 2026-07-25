@@ -4,9 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 
 /**
  * Role-aware tabs. The two roles get different bottom bars — a recipient
- * browses and tracks claims; an organizer manages posts and creates new ones.
- * Every route file exists for both roles, but `href: null` hides the ones that
- * don't belong to the current role, so nobody can even navigate to them.
+ * browses and tracks claims; a host manages posts and creates new ones. Every
+ * route file exists for both roles, but `href: null` hides the ones that don't
+ * belong to the current role, so nobody can even navigate to them.
+ *
+ * The Map tab (recipient) and Activity tab (host) from the mockups are deferred:
+ * Map needs react-native-maps (native, ships with the device build), and
+ * Activity is a Phase 2 feature.
  */
 export default function TabsLayout() {
 	const { profile } = useAuth();
@@ -21,20 +25,24 @@ export default function TabsLayout() {
 				tabBarStyle: {
 					backgroundColor: "#FFFFFF",
 					borderTopColor: "#E5E7EB",
-					height: 60,
+					height: 62,
 					paddingBottom: 8,
 					paddingTop: 6,
 				},
-				tabBarLabelStyle: { fontSize: 11 },
+				tabBarLabelStyle: { fontSize: 11, fontFamily: "DMSans_500Medium" },
 			}}
 		>
 			<Tabs.Screen
 				name="feed"
 				options={{
 					href: isOrganizer ? null : "/feed",
-					title: "Feed",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="fast-food-outline" size={size} color={color} />
+					title: "Discover",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "compass" : "compass-outline"}
+							size={size}
+							color={color}
+						/>
 					),
 				}}
 			/>
@@ -42,9 +50,13 @@ export default function TabsLayout() {
 				name="claims"
 				options={{
 					href: isOrganizer ? null : "/claims",
-					title: "My claims",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="receipt-outline" size={size} color={color} />
+					title: "My Claims",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "receipt" : "receipt-outline"}
+							size={size}
+							color={color}
+						/>
 					),
 				}}
 			/>
@@ -52,9 +64,13 @@ export default function TabsLayout() {
 				name="posts"
 				options={{
 					href: isOrganizer ? "/posts" : null,
-					title: "My posts",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="list-outline" size={size} color={color} />
+					title: "Dashboard",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "grid" : "grid-outline"}
+							size={size}
+							color={color}
+						/>
 					),
 				}}
 			/>
@@ -62,9 +78,13 @@ export default function TabsLayout() {
 				name="post"
 				options={{
 					href: isOrganizer ? "/post" : null,
-					title: "Post",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="add-circle-outline" size={size} color={color} />
+					title: "Create",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "add-circle" : "add-circle-outline"}
+							size={size}
+							color={color}
+						/>
 					),
 				}}
 			/>
@@ -72,8 +92,12 @@ export default function TabsLayout() {
 				name="profile"
 				options={{
 					title: "Profile",
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="person-outline" size={size} color={color} />
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "person" : "person-outline"}
+							size={size}
+							color={color}
+						/>
 					),
 				}}
 			/>
