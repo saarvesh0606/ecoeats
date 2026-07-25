@@ -63,6 +63,7 @@ def _serialise(
     is_saved: bool = False,
     organizer_rating: float | None = None,
     organizer_rating_count: int = 0,
+    interested_count: int = 0,
 ) -> ListingOut:
     return ListingOut(
         id=str(listing.id),
@@ -90,6 +91,7 @@ def _serialise(
         photo_urls=[photo.url for photo in listing.photos],
         distance_miles=distance_miles,
         is_saved=is_saved,
+        interested_count=interested_count,
     )
 
 
@@ -399,11 +401,17 @@ async def read(listing_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Listi
     listing = await _load(db, listing_id)
     saved = await _saved_ids(db, user.id, [listing.id])
     rating, rating_count = await _host_rating(db, listing.organizer_id)
+    interested = await db.scalar(
+        select(func.count(SavedListing.id)).where(
+            SavedListing.listing_id == listing.id
+        )
+    )
     return _serialise(
         listing,
         is_saved=listing.id in saved,
         organizer_rating=rating,
         organizer_rating_count=rating_count,
+        interested_count=int(interested or 0),
     )
 
 

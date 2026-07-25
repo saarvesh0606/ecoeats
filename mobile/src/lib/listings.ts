@@ -37,6 +37,7 @@ export interface Listing {
 	seconds_remaining: number;
 	is_claimable: boolean;
 	is_saved: boolean;
+	interested_count: number;
 }
 
 interface ListingFeed {

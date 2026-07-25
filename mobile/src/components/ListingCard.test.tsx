@@ -33,6 +33,7 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 		seconds_remaining: 1800,
 		is_claimable: true,
 		is_saved: false,
+		interested_count: 0,
 		...overrides,
 	};
 }

@@ -51,6 +51,7 @@ export default function ListingDetail() {
 	const [claiming, setClaiming] = useState(false);
 	const [claimError, setClaimError] = useState<string | null>(null);
 	const [claimed, setClaimed] = useState(false);
+	const [qty, setQty] = useState(1);
 
 	const load = useCallback(async () => {
 		if (!id) return;
@@ -75,7 +76,7 @@ export default function ListingDetail() {
 		setClaiming(true);
 		setClaimError(null);
 		try {
-			await createClaim(listing.id);
+			await createClaim(listing.id, qty);
 			setClaimed(true);
 			toast.show("Reserved! Confirm pickup within 15 minutes.");
 			// Land on the user's claims, where the pickup details live.
@@ -271,9 +272,37 @@ export default function ListingDetail() {
 						{claimError}
 					</Text>
 				)}
+				{canClaim && listing.quantity_remaining > 1 && (
+					<View className="flex-row items-center justify-center gap-5 mb-3">
+						<Text className="font-body text-gray-500 text-sm">Portions</Text>
+						<Pressable
+							onPress={() => setQty((q) => Math.max(1, q - 1))}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="Fewer portions"
+						>
+							<Ionicons name="remove-circle-outline" size={30} color="#1B4332" />
+						</Pressable>
+						<Text className="font-display-bold text-xl text-gray-900 w-6 text-center">
+							{qty}
+						</Text>
+						<Pressable
+							onPress={() =>
+								setQty((q) => Math.min(listing.quantity_remaining, 10, q + 1))
+							}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="More portions"
+						>
+							<Ionicons name="add-circle-outline" size={30} color="#1B4332" />
+						</Pressable>
+					</View>
+				)}
 				<Button onPress={onClaim} loading={claiming} disabled={!canClaim} size="lg">
 					{canClaim
-						? "Claim This Food"
+						? qty > 1
+							? `Claim ${qty} Portions`
+							: "Claim This Food"
 						: listing.quantity_remaining === 0
 							? "All claimed"
 							: "No longer available"}

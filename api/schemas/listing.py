@@ -142,6 +142,10 @@ class ListingOut(BaseModel):
     #: Whether the requesting user has bookmarked this listing.
     is_saved: bool = False
 
+    #: How many people have saved this listing — a "people interested" signal
+    #: shown to the host. Populated on the detail view.
+    interested_count: int = 0
+
     @computed_field
     @property
     def seconds_remaining(self) -> int:

@@ -39,8 +39,11 @@ interface ClaimList {
 	count: number;
 }
 
-export async function createClaim(listingId: string): Promise<Claim> {
-	return api.post<Claim>("/claims", { listing_id: listingId });
+export async function createClaim(
+	listingId: string,
+	quantity = 1,
+): Promise<Claim> {
+	return api.post<Claim>("/claims", { listing_id: listingId, quantity });
 }
 
 export async function fetchMyClaims(): Promise<Claim[]> {

@@ -90,7 +90,7 @@ async def claim_food(
         raise ValidationError("That is not a valid listing id") from exc
 
     claim = await service.create_claim(
-        db, listing_id=listing_id, recipient_id=user.id
+        db, listing_id=listing_id, recipient_id=user.id, quantity=body.quantity
     )
     await db.flush()
 

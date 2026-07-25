@@ -210,8 +210,8 @@ export default function ManageListing() {
 					/>
 				</View>
 				<Text className="font-body text-gray-400 text-xs mt-2">
-					{claimed} claimed · {claims.length} total{" "}
-					{claims.length === 1 ? "claim" : "claims"}
+					{claimed} claimed · {listing.interested_count}{" "}
+					{listing.interested_count === 1 ? "person" : "people"} interested
 				</Text>
 			</View>
 

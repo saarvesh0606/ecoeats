@@ -61,6 +61,25 @@ async def test_saved_feed_lists_only_my_saves(
     assert [i["title"] for i in mine.json()["items"]] == ["Bagels"]
 
 
+async def test_interested_count_reflects_saves(
+    client: AsyncClient,
+    organizer: Account,
+    recipient: Account,
+    client_recipient_two: Account,
+) -> None:
+    listing = await post_listing(client, organizer)
+    lid = listing["id"]
+
+    detail = await client.get(f"/listings/{lid}", headers=organizer.headers)
+    assert detail.json()["interested_count"] == 0
+
+    await client.post(f"/listings/{lid}/save", headers=recipient.headers)
+    await client.post(f"/listings/{lid}/save", headers=client_recipient_two.headers)
+
+    detail = await client.get(f"/listings/{lid}", headers=organizer.headers)
+    assert detail.json()["interested_count"] == 2
+
+
 async def test_save_missing_listing_is_404(
     client: AsyncClient, recipient: Account
 ) -> None:

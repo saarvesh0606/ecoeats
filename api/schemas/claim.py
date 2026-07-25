@@ -2,20 +2,21 @@
 
 from datetime import UTC, datetime
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from api.geo import maps_url
 from api.models.enums import ClaimStatus
 
 
 class CreateClaim(BaseModel):
-    """Reserve a portion.
+    """Reserve one or more portions.
 
-    No quantity field: the spec reserves one portion per person, and the
-    recipient is taken from the verified token, not the body.
+    The recipient is taken from the verified token, not the body. Quantity
+    defaults to one; the server caps it at what's actually left.
     """
 
     listing_id: str
+    quantity: int = Field(default=1, ge=1, le=20, description="Portions to reserve.")
 
 
 class ClaimedListing(BaseModel):
