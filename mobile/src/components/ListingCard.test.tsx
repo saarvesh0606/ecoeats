@@ -30,13 +30,12 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 }
 
 describe("ListingCard", () => {
-	it("shows the title, remaining count, and organizer", () => {
+	it("shows the title and location", () => {
 		const { getByText } = render(
 			<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
 		);
 		expect(getByText("Leftover pizza")).toBeTruthy();
-		expect(getByText("8 left")).toBeTruthy();
-		expect(getByText("Front Desk")).toBeTruthy();
+		expect(getByText("Wrigley Hall, Room 205")).toBeTruthy();
 	});
 
 	it("surfaces the allergen warning prominently", () => {
@@ -55,10 +54,12 @@ describe("ListingCard", () => {
 
 	it("fires onPress when tapped", () => {
 		const onPress = jest.fn();
-		const { getByRole } = render(
+		// The card now also contains a bookmark button, so target the card by its
+		// label rather than the ambiguous role.
+		const { getByLabelText } = render(
 			<ListingCard listing={makeListing()} now={Date.now()} onPress={onPress} />,
 		);
-		fireEvent.press(getByRole("button"));
+		fireEvent.press(getByLabelText(/Leftover pizza/));
 		expect(onPress).toHaveBeenCalledTimes(1);
 	});
 });

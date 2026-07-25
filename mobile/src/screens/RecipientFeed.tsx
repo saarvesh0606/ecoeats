@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -6,13 +7,13 @@ import {
 	Pressable,
 	RefreshControl,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
-import { useAuth } from "@/context/AuthContext";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
@@ -23,7 +24,6 @@ const SOON_MINUTES = 20;
 
 export function RecipientFeed() {
 	const router = useRouter();
-	const { profile } = useAuth();
 	const now = useNow();
 
 	const [listings, setListings] = useState<Listing[]>([]);
@@ -35,6 +35,9 @@ export function RecipientFeed() {
 
 	const [dietary, setDietary] = useState<string[]>([]);
 	const [soonOnly, setSoonOnly] = useState(false);
+	// Client-side text search over the loaded page. Server-side search across the
+	// whole catalogue is a Phase 2 backend feature.
+	const [query, setQuery] = useState("");
 
 	const filters = useCallback(
 		() => ({
@@ -97,9 +100,7 @@ export function RecipientFeed() {
 		let cancelled = false;
 
 		void subscribeToListings((event) => {
-			const known = listingsRef.current.some(
-				(l) => l.id === event.listing_id,
-			);
+			const known = listingsRef.current.some((l) => l.id === event.listing_id);
 			// A change to a listing we don't have is almost always a new post;
 			// refetch so server-side filters decide whether it belongs here.
 			if (!known) {
@@ -149,39 +150,108 @@ export function RecipientFeed() {
 
 	const filtersActive = dietary.length > 0 || soonOnly;
 
+	const q = query.trim().toLowerCase();
+	const visible = q
+		? listings.filter(
+				(l) =>
+					l.title.toLowerCase().includes(q) ||
+					l.building.toLowerCase().includes(q) ||
+					(l.room ?? "").toLowerCase().includes(q) ||
+					l.campus.toLowerCase().includes(q),
+			)
+		: listings;
+
+	const chips = ["all", "soon", ...DIETARY_TAGS];
+
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-			<View className="px-5 pt-2 pb-3">
-				<Text className="font-body text-forest-600 text-xs uppercase tracking-wide">
-					Available now
-				</Text>
-				<Text className="font-display font-bold text-2xl text-gray-900">
-					Hi {profile?.name?.split(" ")[0] ?? "there"}
-				</Text>
+			{/* Header */}
+			<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
+				<View>
+					<Text className="font-display-bold text-3xl text-forest-800">
+						Discover
+					</Text>
+					<Text className="font-body text-gray-500 mt-0.5">
+						Good food. Good impact.
+					</Text>
+				</View>
+				<Pressable
+					hitSlop={8}
+					className="mt-1"
+					accessibilityRole="button"
+					accessibilityLabel="Notifications"
+				>
+					<Ionicons name="notifications-outline" size={24} color="#1B4332" />
+				</Pressable>
 			</View>
 
-			{/* Filters */}
+			{/* Search */}
+			<View className="px-5 pb-3">
+				<View className="flex-row items-center bg-white border border-gray-200 rounded-full px-4 py-2.5">
+					<Ionicons name="search" size={18} color="#9CA3AF" />
+					<TextInput
+						className="flex-1 font-body text-base text-gray-900 ml-2"
+						placeholder="Search food, meals, or locations"
+						placeholderTextColor="#9CA3AF"
+						value={query}
+						onChangeText={setQuery}
+						autoCapitalize="none"
+						returnKeyType="search"
+					/>
+					{query ? (
+						<Pressable
+							onPress={() => setQuery("")}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="Clear search"
+						>
+							<Ionicons name="close-circle" size={18} color="#9CA3AF" />
+						</Pressable>
+					) : (
+						<Ionicons name="options-outline" size={18} color="#9CA3AF" />
+					)}
+				</View>
+			</View>
+
+			{/* Filter chips */}
 			<View className="px-5 pb-3">
 				<FlatList
 					horizontal
-					data={["soon", ...DIETARY_TAGS]}
+					data={chips}
 					keyExtractor={(item) => item}
 					showsHorizontalScrollIndicator={false}
 					contentContainerStyle={{ gap: 8 }}
 					renderItem={({ item }) => {
+						const isAll = item === "all";
 						const isSoon = item === "soon";
-						const on = isSoon ? soonOnly : dietary.includes(item);
+						const on = isAll
+							? !filtersActive
+							: isSoon
+								? soonOnly
+								: dietary.includes(item);
+						const label = isAll
+							? "All"
+							: isSoon
+								? "Expiring soon"
+								: item;
 						return (
 							<Pressable
-								onPress={() =>
-									isSoon ? setSoonOnly((v) => !v) : toggleDietary(item)
-								}
-								className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-700 border-forest-700" : "bg-white border-gray-300"}`}
+								onPress={() => {
+									if (isAll) {
+										setDietary([]);
+										setSoonOnly(false);
+									} else if (isSoon) {
+										setSoonOnly((v) => !v);
+									} else {
+										toggleDietary(item);
+									}
+								}}
+								className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
 							>
 								<Text
-									className={`font-body text-sm capitalize ${on ? "text-white" : "text-gray-700"}`}
+									className={`font-body-medium text-sm capitalize ${on ? "text-white" : "text-gray-600"}`}
 								>
-									{isSoon ? "⏱ Expiring soon" : item}
+									{label}
 								</Text>
 							</Pressable>
 						);
@@ -191,14 +261,16 @@ export function RecipientFeed() {
 
 			{error ? (
 				<View className="flex-1 items-center justify-center px-8">
-					<Text className="font-body text-gray-600 text-center mb-4">{error}</Text>
+					<Text className="font-body text-gray-600 text-center mb-4">
+						{error}
+					</Text>
 					<Button variant="outline" onPress={() => void load()}>
 						Try again
 					</Button>
 				</View>
 			) : (
 				<FlatList
-					data={listings}
+					data={visible}
 					keyExtractor={(item) => item.id}
 					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 					showsVerticalScrollIndicator={false}
@@ -214,24 +286,31 @@ export function RecipientFeed() {
 							</View>
 						) : null
 					}
-					renderItem={({ item }) => (
+					renderItem={({ item, index }) => (
 						<ListingCard
 							listing={item}
 							now={now}
+							featured={index === 0 && !q}
 							onPress={() => router.push(`/listing/${item.id}`)}
 						/>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">
-							<Text className="font-display font-bold text-xl text-gray-900 text-center">
-								{filtersActive ? "Nothing matches those filters" : "Nothing available right now"}
+							<Text className="font-display-bold text-xl text-gray-900 text-center">
+								{q
+									? `No matches for "${query.trim()}"`
+									: filtersActive
+										? "Nothing matches those filters"
+										: "Nothing available right now"}
 							</Text>
 							<Text className="font-body text-gray-500 text-center mt-2">
-								{filtersActive
-									? "Try clearing a filter to see more."
-									: "Food gets posted throughout the day — check back soon."}
+								{q
+									? "Try a different search."
+									: filtersActive
+										? "Try clearing a filter to see more."
+										: "Food gets posted throughout the day — check back soon."}
 							</Text>
-							{filtersActive && (
+							{filtersActive && !q && (
 								<View className="mt-6">
 									<Button
 										variant="outline"
