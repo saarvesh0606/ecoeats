@@ -145,6 +145,13 @@ async def load_claim_for_update(
         )
     ).one()
 
+    # Re-read the claim now that the listing is locked. Resolutions serialise on
+    # the listing lock, so the status read before the lock can be stale: two
+    # concurrent no-shows could both have read `pending` and each refund. After
+    # the lock, the loser sees the winner's committed status and the guard in
+    # resolve_claim rejects it.
+    await db.refresh(claim)
+
     return claim, listing
 
 
