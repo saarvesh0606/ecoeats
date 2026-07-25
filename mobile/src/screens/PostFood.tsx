@@ -127,8 +127,11 @@ export function PostFood() {
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
 			>
 				<View className="px-5 pt-2 pb-3">
-					<Text className="font-display font-bold text-2xl text-gray-900">
-						Post food
+					<Text className="font-display-bold text-3xl text-forest-800">
+						Create a Post
+					</Text>
+					<Text className="font-body text-gray-500 mt-0.5">
+						Share surplus food with the ASU community.
 					</Text>
 				</View>
 
@@ -139,7 +142,7 @@ export function PostFood() {
 					showsVerticalScrollIndicator={false}
 				>
 					{/* Photos */}
-					<Text className="font-body font-medium text-gray-700 mb-2">Photos</Text>
+					<Text className="font-body-semibold text-gray-900 mb-2">Photos</Text>
 					<View className="flex-row flex-wrap gap-2 mb-4">
 						{photos.map((url) => (
 							<Image
@@ -171,7 +174,7 @@ export function PostFood() {
 					{/* Description with voice */}
 					<View className="mb-4">
 						<View className="flex-row items-center justify-between mb-1">
-							<Text className="text-sm font-body font-medium text-gray-700">
+							<Text className="font-body-semibold text-gray-900">
 								Description
 							</Text>
 							{speech.supported && (
@@ -218,7 +221,7 @@ export function PostFood() {
 					/>
 
 					{/* Dietary tags */}
-					<Text className="font-body font-medium text-gray-700 mb-2">
+					<Text className="font-body-semibold text-gray-900 mb-2">
 						Dietary tags
 					</Text>
 					<View className="flex-row flex-wrap gap-2 mb-4">
@@ -228,7 +231,7 @@ export function PostFood() {
 								<Pressable
 									key={tag}
 									onPress={() => toggleTag(tag)}
-									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-700 border-forest-700" : "bg-white border-gray-300"}`}
+									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm capitalize ${on ? "text-white" : "text-gray-700"}`}
@@ -249,7 +252,7 @@ export function PostFood() {
 					/>
 
 					{/* Expiry */}
-					<Text className="font-body font-medium text-gray-700 mb-2">
+					<Text className="font-body-semibold text-gray-900 mb-2">
 						Available for
 					</Text>
 					<View className="flex-row gap-2 mb-4">
@@ -259,7 +262,7 @@ export function PostFood() {
 								<Pressable
 									key={mins}
 									onPress={() => setExpiry(mins)}
-									className={`flex-1 rounded-btn py-2.5 items-center border ${on ? "bg-forest-700 border-forest-700" : "bg-white border-gray-300"}`}
+									className={`flex-1 rounded-btn py-2.5 items-center border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm font-semibold ${on ? "text-white" : "text-gray-700"}`}
@@ -272,7 +275,7 @@ export function PostFood() {
 					</View>
 
 					{/* Campus */}
-					<Text className="font-body font-medium text-gray-700 mb-2">Campus</Text>
+					<Text className="font-body-semibold text-gray-900 mb-2">Campus</Text>
 					<View className="flex-row flex-wrap gap-2 mb-4">
 						{Object.keys(CAMPUSES).map((name) => {
 							const on = campus === name;
@@ -280,7 +283,7 @@ export function PostFood() {
 								<Pressable
 									key={name}
 									onPress={() => setCampus(name)}
-									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-700 border-forest-700" : "bg-white border-gray-300"}`}
+									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm ${on ? "text-white" : "text-gray-700"}`}
@@ -316,7 +319,7 @@ export function PostFood() {
 					)}
 
 					<Button onPress={onSubmit} loading={submitting} size="lg">
-						Post food
+						Publish Post
 					</Button>
 				</ScrollView>
 			</KeyboardAvoidingView>
