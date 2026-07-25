@@ -23,11 +23,7 @@ import {
 	signOut as fbSignOut,
 	watchAuth,
 } from "@/lib/firebase";
-import {
-	fetchProfile,
-	ProfileNotFoundError,
-	type UserProfile,
-} from "@/lib/api";
+import { fetchProfile, type UserProfile } from "@/lib/api";
 import { setDevToken } from "@/lib/session";
 
 export type AuthStatus =

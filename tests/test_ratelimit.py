@@ -18,7 +18,6 @@ from api.ratelimit import (
     build_limiter,
 )
 from tests.fake_auth import FakeTokenVerifier, bearer
-from tests.test_listings import payload
 
 # --------------------------------------------------------------------------
 # The limiter algorithm (in-memory)
@@ -172,9 +171,10 @@ async def test_health_is_never_rate_limited() -> None:
 async def test_per_user_limit_on_claiming() -> None:
     """The precise guard: one user can't spam the claim endpoint, and hitting
     the limit doesn't affect a different user."""
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
     from api.db import session_dependency
     from api.main import create_app
-    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
     settings = _rate_limited_settings(
         rate_limit_ip_requests=10_000, rate_limit_ip_window_seconds=60

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from starlette.datastructures import Headers
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 # ---------------------------------------------------------------------------
 # Core

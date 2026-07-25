@@ -21,6 +21,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "httpx>=0.28",
+    "ruff>=0.16",
 ]
 
 [build-system]
@@ -29,6 +30,22 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["api*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+# Alembic writes the revision files under versions/; they are generated, not
+# hand-maintained, so hold env.py to the standard but not these.
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+# A meaningful, low-noise set: pycodestyle errors (E), pyflakes (F, catches
+# unused imports and undefined names), import sorting (I), pyupgrade (UP),
+# bugbear (B, real bug patterns), and comprehension checks (C4). Deliberately
+# no SIM — its "combine nested with-statements" would flatten the test setup
+# that is nested on purpose for readability. Formatting is not enforced here;
+# the code is hand-formatted and `ruff format` would reflow it wholesale.
+select = ["E", "F", "I", "UP", "B", "C4"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

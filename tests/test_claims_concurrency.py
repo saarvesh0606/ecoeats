@@ -17,7 +17,7 @@ from typing import Any
 
 from httpx import AsyncClient
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from api.models import Claim, Listing
 from api.models.enums import ClaimStatus, ListingStatus

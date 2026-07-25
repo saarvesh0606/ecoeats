@@ -8,11 +8,10 @@ import asyncio
 import os
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from api.events import InMemoryEventBus, ListingEvent, RedisEventBus
 from tests.conftest import Account
-from tests.fake_auth import FakeTokenVerifier
 from tests.test_listings import post_listing
 
 SAMPLE = ListingEvent(

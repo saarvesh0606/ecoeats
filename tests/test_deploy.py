@@ -13,15 +13,15 @@ FIREBASE_JSON_PATH = "secrets/firebase-service-account.json"
 
 
 def _prod_settings(**overrides) -> Settings:
-    base = dict(
-        database_url="postgresql+asyncpg://ecoeats:ecoeats@localhost:5432/ecoeats_test",
-        app_env="production",
-        firebase_project_id="ecoeats-f09a8",
-        firebase_credentials_path=FIREBASE_JSON_PATH,
-        dev_auth_bypass=False,
-        redis_url="redis://localhost:6379/1",
-        scheduler_enabled=False,
-    )
+    base = {
+        "database_url": "postgresql+asyncpg://ecoeats:ecoeats@localhost:5432/ecoeats_test",
+        "app_env": "production",
+        "firebase_project_id": "ecoeats-f09a8",
+        "firebase_credentials_path": FIREBASE_JSON_PATH,
+        "dev_auth_bypass": False,
+        "redis_url": "redis://localhost:6379/1",
+        "scheduler_enabled": False,
+    }
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]
 

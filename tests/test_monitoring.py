@@ -6,7 +6,7 @@ from api.monitoring import capture_exception, init_sentry
 
 
 def _settings(**overrides) -> Settings:
-    base = dict(database_url="postgresql://x/y")
+    base = {"database_url": "postgresql://x/y"}
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]
 

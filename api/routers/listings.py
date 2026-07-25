@@ -212,7 +212,7 @@ async def stream(request: Request) -> StreamingResponse:
                     break
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=20)
-                except (TimeoutError, asyncio.TimeoutError):
+                except TimeoutError:
                     yield ": keepalive\n\n"  # heartbeat keeps idle links open
                     continue
                 yield f"data: {event.to_json()}\n\n"
@@ -306,7 +306,9 @@ async def update(
     _assert_owner(listing, user.id)
     rules.assert_editable(listing)
 
-    fields = body.model_dump(exclude_unset=True, exclude={"location", "status", "quantity_total"})
+    fields = body.model_dump(
+        exclude_unset=True, exclude={"location", "status", "quantity_total"}
+    )
     for field, value in fields.items():
         setattr(listing, field, value)
 

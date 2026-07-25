@@ -40,6 +40,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: python -m ruff check .
       # A few tests construct a Firebase verifier (which only loads a cert
       # locally, no Google call). Give them a throwaway, structurally-valid one
       # so the real secret is never needed in CI.
@@ -62,4 +64,6 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package-lock.json
       - run: npm install --legacy-peer-deps
+      - name: Lint (biome)
+        run: npm run lint
       - run: npx jest --ci

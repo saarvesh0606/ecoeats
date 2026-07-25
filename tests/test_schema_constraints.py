@@ -14,7 +14,6 @@ from api.models import Claim, ListingPhoto
 from api.models.enums import ClaimStatus, ListingStatus, UserRole
 from tests.factories import make_claim, make_listing, make_photo, make_user
 
-
 # --------------------------------------------------------------------------
 # Inventory
 # --------------------------------------------------------------------------

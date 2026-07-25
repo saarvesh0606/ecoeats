@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models import Claim, Listing
-from api.models.enums import ClaimStatus, ListingStatus
+from api.models.enums import ListingStatus
 from tests.conftest import Account
 from tests.test_listings import post_listing
 
