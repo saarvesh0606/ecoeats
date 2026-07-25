@@ -36,7 +36,7 @@ export async function subscribeToListings(
 	onEvent: (event: ListingStreamEvent) => void,
 ): Promise<() => void> {
 	const token = await currentBearerToken();
-	const base = `${config.apiUrl}/listings/stream`;
+	const base = `${config.apiBase}/listings/stream`;
 
 	// Web: native EventSource, token in the query string.
 	const WebEventSource = (globalThis as { EventSource?: typeof EventSource })

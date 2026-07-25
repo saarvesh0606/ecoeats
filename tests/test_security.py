@@ -7,7 +7,8 @@ from api.main import create_app
 
 
 async def test_responses_carry_hardening_headers(client: AsyncClient) -> None:
-    response = await client.get("/health")
+    # Unversioned ops path — absolute URL bypasses the client's /api/v1 base.
+    response = await client.get("http://test/health")
 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
@@ -18,13 +19,13 @@ async def test_responses_carry_hardening_headers(client: AsyncClient) -> None:
 async def test_hsts_is_absent_outside_production(client: AsyncClient) -> None:
     """HSTS over local HTTP would pin the browser to HTTPS for a host that
     doesn't serve it."""
-    response = await client.get("/health")
+    response = await client.get("http://test/health")
     assert "strict-transport-security" not in response.headers
 
 
 async def test_docs_are_served_in_development(client: AsyncClient) -> None:
-    assert (await client.get("/docs")).status_code == 200
-    assert (await client.get("/openapi.json")).status_code == 200
+    assert (await client.get("http://test/docs")).status_code == 200
+    assert (await client.get("http://test/openapi.json")).status_code == 200
 
 
 def _production_app(test_database_url: str):

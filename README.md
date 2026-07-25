@@ -36,6 +36,12 @@ Run the API:
 - Liveness — http://localhost:8000/health
 - Readiness (checks Postgres) — http://localhost:8000/health/ready
 
+Business endpoints are versioned under `/api/v1` (e.g.
+`http://localhost:8000/api/v1/listings`). Clients pin to a version so a future
+`/api/v2` can change shapes without breaking builds already in the wild.
+`/health`, `/health/ready`, and `/docs` stay unversioned — orchestrators and
+health checks depend on those paths being stable.
+
 ## Authentication
 
 Firebase Auth, email/password with mandatory verification. The client signs in

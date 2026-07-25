@@ -87,7 +87,7 @@ async def test_dev_login_reaches_a_real_profile_end_to_end() -> None:
     headers = {"Authorization": "Bearer dev:e2e-organizer"}
 
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test/api/v1"
     ) as client:
         async with app.router.lifespan_context(app):
             # No profile yet.

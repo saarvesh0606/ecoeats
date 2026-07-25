@@ -198,7 +198,7 @@ async def test_per_user_limit_on_claiming() -> None:
         app.dependency_overrides[session_dependency] = _override
 
         async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test/api/v1"
         ) as client:
             async with app.router.lifespan_context(app):
                 # Register a recipient and spam claims at a non-existent listing.

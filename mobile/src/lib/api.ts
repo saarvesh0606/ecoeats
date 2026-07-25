@@ -46,7 +46,7 @@ async function request<T>(
 ): Promise<T> {
 	let response: Response;
 	try {
-		response = await fetch(`${config.apiUrl}${path}`, {
+		response = await fetch(`${config.apiBase}${path}`, {
 			method,
 			headers: {
 				"Content-Type": "application/json",

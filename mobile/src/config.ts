@@ -14,8 +14,20 @@ function required(name: string, value: string | undefined): string {
 	return value;
 }
 
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+
+/**
+ * API version this build targets. Pinning to a version means a future
+ * `/api/v2` can evolve on the server without breaking builds already in the
+ * wild — they keep talking to `/api/v1`. Mirrors API_V1_PREFIX on the backend.
+ */
+export const API_VERSION = "v1";
+
 export const config = {
-	apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000",
+	/** Server origin (host only). Used for anything unversioned. */
+	apiUrl,
+	/** Versioned base for all business API calls: `<host>/api/v1`. */
+	apiBase: `${apiUrl}/api/${API_VERSION}`,
 	firebase: {
 		apiKey: required(
 			"EXPO_PUBLIC_FIREBASE_API_KEY",

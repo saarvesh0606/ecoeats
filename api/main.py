@@ -3,7 +3,7 @@
 import asyncio
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -23,6 +23,12 @@ from api.routers import (
     users_router,
 )
 from api.services.scheduler import sweep_forever
+
+#: Version prefix for the business API. Clients pin to a version, so a future
+#: ``/api/v2`` can change shapes while builds already on phones keep working on
+#: ``/api/v1``. Ops endpoints (``/health``, docs) stay unversioned on purpose —
+#: orchestrators and health checks depend on those paths being stable.
+API_V1_PREFIX = "/api/v1"
 
 
 @asynccontextmanager
@@ -188,10 +194,13 @@ def create_app(
             await session.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
 
-    app.include_router(users_router)
-    app.include_router(listings_router)
-    app.include_router(claims_router)
-    app.include_router(uploads_router)
+    # Business routes live under /api/v1; health and docs stay unversioned.
+    v1 = APIRouter(prefix=API_V1_PREFIX)
+    v1.include_router(users_router)
+    v1.include_router(listings_router)
+    v1.include_router(claims_router)
+    v1.include_router(uploads_router)
+    app.include_router(v1)
 
     return app
 

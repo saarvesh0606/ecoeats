@@ -182,10 +182,15 @@ async def client(app) -> AsyncIterator[AsyncClient]:
 
     Requests run against the same rolled-back session as the ``db`` fixture, so
     a test can set up rows directly and then exercise them over HTTP.
+
+    The base URL is pinned to the versioned API (``/api/v1``), so a relative
+    path like ``/claims`` hits ``/api/v1/claims``. Unversioned ops endpoints
+    (``/health``, ``/docs``) must be requested with an absolute URL — see the
+    ops-focused suites for examples.
     """
     async with AsyncClient(
         transport=ASGITransport(app=app),
-        base_url="http://test",
+        base_url="http://test/api/v1",
     ) as ac:
         async with app.router.lifespan_context(app):
             yield ac
@@ -209,7 +214,7 @@ async def live_client(
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
-        base_url="http://test",
+        base_url="http://test/api/v1",
     ) as ac:
         async with app.router.lifespan_context(app):
             try:

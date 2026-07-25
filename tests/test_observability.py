@@ -110,19 +110,22 @@ def test_console_formatter_is_readable() -> None:
 
 
 async def test_every_response_carries_a_request_id(client: AsyncClient) -> None:
-    response = await client.get("/health")
+    # Unversioned ops path — absolute URL bypasses the client's /api/v1 base.
+    response = await client.get("http://test/health")
     assert response.headers.get("x-request-id")
 
 
 async def test_inbound_request_id_is_threaded_through(client: AsyncClient) -> None:
     """A gateway or client can supply the id so a trace spans the whole system."""
-    response = await client.get("/health", headers={"X-Request-ID": "trace-xyz"})
+    response = await client.get(
+        "http://test/health", headers={"X-Request-ID": "trace-xyz"}
+    )
     assert response.headers["x-request-id"] == "trace-xyz"
 
 
 async def test_each_request_gets_a_distinct_id(client: AsyncClient) -> None:
-    a = await client.get("/health")
-    b = await client.get("/health")
+    a = await client.get("http://test/health")
+    b = await client.get("http://test/health")
     assert a.headers["x-request-id"] != b.headers["x-request-id"]
 
 
@@ -134,7 +137,7 @@ async def test_each_request_gets_a_distinct_id(client: AsyncClient) -> None:
 async def test_requests_are_access_logged_with_timing(
     client: AsyncClient, access_logs: list[logging.LogRecord]
 ) -> None:
-    await client.get("/nope")
+    await client.get("http://test/nope")
 
     assert access_logs, "expected an access log record"
     record = access_logs[-1]
@@ -148,8 +151,8 @@ async def test_health_checks_are_not_access_logged(
     client: AsyncClient, access_logs: list[logging.LogRecord]
 ) -> None:
     """They fire constantly; logging each would bury real traffic."""
-    await client.get("/health")
-    await client.get("/health/ready")
+    await client.get("http://test/health")
+    await client.get("http://test/health/ready")
     assert access_logs == []
 
 
