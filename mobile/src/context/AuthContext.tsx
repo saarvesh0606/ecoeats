@@ -24,7 +24,7 @@ import {
 	watchAuth,
 } from "@/lib/firebase";
 import { fetchProfile, type UserProfile } from "@/lib/api";
-import { setDevToken } from "@/lib/session";
+import { getDevToken, setDevToken } from "@/lib/session";
 
 export type AuthStatus =
 	| "loading" // still resolving Firebase + profile
@@ -57,8 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	// While a dev session is active, Firebase auth changes are ignored so they
 	// can't knock the user back to signed-out. A ref because the watchAuth
-	// callback closes over it and must see the current value.
-	const devActive = useRef(false);
+	// callback closes over it and must see the current value. Seeded from the
+	// persisted dev token so a page reload restores the dev session instead of
+	// racing Firebase to "signed-out".
+	const devActive = useRef(getDevToken() !== null);
 
 	/** Fetch the profile for an already-verified identity. */
 	const resolveProfile = useCallback(async () => {
@@ -92,6 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		},
 		[resolveProfile],
 	);
+
+	useEffect(() => {
+		// A persisted dev token means a reload landed mid-session: restore it
+		// straight away rather than waiting for (and being overridden by) the
+		// Firebase listener, which would otherwise resolve to signed-out.
+		if (getDevToken()) {
+			void resolveProfile();
+		}
+	}, [resolveProfile]);
 
 	useEffect(() => {
 		return watchAuth((user) => {
