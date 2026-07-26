@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +40,7 @@ export function OrganizerHome() {
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [impact, setImpact] = useState<HostImpact | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(false);
 	const [tab, setTab] = useState<Tab>("active");
 	const [publishing, setPublishing] = useState<string | null>(null);
 
@@ -55,22 +56,49 @@ export function OrganizerHome() {
 
 	const load = useCallback(async () => {
 		try {
+			setError(false);
 			const [posts, stats] = await Promise.all([
 				fetchMyListings(),
 				fetchImpact(),
 			]);
 			setListings(posts);
 			setImpact(stats);
+		} catch {
+			// Don't let a transient failure (e.g. a lapsed session) throw as an
+			// uncaught error and drop the whole app into the red overlay. Show a
+			// quiet retry instead.
+			setError(true);
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-	useEffect(() => {
-		void load();
-	}, [load]);
+	// Reload whenever the dashboard regains focus, so a post created or published
+	// on another screen shows up on return without a manual refresh.
+	useFocusEffect(
+		useCallback(() => {
+			void load();
+		}, [load]),
+	);
 
 	if (loading) return <Spinner className="flex-1 bg-cream" />;
+
+	if (error) {
+		return (
+			<SafeAreaView
+				className="flex-1 bg-cream items-center justify-center px-8"
+				edges={["top"]}
+			>
+				<Text className="font-display-bold text-lg text-gray-900 text-center">
+					Couldn't load your dashboard
+				</Text>
+				<Text className="font-body text-gray-500 text-center mt-2 mb-5">
+					Check your connection and try again.
+				</Text>
+				<Button onPress={() => void load()}>Retry</Button>
+			</SafeAreaView>
+		);
+	}
 
 	const firstName = profile?.name?.split(" ")[0] ?? "Sun Devil";
 
