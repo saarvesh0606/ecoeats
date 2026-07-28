@@ -33,6 +33,8 @@ services:
         value: "1" # 512MB free instance — one worker keeps memory in budget
       - key: DB_STATEMENT_CACHE
         value: "false" # Neon's pooler is transaction-mode
+      - key: DB_SSL
+        value: "true" # managed Postgres requires TLS
       # --- secrets (set in the Render dashboard; never committed) ---
       - key: DATABASE_URL
         sync: false # Neon POOLED connection string (host contains -pooler)

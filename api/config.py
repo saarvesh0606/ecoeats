@@ -8,11 +8,30 @@ request path.
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 ASYNC_DRIVER = "postgresql+asyncpg://"
+
+# libpq/psycopg connection options that managed Postgres (Neon, Supabase) put in
+# their URLs but asyncpg rejects as keyword arguments. SSL is turned on out of
+# band via DB_SSL instead, so these are simply dropped.
+_DROP_QUERY_KEYS = frozenset({"sslmode", "channel_binding", "ssl"})
+
+
+def _strip_incompatible_query(url: str) -> str:
+    """Remove query params asyncpg can't accept, keeping any others intact."""
+    parts = urlsplit(url)
+    if not parts.query:
+        return url
+    kept = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in _DROP_QUERY_KEYS
+    ]
+    return urlunsplit(parts._replace(query=urlencode(kept)))
 
 
 class Settings(BaseSettings):
@@ -33,6 +52,9 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_statement_cache: bool = True
+    # Managed Postgres requires TLS. On for production (set DB_SSL=true); off for
+    # the local Docker database, which speaks plaintext on the loopback.
+    db_ssl: bool = False
 
     app_env: str = "development"
 
@@ -100,18 +122,24 @@ class Settings(BaseSettings):
 
     @field_validator("database_url")
     @classmethod
-    def _use_async_driver(cls, value: str) -> str:
-        """Accept a plain postgres:// URL and point it at the asyncpg driver."""
-        for prefix in ("postgresql+asyncpg://", ):
-            if value.startswith(prefix):
-                return value
-        for prefix in ("postgresql://", "postgres://"):
-            if value.startswith(prefix):
-                return ASYNC_DRIVER + value[len(prefix):]
-        raise ValueError(
-            "DATABASE_URL must be a PostgreSQL connection string, "
-            f"got: {value[:32]!r}"
-        )
+    def _normalise_database_url(cls, value: str) -> str:
+        """Point the URL at the asyncpg driver and drop params it can't take.
+
+        Runs for every reader of the URL — the app engine and Alembic both use
+        ``settings.database_url`` — so a Neon/Supabase URL (with the async
+        driver and an ``?sslmode=require`` asyncpg would choke on) is made
+        connectable in exactly one place.
+        """
+        if value.startswith(ASYNC_DRIVER):
+            url = value
+        elif value.startswith(("postgresql://", "postgres://")):
+            url = ASYNC_DRIVER + value.split("://", 1)[1]
+        else:
+            raise ValueError(
+                "DATABASE_URL must be a PostgreSQL connection string, "
+                f"got: {value[:32]!r}"
+            )
+        return _strip_incompatible_query(url)
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

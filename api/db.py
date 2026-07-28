@@ -24,20 +24,32 @@ class Base(AsyncAttrs, DeclarativeBase):
     """
 
 
-def create_engine(settings: Settings) -> AsyncEngine:
+def build_connect_args(settings: Settings) -> dict[str, object]:
+    """asyncpg connect args shared by the app engine and the Alembic engine.
+
+    Kept in one place so a migration and a request connect to a managed database
+    the same way — same TLS, same prepared-statement policy.
+    """
     connect_args: dict[str, object] = {}
     if not settings.db_statement_cache:
         # Required behind a transaction-mode pooler: each query may land on a
         # different backend, so a prepared-statement cache would miss or error.
         connect_args["statement_cache_size"] = 0
+    if settings.db_ssl:
+        # asyncpg's own TLS (the URL's sslmode= is stripped in config, since
+        # asyncpg rejects that keyword). True uses a cert-verifying context.
+        connect_args["ssl"] = True
+    return connect_args
 
+
+def create_engine(settings: Settings) -> AsyncEngine:
     return create_async_engine(
         settings.database_url,
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
         pool_pre_ping=True,  # recycle connections a pooler/DB closed under us
         echo=False,
-        connect_args=connect_args,
+        connect_args=build_connect_args(settings),
     )
 
 

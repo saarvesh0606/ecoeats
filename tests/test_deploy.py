@@ -6,7 +6,7 @@ import pytest
 
 from api.auth.firebase import FirebaseTokenVerifier
 from api.config import Settings
-from api.db import create_engine
+from api.db import build_connect_args, create_engine
 from api.main import create_app
 
 FIREBASE_JSON_PATH = "secrets/firebase-service-account.json"
@@ -94,6 +94,39 @@ def test_engine_builds_with_pooler_settings() -> None:
     )
     engine = create_engine(settings)
     assert engine.pool.size() == 3
+
+
+def test_database_url_strips_asyncpg_incompatible_params() -> None:
+    """A managed-Postgres URL (async driver + libpq ssl params asyncpg rejects)
+    is normalised to something asyncpg can actually connect with."""
+    settings = Settings(
+        database_url=(
+            "postgresql://u:p@ep-cool-pooler.us-east-2.aws.neon.tech/neondb"
+            "?sslmode=require&channel_binding=require"
+        ),
+    )
+    assert settings.database_url == (
+        "postgresql+asyncpg://u:p@ep-cool-pooler.us-east-2.aws.neon.tech/neondb"
+    )
+
+
+def test_database_url_keeps_unrelated_query_params() -> None:
+    settings = Settings(
+        database_url="postgresql://u:p@host:5432/db?application_name=ecoeats&sslmode=require",
+    )
+    assert settings.database_url == (
+        "postgresql+asyncpg://u:p@host:5432/db?application_name=ecoeats"
+    )
+
+
+def test_connect_args_ssl_and_statement_cache() -> None:
+    prod = build_connect_args(
+        Settings(database_url="postgresql://x/y", db_ssl=True, db_statement_cache=False)
+    )
+    assert prod == {"ssl": True, "statement_cache_size": 0}
+
+    local = build_connect_args(Settings(database_url="postgresql://x/y"))
+    assert local == {}
 
 
 def test_json_credentials_win_over_a_bad_path() -> None:

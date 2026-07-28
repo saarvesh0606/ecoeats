@@ -16,6 +16,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from api.config import Settings, get_settings
+from api.db import build_connect_args
 
 # Importing the models package registers every table on Base.metadata.
 # Without it autogenerate would produce an empty migration.
@@ -75,6 +76,9 @@ async def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # Same TLS / prepared-statement policy the app uses, so migrating against
+        # a managed pooler (Neon, Supabase) connects rather than erroring.
+        connect_args=build_connect_args(get_settings()),
     )
     async with engine.connect() as connection:
         await connection.run_sync(_run_migrations)
