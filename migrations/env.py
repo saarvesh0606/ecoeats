@@ -34,13 +34,24 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def _database_url() -> str:
+def _settings() -> Settings:
+    """Settings whose database_url is where migrations should run.
+
+    ALEMBIC_DATABASE_URL overrides it — that is how the test suite points
+    migrations at ecoeats_test. Building Settings from the override (rather than
+    get_settings()) matters because in that context there is no DATABASE_URL in
+    the environment, so get_settings() would raise a missing-field error.
+    """
     override = os.getenv("ALEMBIC_DATABASE_URL")
     if override:
-        # Reuse the settings validator so the driver prefix is normalised
-        # the same way it is everywhere else.
-        return Settings(database_url=override).database_url
-    return get_settings().database_url
+        return Settings(database_url=override)
+    return get_settings()
+
+
+def _database_url() -> str:
+    # Reuse the settings validator so the driver prefix is normalised the same
+    # way it is everywhere else.
+    return _settings().database_url
 
 
 # configparser treats % as interpolation syntax; passwords often contain it.
@@ -78,7 +89,7 @@ async def run_migrations_online() -> None:
         poolclass=pool.NullPool,
         # Same TLS / prepared-statement policy the app uses, so migrating against
         # a managed pooler (Neon, Supabase) connects rather than erroring.
-        connect_args=build_connect_args(get_settings()),
+        connect_args=build_connect_args(_settings()),
     )
     async with engine.connect() as connection:
         await connection.run_sync(_run_migrations)
