@@ -1,8 +1,16 @@
 # Deploying the EcoEats API
 
-The API ships as a Docker image (see `Dockerfile`). This guide uses **Fly.io**
-for hosting, **Neon** for Postgres, and **Upstash** for Redis — all have free
-tiers and no server to manage. Railway works too; the container is the same.
+The API ships as a Docker image (see `Dockerfile`). It needs **Postgres** and
+**Redis**; we use **Neon** and **Upstash** (both free, no card). For hosting,
+**Render** (free, no card, `render.yaml` Blueprint) is the default — see
+[§3a](#3a--deploy-to-render-no-card). **Fly.io** (needs a card) is also
+documented in [§3b](#3b--deploy-to-fly). The container is identical either way.
+
+> **Env var names** (these are what `api/config.py` actually reads):
+> `DATABASE_URL`, `REDIS_URL`, `APP_ENV=production`, `ALLOWED_ORIGINS`
+> (comma-separated — **not** `CORS_ORIGINS`), `FIREBASE_PROJECT_ID`,
+> `FIREBASE_CREDENTIALS_JSON`, `CLOUDINARY_*`, `DB_STATEMENT_CACHE=false`.
+> There is **no `AUTH_SECRET`** — the app doesn't use one.
 
 ## What you need
 
@@ -29,7 +37,32 @@ tiers and no server to manage. Railway works too; the container is the same.
    start without it, because rate limiting and real-time events must be shared
    across instances, not held per-process.
 
-## 3 · Deploy to Fly
+## 3a · Deploy to Render (no card)
+
+`render.yaml` in the repo root is a Blueprint that defines one free Docker web
+service. Migrations run at container start (`alembic upgrade head && uvicorn …`)
+because Render's free tier has no pre-deploy hook; the free service is a single
+instance, so that's safe.
+
+1. Push `render.yaml` to `main` (already committed).
+2. In the [Render dashboard](https://dashboard.render.com) → **New +** →
+   **Blueprint**, connect the `saarvesh0606/ecoeats` repo. Render reads
+   `render.yaml` and creates the `ecoeats-api` service.
+3. It prompts for every `sync: false` env var. Paste:
+   - `DATABASE_URL` — the Neon **pooled** string
+   - `REDIS_URL` — the Upstash `rediss://` URL
+   - `FIREBASE_PROJECT_ID` — `ecoeats-f09a8`
+   - `FIREBASE_CREDENTIALS_JSON` — the entire contents of
+     `secrets/firebase-service-account.json` (paste the JSON inline)
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - `ALLOWED_ORIGINS` — optional; set once a web client is deployed
+4. **Apply** → Render builds the image, runs the migrations, and starts the
+   service at `https://ecoeats-api.onrender.com` (name may vary).
+
+> Free services **spin down after ~15 min idle**; the next request cold-starts
+> in ~30–60s. Fine for a demo. `/health` is the liveness check Render polls.
+
+## 3b · Deploy to Fly (needs a card)
 
 ```bash
 fly launch --no-deploy      # reads fly.toml; pick an app name/region
@@ -41,13 +74,12 @@ Set the secrets (never commit these):
 fly secrets set \
   DATABASE_URL="postgresql://…-pooler…/neondb" \
   REDIS_URL="rediss://…upstash.io:6379" \
-  AUTH_SECRET="$(openssl rand -hex 32)" \
   FIREBASE_PROJECT_ID="ecoeats-f09a8" \
   FIREBASE_CREDENTIALS_JSON="$(cat secrets/firebase-service-account.json)" \
   CLOUDINARY_CLOUD_NAME="…" \
   CLOUDINARY_API_KEY="…" \
   CLOUDINARY_API_SECRET="…" \
-  CORS_ORIGINS="https://your-app-domain,ecoeats://"
+  ALLOWED_ORIGINS="https://your-app-domain,ecoeats://"
 ```
 
 > In a container there's no service-account *file*, so Firebase credentials are

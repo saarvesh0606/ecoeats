@@ -1,0 +1,55 @@
+# Render Blueprint for the EcoEats API.
+#
+# Deploys the Docker image (see Dockerfile) as a single free web service.
+# Postgres (Neon) and Redis (Upstash) are external — their URLs, plus the
+# Firebase and Cloudinary secrets, are set in the Render dashboard, never here
+# (every secret below is `sync: false`, so Render prompts for it and keeps it
+# out of git).
+#
+# Render's free tier has no pre-deploy hook, so migrations run at container
+# start via dockerCommand. The free service is a single instance, so the usual
+# "don't migrate in every replica" caveat doesn't apply here.
+services:
+  - type: web
+    name: ecoeats-api
+    runtime: docker
+    branch: main
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >-
+      sh -c "alembic upgrade head &&
+      uvicorn api.main:create_app --factory
+      --host 0.0.0.0 --port $PORT
+      --workers ${WEB_CONCURRENCY:-1} --no-access-log"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # --- non-secret runtime config (committed) ---
+      - key: APP_ENV
+        value: production
+      - key: WEB_CONCURRENCY
+        value: "1" # 512MB free instance — one worker keeps memory in budget
+      - key: DB_STATEMENT_CACHE
+        value: "false" # Neon's pooler is transaction-mode
+      # --- secrets (set in the Render dashboard; never committed) ---
+      - key: DATABASE_URL
+        sync: false # Neon POOLED connection string (host contains -pooler)
+      - key: REDIS_URL
+        sync: false # Upstash rediss:// URL — required in production
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false # the whole service-account JSON, inline
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # --- optional: web origins allowed to call the API (browser CORS only) ---
+      # Defaults to localhost dev origins if unset; set once a web client is
+      # deployed. Native iOS builds don't need this (no browser CORS).
+      - key: ALLOWED_ORIGINS
+        sync: false
