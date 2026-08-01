@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import {
 	Animated,
+	Image,
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
@@ -26,6 +27,9 @@ type Mode = "signin" | "register";
 
 /** Where the form fades in from. Deliberately not 0 — see switchTo. */
 const FADE_FROM = 0.25;
+
+/** Displayed width of the ASU lockup; its 540x414 ratio sets the height. */
+const ASU_LOGO_WIDTH = 104;
 
 /**
  * One screen for both signing in and signing up, switched by a segmented
@@ -148,23 +152,18 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 			>
 				<View className="px-6 py-10">
 					{/* Brand. The ASU mark sits above EcoEats rather than replacing it:
-					    this is an ASU-only service, but the product is EcoEats.
-
-					    TODO: swap this text mark for the real wordmark once
-					    mobile/assets/asu-logo.png exists —
-					        <Image
-					          source={require("../../assets/asu-logo.png")}
-					          className="w-20 h-7 mb-3"
-					          resizeMode="contain"
-					          accessibilityLabel="Arizona State University"
-					        />
-					    It can't be written now: Metro resolves require() at build time,
-					    so pointing at a missing file fails the whole bundle. */}
+					    this is an ASU-only service, but the product is EcoEats. The
+					    lockup already contains "Arizona State University", so there is no
+					    separate wordmark line. Height is derived from the asset's own
+					    540x414 ratio so it can't stretch. */}
 					<View className="items-center mb-6">
-						<Text className="font-display-bold text-lg text-maroon">ASU</Text>
-						<Text className="font-body-medium text-[9px] text-maroon tracking-widest mt-0.5 mb-3">
-							ARIZONA STATE UNIVERSITY
-						</Text>
+						<Image
+							source={require("../../assets/asu-logo.png")}
+							style={{ width: ASU_LOGO_WIDTH, height: ASU_LOGO_WIDTH / 1.304 }}
+							resizeMode="contain"
+							accessibilityLabel="Arizona State University"
+							className="mb-4"
+						/>
 						<View className="w-14 h-14 rounded-2xl bg-forest-800 items-center justify-center">
 							<Ionicons name="leaf" size={26} color="#86d6ad" />
 						</View>
@@ -272,7 +271,13 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 								size="lg"
 								loading={googleLoading}
 								onPress={onGoogle}
-								icon={<Ionicons name="logo-google" size={18} color="#4285F4" />}
+								icon={
+									<Image
+										source={require("../../assets/google-g.png")}
+										style={{ width: 18, height: 18 }}
+										resizeMode="contain"
+									/>
+								}
 							>
 								Continue with Google
 							</Button>
