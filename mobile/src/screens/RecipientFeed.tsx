@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
+import { FadeInItem } from "@/components/ui/FadeInItem";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
@@ -296,12 +297,14 @@ export function RecipientFeed() {
 						) : null
 					}
 					renderItem={({ item, index }) => (
-						<ListingCard
-							listing={item}
-							now={now}
-							featured={index === 0 && !searching}
-							onPress={() => router.push(`/listing/${item.id}`)}
-						/>
+						<FadeInItem index={index}>
+							<ListingCard
+								listing={item}
+								now={now}
+								featured={index === 0 && !searching}
+								onPress={() => router.push(`/listing/${item.id}`)}
+							/>
+						</FadeInItem>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, Linking, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
+import { FadeInItem } from "@/components/ui/FadeInItem";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
@@ -183,12 +184,15 @@ export function MyClaims() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
-				renderItem={({ item }) => {
+				renderItem={({ item, index }) => {
 					const l = item.listing;
 					const active = item.status === "pending";
 					const cover = l?.photo_urls[0];
 					return (
-						<View className="bg-white rounded-card p-4 border border-gray-100">
+						<FadeInItem
+							index={index}
+							className="bg-white rounded-card p-4 border border-gray-100"
+						>
 							<View className="flex-row gap-3">
 								{cover ? (
 									<Image
@@ -288,7 +292,7 @@ export function MyClaims() {
 									</Text>
 								</Pressable>
 							)}
-						</View>
+						</FadeInItem>
 					);
 				}}
 				ListFooterComponent={

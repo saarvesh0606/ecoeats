@@ -5,6 +5,7 @@ import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
+import { FadeInItem } from "@/components/ui/FadeInItem";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
@@ -187,13 +188,13 @@ export function OrganizerHome() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
-				renderItem={({ item }) => {
+				renderItem={({ item, index }) => {
 					const cover = item.photo_urls[0];
 					const live = item.status === "active";
 					const prelive =
 						item.status === "draft" || item.status === "scheduled";
 					return (
-						<View>
+						<FadeInItem index={index}>
 							<PressableScale
 								onPress={() => router.push(`/manage/${item.id}`)}
 								className="bg-white rounded-card p-4 border border-gray-100"
@@ -281,7 +282,7 @@ export function OrganizerHome() {
 									</Button>
 								</View>
 							)}
-						</View>
+						</FadeInItem>
 					);
 				}}
 				ListFooterComponent={
