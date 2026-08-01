@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import {
 	Animated,
@@ -151,27 +150,23 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="px-6 py-10">
-					{/* Brand. The ASU mark sits above EcoEats rather than replacing it:
-					    this is an ASU-only service, but the product is EcoEats. The
-					    lockup already contains "Arizona State University", so there is no
-					    separate wordmark line. Height is derived from the asset's own
-					    540x414 ratio so it can't stretch. */}
-					<View className="items-center mb-6">
+					{/* Brand: the ASU lockup carries the identity on its own. It already
+					    reads "Arizona State University", so there is no separate wordmark
+					    line, and the height comes from the asset's own 540x414 ratio so
+					    the mark can't stretch. */}
+					<View className="items-center mb-7">
 						<Image
 							source={require("../../assets/asu-logo.png")}
 							style={{ width: ASU_LOGO_WIDTH, height: ASU_LOGO_WIDTH / 1.304 }}
 							resizeMode="contain"
 							accessibilityLabel="Arizona State University"
-							className="mb-4"
+							className="mb-5"
 						/>
-						<View className="w-14 h-14 rounded-2xl bg-forest-800 items-center justify-center">
-							<Ionicons name="leaf" size={26} color="#86d6ad" />
-						</View>
-						<Text className="font-display-bold text-3xl text-forest-800 mt-3">
-							EcoEats
+						<Text className="font-display-bold text-3xl text-forest-800 text-center">
+							Welcome to EcoEats
 						</Text>
-						<Text className="font-body text-gray-500 text-sm mt-1">
-							Rescue food. Feed people.
+						<Text className="font-body text-gray-500 text-sm mt-2 text-center">
+							Share more. Waste less. Impact together.
 						</Text>
 					</View>
 
