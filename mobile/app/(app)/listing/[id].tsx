@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Image, Pressable, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
@@ -11,6 +11,11 @@ import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
 import { formatLocation, formatTimeLeft } from "@/lib/format";
 import { fetchListing, type Listing } from "@/lib/listings";
+
+/** Hero photo height; the parallax range is derived from it. */
+const HERO_HEIGHT = 288;
+/** How far the claim bar travels up on entry. */
+const BAR_TRAVEL = 28;
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -49,9 +54,28 @@ export default function ListingDetail() {
 	const [loadError, setLoadError] = useState<string | null>(null);
 
 	const [claiming, setClaiming] = useState(false);
+
 	const [claimError, setClaimError] = useState<string | null>(null);
 	const [claimed, setClaimed] = useState(false);
 	const [qty, setQty] = useState(1);
+
+	// Drives the hero parallax as the page scrolls over the photo.
+	const scrollY = useRef(new Animated.Value(0)).current;
+	// Lifts the sticky claim bar into place on first render.
+	const barLift = useRef(new Animated.Value(BAR_TRAVEL)).current;
+
+	useEffect(() => {
+		Animated.spring(barLift, {
+			toValue: 0,
+			useNativeDriver: true,
+			speed: 14,
+			bounciness: 4,
+		}).start();
+		// The bar carries the primary action, so it must reach its resting place
+		// whether or not the spring runs.
+		const settle = setTimeout(() => barLift.setValue(0), 600);
+		return () => clearTimeout(settle);
+	}, [barLift]);
 
 	const load = useCallback(async () => {
 		if (!id) return;
@@ -138,18 +162,57 @@ export default function ListingDetail() {
 
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["bottom"]}>
-			<ScrollView showsVerticalScrollIndicator={false}>
-				{/* Photo with overlay controls */}
+			<Animated.ScrollView
+				showsVerticalScrollIndicator={false}
+				scrollEventThrottle={16}
+				onScroll={Animated.event(
+					[{ nativeEvent: { contentOffset: { y: scrollY } } }],
+					// JS driver: react-native-web has no native driver, and this is a
+					// single transform on one element.
+					{ useNativeDriver: false },
+				)}
+			>
+				{/* Photo with overlay controls. The image drifts and swells as the
+				    page moves over it — it stays static if the interpolation never
+				    runs, which costs nothing but the effect. */}
 				<View className="relative">
-					{cover ? (
-						<Image source={{ uri: cover }} className="w-full h-72 bg-gray-100" />
-					) : (
-						<View className="w-full h-72 bg-forest-50 items-center justify-center">
-							<Text className="font-display text-forest-300 text-2xl">
-								EcoEats
-							</Text>
-						</View>
-					)}
+					<Animated.View
+						style={{
+							transform: [
+								{
+									translateY: scrollY.interpolate({
+										inputRange: [-HERO_HEIGHT, 0, HERO_HEIGHT],
+										outputRange: [-HERO_HEIGHT / 2, 0, HERO_HEIGHT * 0.35],
+										extrapolate: "clamp",
+									}),
+								},
+								{
+									scale: scrollY.interpolate({
+										inputRange: [-HERO_HEIGHT, 0],
+										outputRange: [1.6, 1],
+										extrapolateRight: "clamp",
+									}),
+								},
+							],
+						}}
+					>
+						{cover ? (
+							<Image
+								source={{ uri: cover }}
+								className="w-full bg-gray-100"
+								style={{ height: HERO_HEIGHT }}
+							/>
+						) : (
+							<View
+								className="w-full bg-forest-50 items-center justify-center"
+								style={{ height: HERO_HEIGHT }}
+							>
+								<Text className="font-display text-forest-300 text-2xl">
+									EcoEats
+								</Text>
+							</View>
+						)}
+					</Animated.View>
 
 					<Pressable
 						onPress={() => router.back()}
@@ -263,9 +326,13 @@ export default function ListingDetail() {
 						</View>
 					</View>
 				</View>
-			</ScrollView>
+			</Animated.ScrollView>
 
-			{/* Sticky claim bar */}
+			{/* Sticky claim bar. Rises into place once, so the primary action
+			    arrives rather than appearing to have always been there. The styled
+			    box is the inner View — NativeWind doesn't process className on
+			    animated components, and fails silently when you try. */}
+			<Animated.View style={{ transform: [{ translateY: barLift }] }}>
 			<View className="px-5 py-4 border-t border-gray-100 bg-cream">
 				{claimError && (
 					<Text className="font-body text-red-500 text-sm mb-2 text-center">
@@ -313,6 +380,7 @@ export default function ListingDetail() {
 					</Text>
 				)}
 			</View>
+			</Animated.View>
 		</SafeAreaView>
 	);
 }

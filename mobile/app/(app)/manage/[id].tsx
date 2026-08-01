@@ -1,18 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-	Alert,
-	FlatList,
-	Image,
-	Platform,
-	Pressable,
-	Text,
-	View,
-} from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { type ConfirmSpec, useConfirm } from "@/components/ui/ConfirmDialog";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -46,19 +39,6 @@ const STATUS_STYLE: Record<Claim["status"], string> = {
 	cancelled: "bg-gray-100 text-gray-500",
 };
 
-/** Confirm a destructive action; native gets an Alert, web a window.confirm. */
-async function confirmAction(message: string): Promise<boolean> {
-	if (Platform.OS === "web") {
-		return typeof window !== "undefined" ? window.confirm(message) : true;
-	}
-	return new Promise((resolve) => {
-		Alert.alert("Are you sure?", message, [
-			{ text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-			{ text: "Yes", style: "destructive", onPress: () => resolve(true) },
-		]);
-	});
-}
-
 function timeAgo(iso: string, now: number): string {
 	const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
 	if (s < 60) return `${s}s ago`;
@@ -72,6 +52,7 @@ export default function ManageListing() {
 	const router = useRouter();
 	const now = useNow();
 	const toast = useToast();
+	const confirm = useConfirm();
 
 	const [listing, setListing] = useState<Listing | null>(null);
 	const [claims, setClaims] = useState<Claim[]>([]);
@@ -89,7 +70,9 @@ export default function ManageListing() {
 			setListing(l);
 			setClaims(c);
 		} catch (err) {
-			setError(err instanceof ApiError ? err.message : "Couldn't load this post.");
+			setError(
+				err instanceof ApiError ? err.message : "Couldn't load this post.",
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -102,9 +85,9 @@ export default function ManageListing() {
 	async function act(
 		key: string,
 		fn: () => Promise<unknown>,
-		opts: { confirm?: string; success?: string } = {},
+		opts: { confirm?: ConfirmSpec; success?: string } = {},
 	) {
-		if (opts.confirm && !(await confirmAction(opts.confirm))) return;
+		if (opts.confirm && !(await confirm(opts.confirm))) return;
 		setBusyId(key);
 		setError(null);
 		try {
@@ -119,13 +102,13 @@ export default function ManageListing() {
 	}
 
 	async function endPostEarly() {
-		if (
-			!(await confirmAction(
-				"End this post early? It will disappear for everyone.",
-			))
-		) {
-			return;
-		}
+		const ok = await confirm({
+			title: "End this post early?",
+			message:
+				"It disappears for everyone immediately. Anyone who already claimed a portion keeps it.",
+			confirmLabel: "End post",
+		});
+		if (!ok) return;
 		setBusyId("cancel");
 		setError(null);
 		try {
@@ -178,7 +161,10 @@ export default function ManageListing() {
 					</View>
 				)}
 				<View className="flex-1">
-					<Text className="font-display-bold text-base text-gray-900" numberOfLines={1}>
+					<Text
+						className="font-display-bold text-base text-gray-900"
+						numberOfLines={1}
+					>
 						{listing.title}
 					</Text>
 					<Text className="font-body text-gray-500 text-sm" numberOfLines={1}>
@@ -271,7 +257,9 @@ export default function ManageListing() {
 			</View>
 
 			{error && (
-				<Text className="font-body text-red-500 text-sm px-5 pb-2">{error}</Text>
+				<Text className="font-body text-red-500 text-sm px-5 pb-2">
+					{error}
+				</Text>
 			)}
 
 			<FlatList
@@ -289,8 +277,8 @@ export default function ManageListing() {
 									{item.recipient_name}
 								</Text>
 								<Text className="font-body text-gray-500 text-xs">
-									Claimed {item.quantity} serving{item.quantity > 1 ? "s" : ""} ·{" "}
-									{timeAgo(item.claimed_at, now)}
+									Claimed {item.quantity} serving{item.quantity > 1 ? "s" : ""}{" "}
+									· {timeAgo(item.claimed_at, now)}
 								</Text>
 							</View>
 							<View
@@ -326,8 +314,11 @@ export default function ManageListing() {
 										loading={busyId === `noshow-${item.id}`}
 										onPress={() =>
 											act(`noshow-${item.id}`, () => markNoShow(item.id), {
-												confirm:
-													"Mark as no-show? Their portion goes back into the pool.",
+												confirm: {
+													title: "Mark as no-show?",
+													message: `${item.recipient_name} didn't collect. Their portion goes back into the pool for someone else.`,
+													confirmLabel: "Mark no-show",
+												},
 												success: "Marked as no-show.",
 											})
 										}
@@ -342,8 +333,8 @@ export default function ManageListing() {
 				ListEmptyComponent={
 					<View className="items-center justify-center px-8 pt-8">
 						<Text className="font-body text-gray-500 text-center">
-							No claims yet. When someone reserves a portion, they'll appear here
-							so you can confirm the handoff.
+							No claims yet. When someone reserves a portion, they'll appear
+							here so you can confirm the handoff.
 						</Text>
 					</View>
 				}

@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Splash } from "@/components/ui/Splash";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -130,10 +131,12 @@ export default function RootLayout() {
 		<SafeAreaProvider>
 			<PhoneFrame>
 				<ToastProvider>
-					<AuthProvider>
-						<StatusBar style="dark" />
-						<Gate />
-					</AuthProvider>
+					<ConfirmProvider>
+						<AuthProvider>
+							<StatusBar style="dark" />
+							<Gate />
+						</AuthProvider>
+					</ConfirmProvider>
 				</ToastProvider>
 			</PhoneFrame>
 			<SplashOverlay done={minimumElapsed} />
