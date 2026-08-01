@@ -2,9 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
+import { EmptyBell } from "@/components/ui/EmptyBell";
 import { Spinner } from "@/components/ui/Spinner";
+import { SwipeableRow } from "@/components/ui/SwipeableRow";
+import { useToast } from "@/components/ui/Toast";
 import {
 	type AppNotification,
+	deleteNotification,
 	fetchNotifications,
 	markNotificationsRead,
 } from "@/lib/notifications";
@@ -23,8 +27,25 @@ function timeAgo(iso: string): string {
  *  Fetches on mount and marks everything read once opened. */
 export function NotificationsList() {
 	const router = useRouter();
+	const toast = useToast();
 	const [items, setItems] = useState<AppNotification[]>([]);
 	const [loading, setLoading] = useState(true);
+
+	async function onDelete(target: AppNotification) {
+		// Drop it straight away — waiting on the round trip makes the tap feel
+		// broken. Put it back if the server disagrees.
+		setItems((prev) => prev.filter((n) => n.id !== target.id));
+		try {
+			await deleteNotification(target.id);
+		} catch {
+			setItems((prev) =>
+				[...prev, target].sort((a, b) =>
+					b.created_at.localeCompare(a.created_at),
+				),
+			);
+			toast.show("Couldn't delete that. Try again.");
+		}
+	}
 
 	const load = useCallback(async () => {
 		try {
@@ -72,26 +93,26 @@ export function NotificationsList() {
 						</View>
 					</View>
 				);
-				return item.listing_id ? (
-					<Pressable
-						onPress={() => router.push(`/listing/${item.listing_id}`)}
-						accessibilityRole="button"
-						accessibilityLabel={item.message}
-					>
-						{body}
-					</Pressable>
-				) : (
-					body
+				return (
+					<SwipeableRow onDelete={() => void onDelete(item)}>
+						{item.listing_id ? (
+							<Pressable
+								onPress={() => router.push(`/listing/${item.listing_id}`)}
+								accessibilityRole="button"
+								accessibilityLabel={item.message}
+							>
+								{body}
+							</Pressable>
+						) : (
+							body
+						)}
+					</SwipeableRow>
 				);
 			}}
 			ListEmptyComponent={
 				<View className="items-center justify-center px-8 pt-24">
-					<Ionicons
-						name="notifications-off-outline"
-						size={40}
-						color="#9CA3AF"
-					/>
-					<Text className="font-display-bold text-lg text-gray-900 text-center mt-3">
+					<EmptyBell />
+					<Text className="font-display-bold text-lg text-gray-900 text-center mt-4">
 						You're all caught up
 					</Text>
 					<Text className="font-body text-gray-500 text-center mt-1">

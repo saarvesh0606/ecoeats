@@ -1,9 +1,12 @@
 """In-app notifications: recent activity for the signed-in user."""
 
+import uuid
+
 from fastapi import APIRouter, status
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 
 from api.deps import CurrentUser, DbSession
+from api.errors import NotFoundError
 from api.models import Notification
 from api.schemas.notification import NotificationList, NotificationOut
 
@@ -51,3 +54,23 @@ async def mark_all_read(db: DbSession, user: CurrentUser) -> None:
         .where(Notification.user_id == user.id, Notification.read.is_(False))
         .values(read=True)
     )
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_notification(
+    notification_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> None:
+    """Remove one notification from the user's feed.
+
+    The user_id is part of the WHERE clause rather than checked after loading:
+    that way someone else's id simply matches no rows, so this can't be used to
+    probe whether a given notification exists.
+    """
+    result = await db.execute(
+        delete(Notification).where(
+            Notification.id == notification_id,
+            Notification.user_id == user.id,
+        )
+    )
+    if result.rowcount == 0:
+        raise NotFoundError("That notification is already gone")

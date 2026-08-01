@@ -81,3 +81,51 @@ async def test_notifications_are_per_user(
     # The host got notified; the recipient who claimed did not.
     mine = (await client.get("/notifications", headers=recipient.headers)).json()
     assert mine["unread_count"] == 0
+
+
+async def test_delete_removes_one_notification(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    listing = await post_listing(client, organizer)
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    before = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert len(before["items"]) >= 1
+    target = before["items"][0]["id"]
+
+    r = await client.delete(f"/notifications/{target}", headers=organizer.headers)
+    assert r.status_code == 204
+
+    after = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert target not in [n["id"] for n in after["items"]]
+    assert len(after["items"]) == len(before["items"]) - 1
+
+
+async def test_cannot_delete_someone_elses_notification(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """Deleting by id alone would let anyone clear another user's feed."""
+    listing = await post_listing(client, organizer)
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    theirs = (await client.get("/notifications", headers=organizer.headers)).json()
+    target = theirs["items"][0]["id"]
+
+    r = await client.delete(f"/notifications/{target}", headers=recipient.headers)
+    assert r.status_code == 404
+
+    # Still there for its owner.
+    after = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert target in [n["id"] for n in after["items"]]
+
+
+async def test_delete_unknown_notification_is_404(
+    client: AsyncClient, organizer: Account
+) -> None:
+    missing = "00000000-0000-0000-0000-000000000000"
+    r = await client.delete(f"/notifications/{missing}", headers=organizer.headers)
+    assert r.status_code == 404
