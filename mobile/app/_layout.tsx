@@ -12,7 +12,7 @@ import {
 import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Splash } from "@/components/ui/Splash";
@@ -55,8 +55,14 @@ function Gate() {
 	return <Slot />;
 }
 
+/**
+ * Floor on how long the splash stays up. Fonts and the auth check usually
+ * resolve well inside this, so without it the brand moment is a flicker.
+ */
+const SPLASH_MIN_MS = 5000;
+
 export default function RootLayout() {
-	// Hold the app behind a cream splash until the editorial fonts are ready, so
+	// Hold the app behind the splash until the editorial fonts are ready, so
 	// headings never flash in a fallback face first.
 	const [fontsLoaded] = useFonts({
 		PlayfairDisplay_500Medium,
@@ -68,7 +74,13 @@ export default function RootLayout() {
 		DMSans_700Bold,
 	});
 
-	if (!fontsLoaded) {
+	const [minimumElapsed, setMinimumElapsed] = useState(false);
+	useEffect(() => {
+		const timer = setTimeout(() => setMinimumElapsed(true), SPLASH_MIN_MS);
+		return () => clearTimeout(timer);
+	}, []);
+
+	if (!fontsLoaded || !minimumElapsed) {
 		return <Splash />;
 	}
 
