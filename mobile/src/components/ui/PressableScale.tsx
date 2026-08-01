@@ -5,6 +5,8 @@ import Animated, {
 	useSharedValue,
 	withSpring,
 } from "react-native-reanimated";
+// Registers className support on Animated.* (see the module for why).
+import "@/lib/animatedSetup";
 
 /** Springs back rather than snapping — a linear return reads as a glitch. */
 const SPRING = { damping: 15, stiffness: 260, mass: 0.5 };

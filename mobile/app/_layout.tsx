@@ -15,6 +15,9 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+// Side-effect import: lets NativeWind classes work on Reanimated components.
+// Must run before any screen renders, so it sits at the root.
+import "@/lib/animatedSetup";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Spinner } from "@/components/ui/Spinner";
 import { ToastProvider } from "@/components/ui/Toast";
