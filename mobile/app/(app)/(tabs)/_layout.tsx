@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { TabIcon, type TabIconName } from "@/components/ui/TabIcon";
 import { useAuth } from "@/context/AuthContext";
 
 /**
@@ -11,9 +11,55 @@ import { useAuth } from "@/context/AuthContext";
  * The host also gets an Activity tab. The recipient Map tab from the mockups is
  * deferred: react-native-maps is native and ships with the device build.
  */
+
+/** `null` in a role column means the tab is hidden for that role. */
+const TABS: {
+	name: string;
+	title: string;
+	icon: TabIconName;
+	href: { organizer: string | null; recipient: string | null };
+}[] = [
+	{
+		name: "feed",
+		title: "Discover",
+		icon: "discover",
+		href: { organizer: null, recipient: "/feed" },
+	},
+	{
+		name: "claims",
+		title: "My Claims",
+		icon: "claims",
+		href: { organizer: null, recipient: "/claims" },
+	},
+	{
+		name: "posts",
+		title: "Dashboard",
+		icon: "dashboard",
+		href: { organizer: "/posts", recipient: null },
+	},
+	{
+		name: "post",
+		title: "Create",
+		icon: "create",
+		href: { organizer: "/post", recipient: null },
+	},
+	{
+		name: "activity",
+		title: "Activity",
+		icon: "activity",
+		href: { organizer: "/activity", recipient: null },
+	},
+	{
+		name: "profile",
+		title: "Profile",
+		icon: "profile",
+		href: { organizer: "/profile", recipient: "/profile" },
+	},
+];
+
 export default function TabsLayout() {
 	const { profile } = useAuth();
-	const isOrganizer = profile?.role === "organizer";
+	const role = profile?.role === "organizer" ? "organizer" : "recipient";
 
 	return (
 		<Tabs
@@ -31,89 +77,26 @@ export default function TabsLayout() {
 				tabBarLabelStyle: { fontSize: 11, fontFamily: "DMSans_500Medium" },
 			}}
 		>
-			<Tabs.Screen
-				name="feed"
-				options={{
-					href: isOrganizer ? null : "/feed",
-					title: "Discover",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "compass" : "compass-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="claims"
-				options={{
-					href: isOrganizer ? null : "/claims",
-					title: "My Claims",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "receipt" : "receipt-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="posts"
-				options={{
-					href: isOrganizer ? "/posts" : null,
-					title: "Dashboard",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "grid" : "grid-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="post"
-				options={{
-					href: isOrganizer ? "/post" : null,
-					title: "Create",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "add-circle" : "add-circle-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="activity"
-				options={{
-					href: isOrganizer ? "/activity" : null,
-					title: "Activity",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "notifications" : "notifications-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="profile"
-				options={{
-					title: "Profile",
-					tabBarIcon: ({ color, size, focused }) => (
-						<Ionicons
-							name={focused ? "person" : "person-outline"}
-							size={size}
-							color={color}
-						/>
-					),
-				}}
-			/>
+			{TABS.map((tab) => (
+				<Tabs.Screen
+					key={tab.name}
+					name={tab.name}
+					options={{
+						// Cast: expo-router types href as a known-route union, and these
+						// are built from the same route strings the files declare.
+						href: tab.href[role] as never,
+						title: tab.title,
+						tabBarIcon: ({ color, size, focused }) => (
+							<TabIcon
+								name={tab.icon}
+								focused={focused}
+								color={color}
+								size={size}
+							/>
+						),
+					}}
+				/>
+			))}
 		</Tabs>
 	);
 }
