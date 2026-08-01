@@ -147,8 +147,24 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="px-6 py-10">
-					{/* Brand */}
+					{/* Brand. The ASU mark sits above EcoEats rather than replacing it:
+					    this is an ASU-only service, but the product is EcoEats.
+
+					    TODO: swap this text mark for the real wordmark once
+					    mobile/assets/asu-logo.png exists —
+					        <Image
+					          source={require("../../assets/asu-logo.png")}
+					          className="w-20 h-7 mb-3"
+					          resizeMode="contain"
+					          accessibilityLabel="Arizona State University"
+					        />
+					    It can't be written now: Metro resolves require() at build time,
+					    so pointing at a missing file fails the whole bundle. */}
 					<View className="items-center mb-6">
+						<Text className="font-display-bold text-lg text-maroon">ASU</Text>
+						<Text className="font-body-medium text-[9px] text-maroon tracking-widest mt-0.5 mb-3">
+							ARIZONA STATE UNIVERSITY
+						</Text>
 						<View className="w-14 h-14 rounded-2xl bg-forest-800 items-center justify-center">
 							<Ionicons name="leaf" size={26} color="#86d6ad" />
 						</View>
