@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ActivityIndicator, Text, type ViewStyle } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps {
@@ -42,6 +42,8 @@ export function Button({
 		secondary: "bg-lime active:bg-lime-accent",
 		outline: "bg-transparent border-2 border-forest-700 active:bg-forest-50",
 		ghost: "bg-transparent active:bg-forest-50",
+		// Destructive, and styled to look it — ending a post can't be undone.
+		danger: "bg-transparent border-2 border-red-300 active:bg-red-50",
 	};
 
 	const textVariantStyles: Record<ButtonVariant, string> = {
@@ -49,6 +51,7 @@ export function Button({
 		secondary: "text-forest-900",
 		outline: "text-forest-700",
 		ghost: "text-forest-700",
+		danger: "text-red-600",
 	};
 
 	const sizeStyles: Record<ButtonSize, string> = {

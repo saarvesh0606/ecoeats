@@ -11,7 +11,9 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
@@ -203,11 +205,8 @@ export default function ManageListing() {
 						of {listing.quantity_total} servings
 					</Text>
 				</View>
-				<View className="h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
-					<View
-						className="h-2 bg-forest-600 rounded-full"
-						style={{ width: `${pct}%` }}
-					/>
+				<View className="mt-2">
+					<ProgressBar percent={pct} />
 				</View>
 				<Text className="font-body text-gray-400 text-xs mt-2">
 					{claimed} claimed · {listing.interested_count}{" "}
@@ -215,10 +214,15 @@ export default function ManageListing() {
 				</Text>
 			</View>
 
-			{/* Actions */}
+			{/* Actions. Stacked and full-width rather than side by side: these are
+			    distinct decisions, and a cramped row makes the destructive one easy
+			    to hit by accident. */}
 			{isOpen && (
-				<View className="flex-row gap-3 mt-3">
-					<View className="flex-1">
+				<View className="mt-5">
+					<Text className="font-display-bold text-lg text-gray-900 mb-2">
+						Actions
+					</Text>
+					<View className="gap-2">
 						<Button
 							variant="outline"
 							loading={busyId === "stock"}
@@ -233,10 +237,8 @@ export default function ManageListing() {
 						>
 							{live ? "Out of Stock" : "Reopen"}
 						</Button>
-					</View>
-					<View className="flex-1">
 						<Button
-							variant="ghost"
+							variant="danger"
 							loading={busyId === "cancel"}
 							onPress={endPostEarly}
 						>
@@ -281,9 +283,7 @@ export default function ManageListing() {
 				renderItem={({ item }) => (
 					<View className="bg-white rounded-card p-4 border border-gray-100">
 						<View className="flex-row items-center gap-3">
-							<View className="w-9 h-9 rounded-full bg-forest-100 items-center justify-center">
-								<Ionicons name="person-outline" size={16} color="#1B4332" />
-							</View>
+							<Avatar name={item.recipient_name} />
 							<View className="flex-1">
 								<Text className="font-body-semibold text-gray-900">
 									{item.recipient_name}

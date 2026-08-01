@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
@@ -61,11 +62,11 @@ export function Profile() {
 					Profile
 				</Text>
 				<View className="flex-row items-center gap-3 mb-6">
-					<View className="w-14 h-14 rounded-full bg-forest-100 items-center justify-center">
-						<Text className="font-display-bold text-xl text-forest-700">
-							{(profile?.name ?? "?").charAt(0).toUpperCase()}
-						</Text>
-					</View>
+					<Avatar
+						name={profile?.name ?? "?"}
+						uri={profile?.avatar_url}
+						size="lg"
+					/>
 					<View className="flex-1">
 						<Text className="font-display-bold text-lg text-gray-900">
 							{profile?.name}
