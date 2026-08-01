@@ -14,6 +14,8 @@ interface ButtonProps {
 	onPress: () => void;
 	style?: ViewStyle;
 	className?: string;
+	/** Rendered before the label — e.g. a provider mark on a sign-in button. */
+	icon?: ReactNode;
 	accessibilityLabel?: string;
 	accessibilityHint?: string;
 	testID?: string;
@@ -33,6 +35,7 @@ export function Button({
 	onPress,
 	style,
 	className,
+	icon,
 	accessibilityLabel,
 	accessibilityHint,
 	testID,
@@ -86,11 +89,14 @@ export function Button({
 					color={variant === "primary" ? COLORS.white : COLORS.forest}
 				/>
 			) : (
-				<Text
-					className={`font-body-semibold ${textVariantStyles[variant]} ${textSizeStyles[size]}`}
-				>
-					{children}
-				</Text>
+				<>
+					{icon}
+					<Text
+						className={`font-body-semibold ${icon ? "ml-2" : ""} ${textVariantStyles[variant]} ${textSizeStyles[size]}`}
+					>
+						{children}
+					</Text>
+				</>
 			)}
 		</PressableScale>
 	);

@@ -76,17 +76,42 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 	async function onGoogle() {
 		setError(null);
 		setGoogleLoading(true);
+
+		// signInWithPopup does not reliably reject when the user dismisses the
+		// window: closing it mid-redirect (ASU's SSO lives on its own domain)
+		// can leave the promise pending forever, and the button spins with no way
+		// back. Focus returning to the app means the popup is gone, so treat that
+		// as the cancel signal — after a beat, in case the popup closed *because*
+		// sign-in succeeded and the SDK is still resolving.
+		let settled = false;
+		const canWatchFocus = Platform.OS === "web" && typeof window !== "undefined";
+		const onWindowFocus = () => {
+			setTimeout(() => {
+				if (!settled) setGoogleLoading(false);
+			}, 1200);
+		};
+		if (canWatchFocus) window.addEventListener("focus", onWindowFocus);
+
 		try {
 			await signInWithGoogle();
 		} catch (err) {
-			// signInWithGoogle throws a plain Error for the wrong-domain case, which
-			// already reads well; Firebase codes go through the translator.
-			setError(
-				err instanceof Error && !("code" in err)
-					? err.message
-					: authErrorMessage(err),
-			);
+			// A dismissed popup isn't an error worth shouting about.
+			const code =
+				typeof err === "object" && err !== null && "code" in err
+					? String((err as { code: unknown }).code)
+					: "";
+			if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+				// signInWithGoogle throws a plain Error for the wrong-domain case,
+				// which already reads well; Firebase codes go through the translator.
+				setError(
+					err instanceof Error && !("code" in err)
+						? err.message
+						: authErrorMessage(err),
+				);
+			}
 		} finally {
+			settled = true;
+			if (canWatchFocus) window.removeEventListener("focus", onWindowFocus);
 			setGoogleLoading(false);
 		}
 	}
@@ -191,6 +216,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 								size="lg"
 								loading={googleLoading}
 								onPress={onGoogle}
+								icon={<Ionicons name="logo-google" size={18} color="#4285F4" />}
 							>
 								Continue with Google
 							</Button>
