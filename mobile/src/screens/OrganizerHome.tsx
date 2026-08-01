@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
@@ -154,7 +153,7 @@ export function OrganizerHome() {
 			{/* Impact card */}
 			<View className="mx-5 bg-forest-800 rounded-card p-4 mb-4">
 				<Text className="font-body-medium text-forest-100 text-xs uppercase tracking-wide mb-3">
-					Your Impact
+					Impact So Far
 				</Text>
 				<View className="flex-row justify-between">
 					<Stat n={impact?.meals_shared ?? 0} label="Meals Shared" />
@@ -188,15 +187,13 @@ export function OrganizerHome() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
-				renderItem={({ item, index }) => {
+				renderItem={({ item }) => {
 					const cover = item.photo_urls[0];
 					const live = item.status === "active";
 					const prelive =
 						item.status === "draft" || item.status === "scheduled";
 					return (
-						<Animated.View
-							entering={FadeInDown.duration(300).delay(Math.min(index, 6) * 55)}
-						>
+						<View>
 							<PressableScale
 								onPress={() => router.push(`/manage/${item.id}`)}
 								className="bg-white rounded-card p-4 border border-gray-100"
@@ -284,7 +281,7 @@ export function OrganizerHome() {
 									</Button>
 								</View>
 							)}
-						</Animated.View>
+						</View>
 					);
 				}}
 				ListFooterComponent={

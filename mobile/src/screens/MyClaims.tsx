@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, Linking, Pressable, Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -184,15 +183,12 @@ export function MyClaims() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
-				renderItem={({ item, index }) => {
+				renderItem={({ item }) => {
 					const l = item.listing;
 					const active = item.status === "pending";
 					const cover = l?.photo_urls[0];
 					return (
-						<Animated.View
-							entering={FadeInDown.duration(300).delay(Math.min(index, 6) * 55)}
-							className="bg-white rounded-card p-4 border border-gray-100"
-						>
+						<View className="bg-white rounded-card p-4 border border-gray-100">
 							<View className="flex-row gap-3">
 								{cover ? (
 									<Image
@@ -292,7 +288,7 @@ export function MyClaims() {
 									</Text>
 								</Pressable>
 							)}
-						</Animated.View>
+						</View>
 					);
 				}}
 				ListFooterComponent={

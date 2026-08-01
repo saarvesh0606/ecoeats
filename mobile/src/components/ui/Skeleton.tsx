@@ -1,11 +1,5 @@
-import { useEffect } from "react";
-import { View } from "react-native";
-import Animated, {
-	useAnimatedStyle,
-	useSharedValue,
-	withRepeat,
-	withTiming,
-} from "react-native-reanimated";
+import { useEffect, useRef } from "react";
+import { Animated, View } from "react-native";
 
 /**
  * Pulsing placeholders shown while a screen's first data loads.
@@ -14,15 +8,32 @@ import Animated, {
  * is coming", so the layout doesn't jump when the data lands.
  */
 function Shimmer({ className }: { className: string }) {
-	const opacity = useSharedValue(0.5);
+	const opacity = useRef(new Animated.Value(0.5)).current;
 
 	useEffect(() => {
-		opacity.value = withRepeat(withTiming(1, { duration: 750 }), -1, true);
+		const loop = Animated.loop(
+			Animated.sequence([
+				Animated.timing(opacity, {
+					toValue: 1,
+					duration: 750,
+					useNativeDriver: true,
+				}),
+				Animated.timing(opacity, {
+					toValue: 0.5,
+					duration: 750,
+					useNativeDriver: true,
+				}),
+			]),
+		);
+		loop.start();
+		return () => loop.stop();
 	}, [opacity]);
 
-	const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-	return <Animated.View className={`bg-gray-200 ${className}`} style={style} />;
+	return (
+		<Animated.View style={{ opacity }}>
+			<View className={`bg-gray-200 ${className}`} />
+		</Animated.View>
+	);
 }
 
 /** One feed card's worth of placeholder: image block, title, meta line. */

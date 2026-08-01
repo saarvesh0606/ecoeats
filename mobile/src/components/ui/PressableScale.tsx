@@ -1,15 +1,11 @@
-import type { ReactNode } from "react";
-import { Pressable, type PressableProps, type ViewStyle } from "react-native";
-import Animated, {
-	useAnimatedStyle,
-	useSharedValue,
-	withSpring,
-} from "react-native-reanimated";
-// Registers className support on Animated.* (see the module for why).
-import "@/lib/animatedSetup";
-
-/** Springs back rather than snapping — a linear return reads as a glitch. */
-const SPRING = { damping: 15, stiffness: 260, mass: 0.5 };
+import { type ReactNode, useRef } from "react";
+import {
+	Animated,
+	Pressable,
+	type PressableProps,
+	View,
+	type ViewStyle,
+} from "react-native";
 
 interface PressableScaleProps extends Omit<PressableProps, "style"> {
 	children: ReactNode;
@@ -23,14 +19,15 @@ interface PressableScaleProps extends Omit<PressableProps, "style"> {
  * A Pressable that dips slightly while held.
  *
  * `active:opacity-*` gives no sense of depth; a spring scale makes a tap feel
- * like it landed on something physical. The scale runs on the UI thread, so it
- * stays smooth even while the JS thread is busy fetching.
+ * like it landed on something physical.
  *
- * The transform deliberately lives on an inner view rather than on the
- * Pressable itself: making the Pressable animated (createAnimatedComponent)
- * breaks press handling on react-native-web — the transform moves the element
- * mid-gesture, the responder decides the pointer left it, and onPress never
- * fires. Keeping the Pressable plain keeps taps reliable everywhere.
+ * Two deliberate structural choices:
+ *  - the Pressable itself stays un-animated. Animating it breaks press handling
+ *    on react-native-web: the transform moves the element mid-gesture, the
+ *    responder decides the pointer left it, and onPress never fires.
+ *  - the styled box is a plain View inside the animated one, so NativeWind
+ *    applies className normally without needing interop on an animated
+ *    component (which fails silently and strips every style).
  */
 export function PressableScale({
 	children,
@@ -39,25 +36,32 @@ export function PressableScale({
 	className,
 	...props
 }: PressableScaleProps) {
-	const scale = useSharedValue(1);
-	const animated = useAnimatedStyle(() => ({
-		transform: [{ scale: scale.value }],
-	}));
+	const scale = useRef(new Animated.Value(1)).current;
+
+	const springTo = (value: number) =>
+		Animated.spring(scale, {
+			toValue: value,
+			useNativeDriver: true,
+			speed: 40,
+			bounciness: 4,
+		}).start();
 
 	return (
 		<Pressable
 			{...props}
 			onPressIn={(e) => {
-				scale.value = withSpring(scaleTo, SPRING);
+				springTo(scaleTo);
 				props.onPressIn?.(e);
 			}}
 			onPressOut={(e) => {
-				scale.value = withSpring(1, SPRING);
+				springTo(1);
 				props.onPressOut?.(e);
 			}}
 		>
-			<Animated.View className={className} style={[style, animated]}>
-				{children}
+			<Animated.View style={{ transform: [{ scale }] }}>
+				<View className={className} style={style}>
+					{children}
+				</View>
 			</Animated.View>
 		</Pressable>
 	);

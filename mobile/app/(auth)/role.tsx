@@ -1,7 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, registerProfile, type UserRole } from "@/lib/api";
 
@@ -66,7 +67,7 @@ export default function RoleScreen() {
 				{CHOICES.map((choice) => {
 					const active = selected === choice.role;
 					return (
-						<Pressable
+						<PressableScale
 							key={choice.role}
 							onPress={() => setSelected(choice.role)}
 							accessibilityRole="radio"
@@ -97,10 +98,14 @@ export default function RoleScreen() {
 									<Ionicons name="checkmark-circle" size={20} color="#ffffff" />
 								</View>
 							)}
-						</Pressable>
+						</PressableScale>
 					);
 				})}
 			</View>
+
+			<Text className="font-body text-gray-400 text-xs text-center mt-4">
+				EcoEats is for ASU students, staff, and community members.
+			</Text>
 
 			{error && (
 				<Text className="text-red-500 font-body text-sm mt-2 mb-2">{error}</Text>
@@ -113,7 +118,7 @@ export default function RoleScreen() {
 				disabled={!selected}
 				size="lg"
 			>
-				Continue
+				Continue  →
 			</Button>
 			<View className="h-3" />
 			<Button onPress={signOut} variant="ghost">

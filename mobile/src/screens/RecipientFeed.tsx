@@ -10,7 +10,6 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
@@ -297,18 +296,12 @@ export function RecipientFeed() {
 						) : null
 					}
 					renderItem={({ item, index }) => (
-						// Stagger only the first screenful; beyond that the delay would
-						// out-run the scroll and cards would appear late.
-						<Animated.View
-							entering={FadeInDown.duration(320).delay(Math.min(index, 6) * 60)}
-						>
-							<ListingCard
-								listing={item}
-								now={now}
-								featured={index === 0 && !searching}
-								onPress={() => router.push(`/listing/${item.id}`)}
-							/>
-						</Animated.View>
+						<ListingCard
+							listing={item}
+							now={now}
+							featured={index === 0 && !searching}
+							onPress={() => router.push(`/listing/${item.id}`)}
+						/>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">
