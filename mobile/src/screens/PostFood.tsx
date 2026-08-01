@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { VoicePanel } from "@/components/VoicePanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useSpeech } from "@/hooks/useSpeech";
@@ -49,6 +50,9 @@ export function PostFood() {
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
+	// Which entry affordance is on screen. Defaults to voice because the spec
+	// leads with speaking; typing stays available in both modes.
+	const [entryMode, setEntryMode] = useState<"voice" | "manual">("voice");
 	const [descriptionSource, setDescriptionSource] = useState<"voice" | "manual">(
 		"manual",
 	);
@@ -194,29 +198,58 @@ export function PostFood() {
 						onChangeText={setTitle}
 					/>
 
-					{/* Description with voice */}
+					{/* Description — spoken or typed */}
 					<View className="mb-4">
-						<View className="flex-row items-center justify-between mb-1">
-							<Text className="font-body-semibold text-gray-900">
-								Description
-							</Text>
-							{speech.supported && (
-								<Pressable
-									onPress={() =>
+						<Text className="font-body-semibold text-gray-900 mb-2">
+							Description
+						</Text>
+
+						{/* Entry-mode toggle. Only offered where speech actually works;
+						    elsewhere the form is simply the typed one. */}
+						{speech.supported && (
+							<View className="flex-row bg-gray-100 rounded-btn p-1 mb-3">
+								{(["voice", "manual"] as const).map((mode) => {
+									const on = entryMode === mode;
+									return (
+										<Pressable
+											key={mode}
+											onPress={() => {
+												if (speech.listening) speech.stop();
+												setEntryMode(mode);
+											}}
+											className={`flex-1 rounded-btn py-2 ${on ? "bg-forest-700" : ""}`}
+											accessibilityRole="button"
+											accessibilityState={{ selected: on }}
+										>
+											<Text
+												className={`font-body-semibold text-sm text-center ${on ? "text-white" : "text-gray-600"}`}
+											>
+												{mode === "voice" ? "Voice Entry" : "Manual Entry"}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						)}
+
+						{speech.supported && entryMode === "voice" && (
+							<View className="mb-3">
+								<VoicePanel
+									listening={speech.listening}
+									onToggle={() =>
 										speech.listening ? speech.stop() : speech.start()
 									}
-									className={`rounded-full px-3 py-1 ${speech.listening ? "bg-red-100" : "bg-forest-50"}`}
-								>
-									<Text
-										className={`font-body text-xs font-semibold ${speech.listening ? "text-red-700" : "text-forest-700"}`}
-									>
-										{speech.listening ? "● Listening… tap to stop" : "🎤 Speak"}
-									</Text>
-								</Pressable>
-							)}
-						</View>
+									error={speech.error}
+								/>
+							</View>
+						)}
+
 						<Input
-							placeholder="What is it? Say it out loud or type."
+							placeholder={
+								entryMode === "voice" && speech.supported
+									? "What you say appears here — you can edit it."
+									: "What is it? Describe the food."
+							}
 							value={description}
 							onChangeText={(text) => {
 								setDescription(text);
@@ -227,7 +260,7 @@ export function PostFood() {
 							className="mb-0"
 							style={{ minHeight: 72, textAlignVertical: "top" }}
 						/>
-						{speech.error && (
+						{speech.error && !speech.supported && (
 							<Text className="font-body text-xs text-red-500 mt-1">
 								{speech.error}
 							</Text>
