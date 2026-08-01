@@ -12,7 +12,8 @@ import {
 import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Splash } from "@/components/ui/Splash";
@@ -57,9 +58,48 @@ function Gate() {
 
 /**
  * Floor on how long the splash stays up. Fonts and the auth check usually
- * resolve well inside this, so without it the brand moment is a flicker.
+ * resolve well inside this, so without it the brand moment is a flicker — but
+ * much beyond this it stops being a greeting and starts being a wait.
  */
-const SPLASH_MIN_MS = 5000;
+const SPLASH_MIN_MS = 2800;
+/** Cross-fade out of the splash. */
+const SPLASH_FADE_MS = 450;
+
+/**
+ * Covers the app with the splash, then fades it away.
+ *
+ * The app mounts underneath while this is still opaque, so the first frame
+ * behind the fade is the real screen rather than a blank one.
+ */
+function SplashOverlay({ done }: { done: boolean }) {
+	const opacity = useRef(new Animated.Value(1)).current;
+	const [removed, setRemoved] = useState(false);
+
+	useEffect(() => {
+		if (!done) return;
+		Animated.timing(opacity, {
+			toValue: 0,
+			duration: SPLASH_FADE_MS,
+			useNativeDriver: true,
+		}).start(() => setRemoved(true));
+
+		// Never let a splash that won't fade trap the app behind it: unmount on a
+		// timer regardless of whether the animation actually ran.
+		const failsafe = setTimeout(() => setRemoved(true), SPLASH_FADE_MS + 250);
+		return () => clearTimeout(failsafe);
+	}, [done, opacity]);
+
+	if (removed) return null;
+
+	return (
+		<Animated.View
+			pointerEvents={done ? "none" : "auto"}
+			style={[StyleSheet.absoluteFillObject, { opacity, zIndex: 10 }]}
+		>
+			<Splash />
+		</Animated.View>
+	);
+}
 
 export default function RootLayout() {
 	// Hold the app behind the splash until the editorial fonts are ready, so
@@ -80,7 +120,9 @@ export default function RootLayout() {
 		return () => clearTimeout(timer);
 	}, []);
 
-	if (!fontsLoaded || !minimumElapsed) {
+	// Until the fonts land there is nothing worth showing behind the splash —
+	// mounting early would render headings in a fallback face.
+	if (!fontsLoaded) {
 		return <Splash />;
 	}
 
@@ -94,6 +136,7 @@ export default function RootLayout() {
 					</AuthProvider>
 				</ToastProvider>
 			</PhoneFrame>
+			<SplashOverlay done={minimumElapsed} />
 		</SafeAreaProvider>
 	);
 }

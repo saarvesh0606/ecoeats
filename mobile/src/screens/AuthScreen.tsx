@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
+	Animated,
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
@@ -23,6 +24,9 @@ import { validateAsuEmail, validatePassword } from "@/lib/validation";
 
 type Mode = "signin" | "register";
 
+/** Where the form fades in from. Deliberately not 0 — see switchTo. */
+const FADE_FROM = 0.25;
+
 /**
  * One screen for both signing in and signing up, switched by a segmented
  * control.
@@ -43,9 +47,25 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 
 	const registering = mode === "register";
 
+	// Cross-fades the form when the tab changes, so the fields that appear or
+	// disappear don't just pop.
+	const formFade = useRef(new Animated.Value(1)).current;
+
 	function switchTo(next: Mode) {
+		if (next === mode) return;
 		setMode(next);
 		setError(null); // an error about the other form is just noise here
+
+		formFade.setValue(FADE_FROM);
+		Animated.timing(formFade, {
+			toValue: 1,
+			duration: 220,
+			useNativeDriver: true,
+		}).start();
+		// The form must end up readable whether or not that animation ran, so
+		// settle it on a timer too. It starts at FADE_FROM rather than 0 for the
+		// same reason: a form nobody can see is worse than one that didn't fade.
+		setTimeout(() => formFade.setValue(1), 400);
 	}
 
 	async function onSubmit() {
@@ -167,42 +187,62 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 						})}
 					</View>
 
-					{registering && (
+					{/* Style only, no className: NativeWind doesn't process classes on
+					    animated components, and does so silently. */}
+					<Animated.View
+						style={{
+							opacity: formFade,
+							transform: [
+								{
+									translateY: formFade.interpolate({
+										inputRange: [FADE_FROM, 1],
+										outputRange: [8, 0],
+									}),
+								},
+							],
+						}}
+					>
+						{registering && (
+							<Input
+								label="Full name"
+								placeholder="Your name"
+								autoCapitalize="words"
+								autoComplete="name"
+								value={name}
+								onChangeText={setName}
+							/>
+						)}
+
 						<Input
-							label="Full name"
-							placeholder="Your name"
-							autoCapitalize="words"
-							autoComplete="name"
-							value={name}
-							onChangeText={setName}
+							label="ASU email"
+							placeholder="you@asu.edu"
+							autoCapitalize="none"
+							autoComplete="email"
+							keyboardType="email-address"
+							value={email}
+							onChangeText={setEmail}
 						/>
-					)}
+						<Input
+							label="Password"
+							placeholder={
+								registering ? "At least 6 characters" : "Your password"
+							}
+							secureTextEntry
+							autoComplete={registering ? "new-password" : "password"}
+							value={password}
+							onChangeText={setPassword}
+						/>
 
-					<Input
-						label="ASU email"
-						placeholder="you@asu.edu"
-						autoCapitalize="none"
-						autoComplete="email"
-						keyboardType="email-address"
-						value={email}
-						onChangeText={setEmail}
-					/>
-					<Input
-						label="Password"
-						placeholder={registering ? "At least 6 characters" : "Your password"}
-						secureTextEntry
-						autoComplete={registering ? "new-password" : "password"}
-						value={password}
-						onChangeText={setPassword}
-					/>
+						{error && (
+							<Text className="text-red-500 font-body text-sm mb-3">
+								{error}
+							</Text>
+						)}
 
-					{error && (
-						<Text className="text-red-500 font-body text-sm mb-3">{error}</Text>
-					)}
-
-					<Button onPress={onSubmit} loading={loading} size="lg">
-						{registering ? "Create account" : "Sign in"}
-					</Button>
+						<Button onPress={onSubmit} loading={loading} size="lg">
+							{registering ? "Create account" : "Sign in"}
+						</Button>
+					</Animated.View>
 
 					{googleSignInSupported && (
 						<>
