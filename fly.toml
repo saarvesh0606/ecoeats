@@ -13,6 +13,10 @@ primary_region = "sjc"
   WEB_CONCURRENCY = "2"
   # Behind Fly's shared Postgres/pooler, keep prepared-statement caching off.
   DB_STATEMENT_CACHE = "false"
+  # Managed Postgres requires TLS (asyncpg gets it from here, not the URL).
+  DB_SSL = "true"
+  # release_command below already migrates; don't repeat it in every instance.
+  RUN_MIGRATIONS = "false"
 
 # Migrations run once per deploy, before the new version takes traffic — not in
 # each worker's startup, which would race across replicas.

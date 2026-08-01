@@ -16,12 +16,17 @@ COPY migrations ./migrations
 COPY alembic.ini ./
 RUN pip install --upgrade pip && pip install .
 
+# Normalise line endings and set the exec bit here rather than trusting the
+# checkout: on Windows a CRLF shebang would make this fail as "not found".
+COPY scripts/start.sh ./scripts/start.sh
+RUN sed -i 's/\r$//' ./scripts/start.sh && chmod +x ./scripts/start.sh
+
 # Run as an unprivileged user.
 RUN useradd --create-home --uid 10001 appuser
 USER appuser
 
 EXPOSE 8000
 
-# $PORT is injected by Railway/Fly; WEB_CONCURRENCY sets the worker count.
-# --no-access-log: uvicorn's access log is replaced by our structured one.
-CMD ["sh", "-c", "uvicorn api.main:create_app --factory --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --no-access-log"]
+# Migrates (unless RUN_MIGRATIONS=false) then execs uvicorn. Kept in a script so
+# hosts don't have to parse a multi-command string — see scripts/start.sh.
+CMD ["./scripts/start.sh"]

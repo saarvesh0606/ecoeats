@@ -1,0 +1,4 @@
+# Shell scripts must keep LF endings even when checked out on Windows
+# (core.autocrlf=true). A CRLF shebang line makes Linux containers fail with
+# "bad interpreter" / "not found", which is maddening to diagnose.
+*.sh text eol=lf

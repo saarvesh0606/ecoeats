@@ -7,8 +7,13 @@
 # out of git).
 #
 # Render's free tier has no pre-deploy hook, so migrations run at container
-# start via dockerCommand. The free service is a single instance, so the usual
-# "don't migrate in every replica" caveat doesn't apply here.
+# start (see scripts/start.sh, the image's CMD). The free service is a single
+# instance, so the usual "don't migrate in every replica" caveat doesn't apply.
+#
+# There is deliberately no dockerCommand here: Render re-parses that field, and
+# an inline "sh -c '... && ...'" comes back as a single argv element, which the
+# shell then reports as command-not-found (exit 127). Letting the image's own
+# CMD run avoids the quoting entirely.
 services:
   - type: web
     name: ecoeats-api
@@ -18,11 +23,6 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: >-
-      sh -c "alembic upgrade head &&
-      uvicorn api.main:create_app --factory
-      --host 0.0.0.0 --port $PORT
-      --workers ${WEB_CONCURRENCY:-1} --no-access-log"
     healthCheckPath: /health
     autoDeploy: true
     envVars:
