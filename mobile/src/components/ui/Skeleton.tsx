@@ -8,26 +8,27 @@ import { Animated, View } from "react-native";
  * is coming", so the layout doesn't jump when the data lands.
  */
 function Shimmer({ className }: { className: string }) {
-	const opacity = useRef(new Animated.Value(0.5)).current;
+	const progress = useRef(new Animated.Value(0)).current;
 
 	useEffect(() => {
+		// One timing ping-ponged through interpolation, rather than a looped
+		// sequence of two timings: same result, and a single segment can't get
+		// out of step with itself.
 		const loop = Animated.loop(
-			Animated.sequence([
-				Animated.timing(opacity, {
-					toValue: 1,
-					duration: 750,
-					useNativeDriver: true,
-				}),
-				Animated.timing(opacity, {
-					toValue: 0.5,
-					duration: 750,
-					useNativeDriver: true,
-				}),
-			]),
+			Animated.timing(progress, {
+				toValue: 1,
+				duration: 1500,
+				useNativeDriver: true,
+			}),
 		);
 		loop.start();
 		return () => loop.stop();
-	}, [opacity]);
+	}, [progress]);
+
+	const opacity = progress.interpolate({
+		inputRange: [0, 0.5, 1],
+		outputRange: [0.5, 1, 0.5],
+	});
 
 	return (
 		<Animated.View style={{ opacity }}>
