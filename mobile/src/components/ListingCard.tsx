@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
 import { type Listing, saveListing, unsaveListing } from "@/lib/listings";
 
@@ -12,6 +13,9 @@ interface ListingCardProps {
 	 *  flag would be a Phase 2 backend feature. */
 	featured?: boolean;
 }
+
+/** Under this, the countdown turns red and pulses — the food is about to go. */
+const URGENT_SECONDS = 5 * 60;
 
 export function ListingCard({
 	listing,
@@ -35,10 +39,12 @@ export function ListingCard({
 		}
 	}
 
+	const urgent = listing.seconds_remaining <= URGENT_SECONDS;
+
 	return (
-		<Pressable
+		<PressableScale
 			onPress={onPress}
-			className="bg-white rounded-card overflow-hidden border border-gray-100 active:opacity-95"
+			className="bg-white rounded-card overflow-hidden border border-gray-100"
 			// Not accessibilityRole="button": the card contains its own bookmark
 			// button, and a button nested in a button is invalid HTML on web.
 			accessibilityLabel={`${listing.title}, ${timeLeft}`}
@@ -64,7 +70,9 @@ export function ListingCard({
 					</View>
 				)}
 
-				<View className="absolute top-3 right-3 bg-forest-900 rounded-full px-2.5 py-1">
+				<View
+					className={`absolute top-3 right-3 rounded-full px-2.5 py-1 ${urgent ? "bg-red-600" : "bg-forest-900"}`}
+				>
 					<Text className="font-body-semibold text-xs text-white">{timeLeft}</Text>
 				</View>
 
@@ -125,6 +133,6 @@ export function ListingCard({
 					</Text>
 				)}
 			</View>
-		</Pressable>
+		</PressableScale>
 	);
 }

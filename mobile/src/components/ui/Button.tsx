@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
-import {
-	ActivityIndicator,
-	Pressable,
-	Text,
-	type ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Text, type ViewStyle } from "react-native";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
@@ -68,8 +64,10 @@ export function Button({
 	};
 
 	return (
-		<Pressable
+		<PressableScale
 			testID={testID}
+			// Buttons are small, so they need a shallower dip than a full card.
+			scaleTo={0.96}
 			className={`rounded-btn items-center justify-center flex-row ${variantStyles[variant]} ${sizeStyles[size]} ${disabled || loading ? "opacity-50" : ""} ${className || ""}`}
 			onPress={onPress}
 			disabled={disabled || loading}
@@ -91,6 +89,6 @@ export function Button({
 					{children}
 				</Text>
 			)}
-		</Pressable>
+		</PressableScale>
 	);
 }

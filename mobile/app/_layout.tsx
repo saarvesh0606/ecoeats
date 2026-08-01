@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Spinner } from "@/components/ui/Spinner";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -82,12 +83,14 @@ export default function RootLayout() {
 
 	return (
 		<SafeAreaProvider>
-			<ToastProvider>
-				<AuthProvider>
-					<StatusBar style="dark" />
-					<Gate />
-				</AuthProvider>
-			</ToastProvider>
+			<PhoneFrame>
+				<ToastProvider>
+					<AuthProvider>
+						<StatusBar style="dark" />
+						<Gate />
+					</AuthProvider>
+				</ToastProvider>
+			</PhoneFrame>
 		</SafeAreaProvider>
 	);
 }

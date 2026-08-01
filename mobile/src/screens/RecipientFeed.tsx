@@ -10,10 +10,11 @@ import {
 	TextInput,
 	View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
@@ -152,7 +153,19 @@ export function RecipientFeed() {
 	}, [load]);
 
 	if (loading) {
-		return <Spinner className="flex-1 bg-cream" />;
+		return (
+			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+				<View className="px-5 pt-2 pb-3">
+					<Text className="font-display-bold text-3xl text-forest-800">
+						Discover
+					</Text>
+					<Text className="font-body text-gray-500 mt-0.5">
+						Good food. Good impact.
+					</Text>
+				</View>
+				<SkeletonList count={3} />
+			</SafeAreaView>
+		);
 	}
 
 	const filtersActive = dietary.length > 0 || soonOnly;
@@ -284,12 +297,18 @@ export function RecipientFeed() {
 						) : null
 					}
 					renderItem={({ item, index }) => (
-						<ListingCard
-							listing={item}
-							now={now}
-							featured={index === 0 && !searching}
-							onPress={() => router.push(`/listing/${item.id}`)}
-						/>
+						// Stagger only the first screenful; beyond that the delay would
+						// out-run the scroll and cards would appear late.
+						<Animated.View
+							entering={FadeInDown.duration(320).delay(Math.min(index, 6) * 60)}
+						>
+							<ListingCard
+								listing={item}
+								now={now}
+								featured={index === 0 && !searching}
+								onPress={() => router.push(`/listing/${item.id}`)}
+							/>
+						</Animated.View>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">

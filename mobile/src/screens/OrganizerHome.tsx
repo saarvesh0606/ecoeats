@@ -2,9 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { SkeletonList } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import {
 	fetchImpact,
@@ -26,7 +29,10 @@ const TABS: { key: Tab; label: string }[] = [
 function Stat({ n, label }: { n: number; label: string }) {
 	return (
 		<View className="items-center flex-1">
-			<Text className="font-display-bold text-2xl text-white">{n}</Text>
+			<AnimatedNumber
+				value={n}
+				className="font-display-bold text-2xl text-white"
+			/>
 			<Text className="font-body text-forest-100 text-xs mt-0.5 text-center">
 				{label}
 			</Text>
@@ -81,7 +87,18 @@ export function OrganizerHome() {
 		}, [load]),
 	);
 
-	if (loading) return <Spinner className="flex-1 bg-cream" />;
+	if (loading) {
+		return (
+			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+				<View className="px-5 pt-2 pb-3">
+					<Text className="font-display-bold text-3xl text-forest-800">
+						Host Dashboard
+					</Text>
+				</View>
+				<SkeletonList count={4} variant="row" />
+			</SafeAreaView>
+		);
+	}
 
 	if (error) {
 		return (
@@ -171,16 +188,18 @@ export function OrganizerHome() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
-				renderItem={({ item }) => {
+				renderItem={({ item, index }) => {
 					const cover = item.photo_urls[0];
 					const live = item.status === "active";
 					const prelive =
 						item.status === "draft" || item.status === "scheduled";
 					return (
-						<View>
-							<Pressable
+						<Animated.View
+							entering={FadeInDown.duration(300).delay(Math.min(index, 6) * 55)}
+						>
+							<PressableScale
 								onPress={() => router.push(`/manage/${item.id}`)}
-								className="bg-white rounded-card p-4 border border-gray-100 active:opacity-90"
+								className="bg-white rounded-card p-4 border border-gray-100"
 								accessibilityRole="button"
 								accessibilityLabel={`Manage ${item.title}`}
 							>
@@ -253,7 +272,7 @@ export function OrganizerHome() {
 									</View>
 									<Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
 								</View>
-							</Pressable>
+							</PressableScale>
 							{prelive && (
 								<View className="mt-2">
 									<Button
@@ -265,7 +284,7 @@ export function OrganizerHome() {
 									</Button>
 								</View>
 							)}
-						</View>
+						</Animated.View>
 					);
 				}}
 				ListFooterComponent={
