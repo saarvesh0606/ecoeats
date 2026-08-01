@@ -13,10 +13,9 @@ import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
-import { Spinner } from "@/components/ui/Spinner";
+import { Splash } from "@/components/ui/Splash";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import "../global.css";
@@ -50,11 +49,7 @@ function Gate() {
 	}, [status, profile, segments, router]);
 
 	if (status === "loading") {
-		return (
-			<View className="flex-1 bg-cream items-center justify-center">
-				<Spinner />
-			</View>
-		);
+		return <Splash />;
 	}
 
 	return <Slot />;
@@ -74,11 +69,7 @@ export default function RootLayout() {
 	});
 
 	if (!fontsLoaded) {
-		return (
-			<View className="flex-1 bg-cream items-center justify-center">
-				<Spinner />
-			</View>
-		);
+		return <Splash />;
 	}
 
 	return (
