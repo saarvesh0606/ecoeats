@@ -1,5 +1,6 @@
 import {
 	formatDistance,
+	formatDuration,
 	formatLocation,
 	formatTimeLeft,
 	urgency,
@@ -33,6 +34,21 @@ describe("formatTimeLeft", () => {
 
 	it("omits the minutes when it's a whole number of hours", () => {
 		expect(formatTimeLeft(inMinutes(120), NOW)).toBe("2h left");
+	});
+});
+
+describe("formatDuration", () => {
+	it("leaves off the trailing word, so callers can phrase it themselves", () => {
+		expect(formatDuration(inMinutes(45), NOW)).toBe("45m");
+		expect(formatDuration(inMinutes(90), NOW)).toBe("1h 30m");
+		expect(formatDuration(inMinutes(120), NOW)).toBe("2h");
+	});
+
+	it("is empty once the deadline has passed", () => {
+		// Empty rather than "Expired": the caller says what expiry means in
+		// its own sentence, instead of reading "Expires in Expired".
+		expect(formatDuration(inMinutes(-1), NOW)).toBe("");
+		expect(formatDuration(inMinutes(0), NOW)).toBe("");
 	});
 });
 

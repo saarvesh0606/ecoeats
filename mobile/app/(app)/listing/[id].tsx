@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
-import { formatLocation, formatTimeLeft } from "@/lib/format";
+import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
 import { fetchListing, type Listing } from "@/lib/listings";
 
 /** Hero photo height; the parallax range is derived from it. */
@@ -153,6 +153,7 @@ export default function ListingDetail() {
 	}
 
 	const timeLeft = formatTimeLeft(listing.expires_at, now);
+	const remaining = formatDuration(listing.expires_at, now);
 	const cover = listing.photo_urls[0];
 	const canClaim = listing.is_claimable && !claimed;
 	const expiresAt = new Date(listing.expires_at).toLocaleTimeString([], {
@@ -292,7 +293,11 @@ export default function ListingDetail() {
 							icon="time-outline"
 							label="When"
 							value="Ready for pickup now"
-							sub={`Expires in ${timeLeft} (by ${expiresAt})`}
+							sub={
+								remaining
+									? `Expires in ${remaining} (by ${expiresAt})`
+									: `Expired at ${expiresAt}`
+							}
 						/>
 					</View>
 
