@@ -26,9 +26,26 @@ node_modules/
 .expo/
 dist/
 
+# Flutter / Dart / Pub (client). Patterns are unanchored so they hold whether
+# the Flutter app sits at the root or in a subdirectory.
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+migrate_working_dir/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+app.*.symbols
+app.*.map.json
+
 # Editors / OS
 .vscode/
 .idea/
+*.iml
+*.ipr
+*.iws
 .DS_Store
 Thumbs.db
 desktop.ini
