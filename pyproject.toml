@@ -3,6 +3,10 @@ name = "ecoeats-api"
 version = "0.1.0"
 description = "EcoEats — campus food rescue API"
 requires-python = ">=3.11"
+authors = [{ name = "Sarvesh Sunil Jagtap" }]
+# Points at the file rather than naming a licence, so changing the terms means
+# editing LICENSE alone — nothing here has to move with it.
+license = { file = "LICENSE" }
 
 dependencies = [
     "fastapi>=0.115",

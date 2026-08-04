@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "private": true,
+  "author": "Sarvesh Sunil Jagtap",
+  "license": "SEE LICENSE IN ../LICENSE",
   "scripts": {
     "start": "expo start",
     "web": "expo start --web",

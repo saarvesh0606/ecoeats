@@ -119,3 +119,22 @@ Uvicorn is pointed at the factory with `--factory`.
 
 Scaffold complete. Next: schema and models (Alembic + SQLAlchemy), then Firebase
 auth, listings, and the claim transaction.
+
+## Licence and ownership
+
+Copyright © 2026 Sarvesh Sunil Jagtap. All rights reserved. See [LICENSE](LICENSE).
+
+This is proprietary source. Reading it grants no right to use it — ask first.
+
+Two things the licence deliberately does not cover:
+
+- **ASU's name, wordmark and logo are Arizona State University's trademarks.**
+  They are not the copyright holder's to license. They appear here for a
+  student project connected to the university; any public or commercial use of
+  the marks needs ASU's own permission.
+- **Dependencies keep their own licences**, as do photographs loaded from
+  third-party services at runtime.
+
+Changing the terms later means editing `LICENSE` and nothing else: both
+`pyproject.toml` and `mobile/package.json` point at the file rather than naming
+the licence, so they stay correct on their own.
