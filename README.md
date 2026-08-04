@@ -14,7 +14,7 @@ over before it expires.
 Requires Python 3.11+ and Docker.
 
 ```bash
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 ```bash
@@ -117,8 +117,24 @@ Uvicorn is pointed at the factory with `--factory`.
 
 ## Status
 
-Scaffold complete. Next: schema and models (Alembic + SQLAlchemy), then Firebase
-auth, listings, and the claim transaction.
+Live. The API runs at https://ecoeats-api.onrender.com on Render, backed by Neon
+(Postgres) and Upstash (Redis), and redeploys from `main` on every push.
+
+- 213 backend tests and 28 client tests. CI runs both, plus ruff and biome, on
+  every push.
+- The whole loop — post, browse, search, save, claim, pick up, rate — has been
+  exercised against production, including the double-claim rejection and the
+  inventory refund on cancel.
+- Live quantity changes are pushed over SSE rather than polled.
+
+Not done yet:
+
+- **It has never run on a physical iPhone.** The EAS build needs an Apple
+  Developer account — see `mobile/IPHONE_BUILD.md`.
+- **Map screen** and **push notifications** are native-only and ship with that
+  build. The in-app notification feed is already done.
+- `flutter_app/` is a parked prototype on mock data. It has no backend
+  integration and is not part of the product.
 
 ## Licence and ownership
 
