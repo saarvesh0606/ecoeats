@@ -17,6 +17,7 @@ import { FadeInItem } from "@/components/ui/FadeInItem";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
+import { haptics } from "@/lib/haptics";
 import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
 import { subscribeToListings } from "@/lib/listingStream";
 
@@ -149,6 +150,9 @@ export function RecipientFeed() {
 
 	const onRefresh = useCallback(() => {
 		setRefreshing(true);
+		// Fires when the pull actually triggers, which is the moment the gesture
+		// is committed and the one the user is pulling to find.
+		haptics.tap();
 		void load();
 	}, [load]);
 
@@ -247,6 +251,7 @@ export function RecipientFeed() {
 						return (
 							<Pressable
 								onPress={() => {
+									haptics.select();
 									if (isAll) {
 										setDietary([]);
 										setSoonOnly(false);

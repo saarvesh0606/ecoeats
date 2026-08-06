@@ -6,6 +6,7 @@ import { EmptyBell } from "@/components/ui/EmptyBell";
 import { Spinner } from "@/components/ui/Spinner";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { useToast } from "@/components/ui/Toast";
+import { haptics } from "@/lib/haptics";
 import {
 	type AppNotification,
 	deleteNotification,
@@ -35,6 +36,7 @@ export function NotificationsList() {
 		// Drop it straight away — waiting on the round trip makes the tap feel
 		// broken. Put it back if the server disagrees.
 		setItems((prev) => prev.filter((n) => n.id !== target.id));
+		haptics.press();
 		try {
 			await deleteNotification(target.id);
 		} catch {
@@ -43,6 +45,7 @@ export function NotificationsList() {
 					b.created_at.localeCompare(a.created_at),
 				),
 			);
+			haptics.error();
 			toast.show("Couldn't delete that. Try again.");
 		}
 	}

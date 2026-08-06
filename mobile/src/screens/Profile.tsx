@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, updateProfile } from "@/lib/api";
+import { haptics } from "@/lib/haptics";
 import { DIETARY_TAGS } from "@/lib/listings";
 
 export function Profile() {
@@ -27,6 +28,7 @@ export function Profile() {
 			JSON.stringify([...(profile?.dietary_prefs ?? [])].sort());
 
 	function togglePref(tag: string) {
+		haptics.select();
 		setSaved(false);
 		setPrefs((prev) =>
 			prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
@@ -35,6 +37,7 @@ export function Profile() {
 
 	async function onSave() {
 		if (!name.trim()) {
+			haptics.warning();
 			setError("Name can't be empty.");
 			return;
 		}
@@ -47,8 +50,10 @@ export function Profile() {
 			});
 			applyProfile(updated);
 			setSaved(true);
+			haptics.success();
 			toast.show("Profile saved.");
 		} catch (err) {
+			haptics.error();
 			setError(err instanceof ApiError ? err.message : "Couldn't save. Try again.");
 		} finally {
 			setSaving(false);

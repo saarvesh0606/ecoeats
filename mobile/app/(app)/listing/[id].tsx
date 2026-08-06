@@ -10,6 +10,7 @@ import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
 import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
+import { haptics } from "@/lib/haptics";
 import { fetchListing, type Listing } from "@/lib/listings";
 
 /** Hero photo height; the parallax range is derived from it. */
@@ -102,16 +103,41 @@ export default function ListingDetail() {
 		try {
 			await createClaim(listing.id, qty);
 			setClaimed(true);
+			// This is the moment the whole app exists for, and the screen changes
+			// out from under it — the toast and the claims list arrive together, so
+			// the success pattern is what marks the food as actually yours.
+			haptics.success();
 			toast.show("Reserved! Confirm pickup within 15 minutes.");
 			// Land on the user's claims, where the pickup details live.
 			router.replace("/claims");
 		} catch (err) {
+			// Losing a race for the last portion is the common failure here, and it
+			// deserves to feel different from succeeding, not just read differently.
+			haptics.error();
 			setClaimError(
 				err instanceof ApiError ? err.message : "Couldn't claim. Try again.",
 			);
 		} finally {
 			setClaiming(false);
 		}
+	}
+
+	/** Nudge the portion count, within what's actually left (and at most 10). */
+	function stepQty(delta: number) {
+		if (!listing) return;
+		const next = Math.min(
+			Math.min(listing.quantity_remaining, 10),
+			Math.max(1, qty + delta),
+		);
+		// A stepper that feels identical at the end of its range as in the middle
+		// leaves you pressing a dead control and wondering. The refusal gets its
+		// own, blunter pulse.
+		if (next === qty) {
+			haptics.bump();
+			return;
+		}
+		haptics.select();
+		setQty(next);
 	}
 
 	async function onShare() {
@@ -348,7 +374,7 @@ export default function ListingDetail() {
 					<View className="flex-row items-center justify-center gap-5 mb-3">
 						<Text className="font-body text-gray-500 text-sm">Portions</Text>
 						<Pressable
-							onPress={() => setQty((q) => Math.max(1, q - 1))}
+							onPress={() => stepQty(-1)}
 							hitSlop={8}
 							accessibilityRole="button"
 							accessibilityLabel="Fewer portions"
@@ -359,9 +385,7 @@ export default function ListingDetail() {
 							{qty}
 						</Text>
 						<Pressable
-							onPress={() =>
-								setQty((q) => Math.min(listing.quantity_remaining, 10, q + 1))
-							}
+							onPress={() => stepQty(1)}
 							hitSlop={8}
 							accessibilityRole="button"
 							accessibilityLabel="More portions"

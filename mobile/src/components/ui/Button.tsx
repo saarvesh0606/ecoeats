@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, Text, type ViewStyle } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
+import type { Feel } from "@/lib/haptics";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
@@ -14,6 +15,9 @@ interface ButtonProps {
 	onPress: () => void;
 	style?: ViewStyle;
 	className?: string;
+	/** Overrides the variant's feedback. `"none"` for a button that should be
+	 *  silent despite looking like a committing one. */
+	haptic?: Feel | "none";
 	/** Rendered before the label — e.g. a provider mark on a sign-in button. */
 	icon?: ReactNode;
 	accessibilityLabel?: string;
@@ -26,6 +30,25 @@ const COLORS = {
 	white: "#FFFFFF",
 };
 
+/**
+ * The variant already says how much a button commits to, so it can pick the
+ * feedback too and call sites stay clean.
+ *
+ * The filled variants are the affirmative ones — claim, publish, save — and get
+ * a crisp tick. `danger` gets a heavier one, because ending a post can't be
+ * undone and it should feel like it weighs something. The flat variants carry
+ * the retreats and detours ("Cancel", "Try again", "Browse food"); a phone that
+ * pulses just as insistently when you back out as when you commit is a phone
+ * that has stopped saying anything.
+ */
+const VARIANT_FEEL: Record<ButtonVariant, Feel | "none"> = {
+	primary: "tap",
+	secondary: "tap",
+	danger: "press",
+	outline: "none",
+	ghost: "none",
+};
+
 export function Button({
 	children,
 	variant = "primary",
@@ -36,10 +59,12 @@ export function Button({
 	style,
 	className,
 	icon,
+	haptic,
 	accessibilityLabel,
 	accessibilityHint,
 	testID,
 }: ButtonProps) {
+	const feel = haptic ?? VARIANT_FEEL[variant];
 	const variantStyles: Record<ButtonVariant, string> = {
 		primary: "bg-forest-700 active:bg-forest-800",
 		secondary: "bg-lime active:bg-lime-accent",
@@ -74,6 +99,7 @@ export function Button({
 			testID={testID}
 			// Buttons are small, so they need a shallower dip than a full card.
 			scaleTo={0.96}
+			haptic={feel === "none" ? undefined : feel}
 			className={`rounded-btn items-center justify-center flex-row ${variantStyles[variant]} ${sizeStyles[size]} ${disabled || loading ? "opacity-50" : ""} ${className || ""}`}
 			onPress={onPress}
 			disabled={disabled || loading}

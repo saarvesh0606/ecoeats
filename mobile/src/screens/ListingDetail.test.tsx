@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { ToastProvider } from "@/components/ui/Toast";
 import { createClaim } from "@/lib/claims";
+import { haptics } from "@/lib/haptics";
 import { fetchListing, type Listing } from "@/lib/listings";
 // The screen itself lives under app/, because it is a route. The test cannot
 // sit beside it: expo-router's require.context matches every .tsx under app/
@@ -23,6 +24,18 @@ jest.mock("@/lib/api", () => {
 
 jest.mock("@/lib/listings", () => ({ fetchListing: jest.fn() }));
 jest.mock("@/lib/claims", () => ({ createClaim: jest.fn() }));
+
+jest.mock("@/lib/haptics", () => ({
+	haptics: {
+		tap: jest.fn(),
+		press: jest.fn(),
+		select: jest.fn(),
+		bump: jest.fn(),
+		success: jest.fn(),
+		warning: jest.fn(),
+		error: jest.fn(),
+	},
+}));
 
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
@@ -201,6 +214,59 @@ describe("listing detail", () => {
 			);
 			renderDetail();
 			expect(await screen.findByText("All claimed")).toBeTruthy();
+		});
+	});
+
+	describe("how a claim feels", () => {
+		it("confirms a landed claim in the hand, not only on a screen you're leaving", async () => {
+			// The toast and the claims list arrive together as the route replaces
+			// itself, so the success pattern is the one signal that survives the
+			// transition and marks the food as actually yours.
+			mockFetch.mockResolvedValue(listing());
+			renderDetail();
+			fireEvent.press(await screen.findByText("Claim This Food"));
+
+			await waitFor(() => expect(haptics.success).toHaveBeenCalledTimes(1));
+			expect(haptics.error).not.toHaveBeenCalled();
+		});
+
+		it("feels different when someone else got the last portion", async () => {
+			// Losing the race is the common failure here. Reading differently is not
+			// enough when the phone is halfway back into a pocket.
+			const { ApiError } = jest.requireMock("@/lib/api");
+			mockFetch.mockResolvedValue(listing());
+			mockClaim.mockRejectedValue(new ApiError(409, "You already claimed this."));
+
+			renderDetail();
+			fireEvent.press(await screen.findByText("Claim This Food"));
+
+			await waitFor(() => expect(haptics.error).toHaveBeenCalledTimes(1));
+			expect(haptics.success).not.toHaveBeenCalled();
+		});
+
+		it("ticks each step of the portions stepper", async () => {
+			mockFetch.mockResolvedValue(listing());
+			renderDetail();
+			await screen.findByText("Claim This Food");
+
+			fireEvent.press(screen.getByLabelText("More portions"));
+
+			expect(haptics.select).toHaveBeenCalledTimes(1);
+			expect(haptics.bump).not.toHaveBeenCalled();
+		});
+
+		it("feels the stepper refuse rather than going quiet at its limit", async () => {
+			// A dead control that pulses exactly like a live one leaves you pressing
+			// it again, wondering whether the tap registered at all.
+			mockFetch.mockResolvedValue(listing({ quantity_remaining: 2 }));
+			renderDetail();
+			await screen.findByText("Claim This Food");
+
+			fireEvent.press(screen.getByLabelText("More portions")); // 1 -> 2, ticks
+			fireEvent.press(screen.getByLabelText("More portions")); // held at 2
+
+			expect(haptics.select).toHaveBeenCalledTimes(1);
+			expect(haptics.bump).toHaveBeenCalledTimes(1);
 		});
 	});
 

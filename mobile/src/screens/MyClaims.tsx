@@ -11,6 +11,7 @@ import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { cancelClaim, type Claim, fetchMyClaims, rateHost } from "@/lib/claims";
 import { formatLocation } from "@/lib/format";
+import { haptics } from "@/lib/haptics";
 
 type Tab = "active" | "picked_up" | "expired";
 
@@ -50,7 +51,10 @@ function StarRow({ onPick }: { onPick: (stars: number) => void }) {
 			{[1, 2, 3, 4, 5].map((n) => (
 				<Pressable
 					key={n}
-					onPress={() => onPick(n)}
+					onPress={() => {
+						haptics.select();
+						onPick(n);
+					}}
 					hitSlop={6}
 					accessibilityRole="button"
 					accessibilityLabel={`Rate ${n} star${n > 1 ? "s" : ""}`}
@@ -108,8 +112,14 @@ export function MyClaims() {
 		try {
 			await cancelClaim(claim.id);
 			await load();
+			// Giving food back is a success, but not a triumph — it lands as one
+			// clean confirmation rather than anything celebratory.
+			haptics.success();
 			toast.show("Claim cancelled.");
 		} catch (err) {
+			// The API refusing (the hold already expired, say) is silent otherwise:
+			// the row just doesn't change. This is the only sign it was refused.
+			haptics.error();
 			if (!(err instanceof ApiError)) throw err;
 		} finally {
 			setBusyId(null);
@@ -120,8 +130,10 @@ export function MyClaims() {
 		try {
 			await rateHost(claim.id, stars);
 			await load();
+			haptics.success();
 			toast.show("Thanks for rating!");
 		} catch (err) {
+			haptics.error();
 			if (!(err instanceof ApiError)) throw err;
 		}
 	}
@@ -166,7 +178,10 @@ export function MyClaims() {
 					return (
 						<Pressable
 							key={key}
-							onPress={() => setTab(key)}
+							onPress={() => {
+								haptics.select();
+								setTab(key);
+							}}
 							className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
 						>
 							<Text

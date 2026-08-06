@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
+import { haptics } from "@/lib/haptics";
 import { type Listing, saveListing, unsaveListing } from "@/lib/listings";
 
 interface ListingCardProps {
@@ -31,11 +32,15 @@ export function ListingCard({
 	async function toggleSave() {
 		const next = !saved;
 		setSaved(next); // optimistic — the server call is idempotent
+		haptics.select();
 		try {
 			if (next) await saveListing(listing.id);
 			else await unsaveListing(listing.id);
 		} catch {
 			setSaved(!next); // put it back if the request failed
+			// The bookmark silently flipping back is easy to miss mid-scroll; this
+			// is the only thing that tells you the save didn't take.
+			haptics.error();
 		}
 	}
 

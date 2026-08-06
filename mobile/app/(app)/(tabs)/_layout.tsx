@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { TabIcon, type TabIconName } from "@/components/ui/TabIcon";
 import { useAuth } from "@/context/AuthContext";
+import { haptics } from "@/lib/haptics";
 
 /**
  * Role-aware tabs. The two roles get different bottom bars — a recipient
@@ -81,6 +82,10 @@ export default function TabsLayout() {
 				<Tabs.Screen
 					key={tab.name}
 					name={tab.name}
+					// On the tab press itself, not on focus: the app also moves between
+					// tabs on its own (a claim lands the user on /claims), and feedback
+					// nobody's finger asked for is just a phone buzzing at you.
+					listeners={{ tabPress: () => haptics.select() }}
 					options={{
 						// Cast: expo-router types href as a known-route union, and these
 						// are built from the same route strings the files declare.

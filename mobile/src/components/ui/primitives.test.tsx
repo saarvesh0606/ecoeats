@@ -1,11 +1,24 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Animated, Text } from "react-native";
+import { haptics } from "@/lib/haptics";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { FadeInItem } from "./FadeInItem";
 import { Input } from "./Input";
 import { ProgressBar } from "./ProgressBar";
+
+jest.mock("@/lib/haptics", () => ({
+	haptics: {
+		tap: jest.fn(),
+		press: jest.fn(),
+		select: jest.fn(),
+		bump: jest.fn(),
+		success: jest.fn(),
+		warning: jest.fn(),
+		error: jest.fn(),
+	},
+}));
 
 describe("Button", () => {
 	it("calls onPress", () => {
@@ -50,6 +63,74 @@ describe("Button", () => {
 			busy: true,
 			disabled: true,
 		});
+	});
+});
+
+describe("Button haptics", () => {
+	beforeEach(() => jest.clearAllMocks());
+
+	it("fires as the touch lands, not when it is released", () => {
+		// The pulse confirms the press registered, so it has to arrive under the
+		// finger. On release it lands after the thing it is acknowledging and the
+		// whole control reads as laggy.
+		render(<Button onPress={() => {}}>Claim</Button>);
+
+		fireEvent(screen.getByText("Claim"), "pressIn");
+
+		expect(haptics.tap).toHaveBeenCalledTimes(1);
+	});
+
+	it("gives a destructive button more weight than an affirmative one", () => {
+		render(
+			<Button variant="danger" onPress={() => {}}>
+				End post
+			</Button>,
+		);
+
+		fireEvent(screen.getByText("End post"), "pressIn");
+
+		expect(haptics.press).toHaveBeenCalledTimes(1);
+		expect(haptics.tap).not.toHaveBeenCalled();
+	});
+
+	it("stays silent on the retreats", () => {
+		// "Cancel", "Try again", "Browse food" are all ghost/outline. A phone that
+		// pulses as insistently when you back out as when you commit has stopped
+		// saying anything.
+		render(
+			<Button variant="ghost" onPress={() => {}}>
+				Cancel
+			</Button>,
+		);
+
+		fireEvent(screen.getByText("Cancel"), "pressIn");
+
+		expect(haptics.tap).not.toHaveBeenCalled();
+		expect(haptics.press).not.toHaveBeenCalled();
+	});
+
+	it("says nothing while disabled, having refused to act", () => {
+		render(
+			<Button onPress={() => {}} disabled>
+				Claim
+			</Button>,
+		);
+
+		fireEvent(screen.getByText("Claim"), "pressIn");
+
+		expect(haptics.tap).not.toHaveBeenCalled();
+	});
+
+	it("lets a call site override the variant's default", () => {
+		render(
+			<Button variant="outline" haptic="tap" onPress={() => {}}>
+				Save as Draft
+			</Button>,
+		);
+
+		fireEvent(screen.getByText("Save as Draft"), "pressIn");
+
+		expect(haptics.tap).toHaveBeenCalledTimes(1);
 	});
 });
 

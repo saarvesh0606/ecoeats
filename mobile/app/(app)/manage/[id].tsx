@@ -18,6 +18,7 @@ import {
 	markNoShow,
 } from "@/lib/claims";
 import { formatLocation, formatTimeLeft } from "@/lib/format";
+import { haptics } from "@/lib/haptics";
 import {
 	cancelListing,
 	fetchListing,
@@ -93,8 +94,10 @@ export default function ManageListing() {
 		try {
 			await fn();
 			await load();
+			haptics.success();
 			if (opts.success) toast.show(opts.success);
 		} catch (err) {
+			haptics.error();
 			setError(err instanceof ApiError ? err.message : "Something went wrong.");
 		} finally {
 			setBusyId(null);
@@ -113,10 +116,12 @@ export default function ManageListing() {
 		setError(null);
 		try {
 			await cancelListing(listing?.id ?? "");
+			haptics.success();
 			toast.show("Post ended.");
 			// Land back on the dashboard so the change is visible where it matters.
 			router.replace("/posts");
 		} catch (err) {
+			haptics.error();
 			setError(err instanceof ApiError ? err.message : "Something went wrong.");
 			setBusyId(null);
 		}

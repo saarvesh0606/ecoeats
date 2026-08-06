@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { type ReactNode, useRef } from "react";
 import { Animated, PanResponder, Pressable, Text, View } from "react-native";
+import { haptics } from "@/lib/haptics";
 
 /** How far the row slides to expose the action beneath it. */
 const REVEAL = 88;
@@ -31,9 +32,12 @@ export function SwipeableRow({
 }) {
 	const translateX = useRef(new Animated.Value(0)).current;
 	const openRef = useRef(false);
+	/** Whether the drag is currently far enough to stay open on release. */
+	const armedRef = useRef(false);
 
 	const settle = (toOpen: boolean) => {
 		openRef.current = toOpen;
+		armedRef.current = toOpen;
 		Animated.spring(translateX, {
 			toValue: toOpen ? REVEAL : 0,
 			useNativeDriver: true,
@@ -51,7 +55,20 @@ export function SwipeableRow({
 				(openRef.current ? g.dx < 0 : g.dx > 0),
 			onPanResponderMove: (_e, g) => {
 				const base = openRef.current ? REVEAL : 0;
-				translateX.setValue(Math.min(REVEAL, Math.max(0, base + g.dx)));
+				const next = Math.min(REVEAL, Math.max(0, base + g.dx));
+				translateX.setValue(next);
+
+				// Pulse the moment the drag passes the point where letting go would
+				// leave the row open, while the finger is still down. That turns an
+				// invisible threshold into something you can feel for, so you stop
+				// pulling exactly when it has caught rather than guessing and
+				// checking. Only on the way in — ticking on every wobble across the
+				// line would be noise.
+				const armed = next > REVEAL * OPEN_THRESHOLD;
+				if (armed !== armedRef.current) {
+					armedRef.current = armed;
+					if (armed) haptics.tap();
+				}
 			},
 			onPanResponderRelease: (_e, g) => {
 				const base = openRef.current ? REVEAL : 0;

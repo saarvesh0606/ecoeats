@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useSpeech } from "@/hooks/useSpeech";
 import { ApiError } from "@/lib/api";
+import { haptics } from "@/lib/haptics";
 import {
 	CAMPUSES,
 	createListing,
@@ -77,6 +78,7 @@ export function PostFood() {
 	});
 
 	function toggleTag(tag: string) {
+		haptics.select();
 		setTags((prev) =>
 			prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
 		);
@@ -94,7 +96,9 @@ export function PostFood() {
 		try {
 			const url = await uploadPhoto(result.assets[0].uri);
 			setPhotos((prev) => [...prev, url]);
+			haptics.success();
 		} catch {
+			haptics.error();
 			setError("The photo couldn't be uploaded. Try again.");
 		} finally {
 			setUploading(false);
@@ -113,6 +117,9 @@ export function PostFood() {
 	async function submit(publish: "now" | "draft" | "scheduled") {
 		const problem = validate();
 		if (problem) {
+			// The message appears above the button, which on a long form can be off
+			// screen; a warning at least says the press did something.
+			haptics.warning();
 			setError(problem);
 			return;
 		}
@@ -139,8 +146,10 @@ export function PostFood() {
 				scheduled_for:
 					publish === "scheduled" ? scheduledFor(scheduleMode) : null,
 			});
+			haptics.success();
 			router.replace("/posts");
 		} catch (err) {
+			haptics.error();
 			setError(err instanceof ApiError ? err.message : "Couldn't post. Try again.");
 		} finally {
 			setSubmitting(false);
@@ -214,6 +223,7 @@ export function PostFood() {
 										<Pressable
 											key={mode}
 											onPress={() => {
+												haptics.select();
 												if (speech.listening) speech.stop();
 												setEntryMode(mode);
 											}}
@@ -317,7 +327,10 @@ export function PostFood() {
 							return (
 								<Pressable
 									key={mins}
-									onPress={() => setExpiry(mins)}
+									onPress={() => {
+										haptics.select();
+										setExpiry(mins);
+									}}
 									className={`flex-1 rounded-btn py-2.5 items-center border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
 								>
 									<Text
@@ -338,7 +351,10 @@ export function PostFood() {
 							return (
 								<Pressable
 									key={name}
-									onPress={() => setCampus(name)}
+									onPress={() => {
+										haptics.select();
+										setCampus(name);
+									}}
 									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
 								>
 									<Text
@@ -379,7 +395,10 @@ export function PostFood() {
 							return (
 								<Pressable
 									key={key}
-									onPress={() => setScheduleMode(key)}
+									onPress={() => {
+										haptics.select();
+										setScheduleMode(key);
+									}}
 									className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
 								>
 									<Text
