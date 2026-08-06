@@ -1,41 +1,44 @@
 {
-	"expo": {
-		"name": "EcoEats",
-		"slug": "ecoeats",
-		"version": "0.1.0",
-		"orientation": "portrait",
-		"scheme": "ecoeats",
-		"userInterfaceStyle": "light",
-		"newArchEnabled": true,
-		"ios": {
-			"supportsTablet": true,
-			"bundleIdentifier": "com.ecoeats.app",
-			"infoPlist": {
-				"NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
-				"NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting."
-			}
-		},
-		"android": {
-			"package": "com.ecoeats.app",
-			"permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
-		},
-		"web": {
-			"bundler": "metro",
-			"output": "single"
-		},
-		"plugins": [
-			"expo-router",
-			"expo-secure-store",
-			[
-				"expo-image-picker",
-				{
-					"photosPermission": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
-					"cameraPermission": "EcoEats uses the camera so you can take a photo of the food you're posting."
-				}
-			]
-		],
-		"experiments": {
-			"typedRoutes": true
-		}
-	}
+  "expo": {
+    "name": "EcoEats",
+    "slug": "ecoeats",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "ecoeats",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ecoeats.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
+        "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting."
+      }
+    },
+    "android": {
+      "package": "com.ecoeats.app",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
+          "cameraPermission": "EcoEats uses the camera so you can take a photo of the food you're posting."
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
 }
