@@ -9,7 +9,13 @@ module.exports = {
 	// Jest's 5s default is a poor fit here. A screen suite mounts the real
 	// navigation, animation and font stacks, and on a slower machine a handful of
 	// tests blow the limit at random — a different handful each run, which reads
-	// as a broken suite rather than a slow one. The tests themselves are not
-	// waiting on anything that could hang; every fetch is mocked.
-	testTimeout: 30_000,
+	// as a broken suite rather than a slow one.
+	//
+	// 60s rather than something tighter because the worst case is a cold Babel
+	// transform cache, which is exactly what CI and a fresh clone always have: on
+	// a clean install the first test in a suite paid enough transform cost to
+	// blow 30s, then passed in single digits once the cache was warm. Nothing
+	// here waits on anything that could genuinely hang — every fetch is mocked —
+	// so a generous ceiling costs nothing and buys a trustworthy signal.
+	testTimeout: 60_000,
 };
