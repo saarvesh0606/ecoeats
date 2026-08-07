@@ -12,6 +12,7 @@ import { createClaim } from "@/lib/claims";
 import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { fetchListing, type Listing } from "@/lib/listings";
+import { openDirections } from "@/lib/maps";
 
 /** Hero photo height; the parallax range is derived from it. */
 const HERO_HEIGHT = 288;
@@ -119,6 +120,21 @@ export default function ListingDetail() {
 			);
 		} finally {
 			setClaiming(false);
+		}
+	}
+
+	async function onDirections() {
+		if (!listing) return;
+		const opened = await openDirections(
+			listing.lat,
+			listing.lng,
+			listing.building,
+		);
+		if (!opened) {
+			// No maps app and no browser to fall back to is rare, but silently
+			// doing nothing would read as a dead button.
+			haptics.error();
+			toast.show("Couldn't open maps on this device.");
 		}
 	}
 
@@ -325,6 +341,23 @@ export default function ListingDetail() {
 									: `Expired at ${expiresAt}`
 							}
 						/>
+						{/* Sits with the address rather than beside the claim button: it
+						    answers "where is that?", which is a question you have while
+						    still deciding, not after committing. */}
+						<View className="mt-3 pt-3 border-t border-gray-100">
+							<Button
+								variant="outline"
+								size="sm"
+								haptic="tap"
+								onPress={() => void onDirections()}
+								accessibilityLabel={`Directions to ${listing.building}`}
+								icon={
+									<Ionicons name="navigate-outline" size={16} color="#1B4332" />
+								}
+							>
+								Get Directions
+							</Button>
+						</View>
 					</View>
 
 					{/* Shared by */}

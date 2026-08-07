@@ -10,7 +10,11 @@ import { haptics } from "@/lib/haptics";
  * belong to the current role, so nobody can even navigate to them.
  *
  * The host also gets an Activity tab. The recipient Map tab from the mockups is
- * deferred: react-native-maps is native and ships with the device build.
+ * deliberately NOT here. Directions hand off to the phone's own maps app from
+ * the listing itself (see lib/maps), and a tab is the wrong shape for that: a
+ * tab promises a place inside the app you can go and come back from, whereas
+ * this one would throw you into Apple or Google Maps the moment you touched it.
+ * The button sits with the address instead, where the question it answers is.
  */
 
 /** `null` in a role column means the tab is hidden for that role. */

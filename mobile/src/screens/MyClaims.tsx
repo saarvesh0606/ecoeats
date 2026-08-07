@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, Linking, Pressable, Text, View } from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/api";
 import { cancelClaim, type Claim, fetchMyClaims, rateHost } from "@/lib/claims";
 import { formatLocation } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
+import { openDirections } from "@/lib/maps";
 
 type Tab = "active" | "picked_up" | "expired";
 
@@ -263,7 +264,7 @@ export function MyClaims() {
 									<View className="flex-1">
 										<Button
 											size="sm"
-											onPress={() => void Linking.openURL(l.directions_url)}
+											onPress={() => void openDirections(l.lat, l.lng, l.title)}
 										>
 											Directions
 										</Button>

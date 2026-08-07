@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Linking } from "react-native";
 import { ToastProvider } from "@/components/ui/Toast";
 import { createClaim } from "@/lib/claims";
 import { haptics } from "@/lib/haptics";
@@ -214,6 +215,39 @@ describe("listing detail", () => {
 			);
 			renderDetail();
 			expect(await screen.findByText("All claimed")).toBeTruthy();
+		});
+	});
+
+	describe("directions", () => {
+		it("hands the listing's own coordinates to the maps app", async () => {
+			// Not the API's directions_url: that is a maps.google.com link, which
+			// opens Safari on iOS rather than Apple Maps. Only the client knows the
+			// platform, so it builds the link itself.
+			const open = jest
+				.spyOn(Linking, "openURL")
+				.mockResolvedValue(true as never);
+			mockFetch.mockResolvedValue(listing({ lat: 33.4212, lng: -111.9327 }));
+			renderDetail();
+
+			fireEvent.press(await screen.findByLabelText(/Directions to /));
+
+			await waitFor(() => expect(open).toHaveBeenCalledTimes(1));
+			expect(open.mock.calls[0][0]).toContain("33.4212,-111.9327");
+		});
+
+		it("says so when the device has nothing that can open a map", async () => {
+			// Otherwise the button just appears dead.
+			jest
+				.spyOn(Linking, "openURL")
+				.mockRejectedValue(new Error("no handler") as never);
+			mockFetch.mockResolvedValue(listing());
+			renderDetail();
+
+			fireEvent.press(await screen.findByLabelText(/Directions to /));
+
+			expect(
+				await screen.findByText("Couldn't open maps on this device."),
+			).toBeTruthy();
 		});
 	});
 

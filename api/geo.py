@@ -53,10 +53,13 @@ def bounding_box(
 
 
 def maps_url(lat: float, lng: float, label: str | None = None) -> str:
-    """A universal maps link the phone opens in its default navigation app.
+    """A Google Maps link to a point, for any consumer that just wants a URL.
 
-    Apple Maps handles this on iOS and Google Maps on Android, so the client
-    does not need to branch on platform.
+    Not universal, despite what this used to claim: on iOS a maps.google.com
+    link opens Safari, not Apple Maps. The server cannot know what it is talking
+    to, so the mobile client builds its own platform-appropriate link instead
+    (see mobile/src/lib/maps.ts) and does not use this field for navigation.
+    Kept because it is a reasonable default for anything that isn't the app.
     """
     query = f"{lat},{lng}"
     if label:
