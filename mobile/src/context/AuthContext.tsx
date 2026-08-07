@@ -24,6 +24,7 @@ import {
 	watchAuth,
 } from "@/lib/firebase";
 import { fetchProfile, type UserProfile } from "@/lib/api";
+import { registerForPush, unregisterForPush } from "@/lib/push";
 import { getDevToken, setDevToken } from "@/lib/session";
 
 export type AuthStatus =
@@ -54,6 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [status, setStatus] = useState<AuthStatus>("loading");
+
+	/** This device's push token, kept so sign-out can hand it back. A ref
+	 *  because nothing renders from it. */
+	const pushToken = useRef<string | null>(null);
 
 	// While a dev session is active, Firebase auth changes are ignored so they
 	// can't knock the user back to signed-out. A ref because the watchAuth
@@ -141,9 +146,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setProfile(updated);
 	}, []);
 
+	// Registered once the account is fully usable, not at launch: the token
+	// belongs to an account, and asking a stranger for notification permission
+	// before they have even signed in is the surest way to be refused for good.
+	useEffect(() => {
+		if (status !== "ready") return;
+		let cancelled = false;
+		void registerForPush().then((token) => {
+			if (!cancelled) pushToken.current = token;
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [status]);
+
 	const signOut = useCallback(async () => {
 		devActive.current = false;
 		setDevToken(null);
+		// Before Firebase drops the credentials, while the call can still be
+		// authorised — otherwise the phone keeps buzzing for an account nobody
+		// is signed into.
+		await unregisterForPush(pushToken.current);
+		pushToken.current = null;
 		await fbSignOut();
 		setProfile(null);
 		setStatus("signed-out");

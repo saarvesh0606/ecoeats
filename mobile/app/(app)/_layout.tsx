@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { usePushNavigation } from "@/hooks/usePushNavigation";
 
 /**
  * The authenticated area: a stack whose base is the role-aware tab bar, with
@@ -8,8 +9,13 @@ import { Stack } from "expo-router";
  * a listing and returning feels continuous rather than like a hard cut. The tab
  * bar itself gets no animation — switching tabs shouldn't look like navigation
  * deeper into the app.
+ *
+ * Tapped notifications are handled here rather than at the root, because the
+ * listing they open lives in this stack and only makes sense signed in.
  */
 export default function AppLayout() {
+	usePushNavigation();
+
 	return (
 		<Stack
 			screenOptions={{

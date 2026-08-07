@@ -85,7 +85,10 @@ export const api = {
 	get: <T>(path: string) => request<T>("GET", path),
 	post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
 	patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
-	del: <T>(path: string) => request<T>("DELETE", path),
+	// A body is optional and rarely used, but unregistering a device has to say
+	// which token — and it isn't safe in a path segment, where an Expo token's
+	// brackets would need encoding by every caller.
+	del: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
 };
 
 // --- Shapes mirrored from the backend Pydantic schemas --------------------
