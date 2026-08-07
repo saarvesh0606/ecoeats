@@ -14,6 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { VoicePanel } from "@/components/VoicePanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Accuracy as LocationAccuracy } from "expo-location";
+import { type Coords, useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useSpeech } from "@/hooks/useSpeech";
 import { ApiError } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
@@ -67,6 +69,26 @@ export function PostFood() {
 	const [placement, setPlacement] = useState("");
 	const [photos, setPhotos] = useState<string[]>([]);
 	const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("now");
+	/** Where the food actually is, once the host has pinned it. Null means the
+	 *  post falls back to the middle of the chosen campus. */
+	const [pinned, setPinned] = useState<Coords | null>(null);
+
+	// Never automatic. A host can post from their office about food two
+	// buildings away, so quietly stamping the post with wherever the phone
+	// happens to be would send people to the wrong door with confidence.
+	const location = useDeviceLocation({
+		accuracy: LocationAccuracy.High,
+	});
+
+	async function pinCurrentLocation() {
+		const next = await location.request();
+		if (next) {
+			setPinned(next);
+			haptics.success();
+		} else {
+			haptics.error();
+		}
+	}
 
 	const [uploading, setUploading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
@@ -139,7 +161,10 @@ export function PostFood() {
 					building: building.trim(),
 					room: room.trim() || null,
 					placement_note: placement.trim() || null,
-					...CAMPUSES[campus],
+					// The pin when there is one, the campus centre otherwise. The
+					// fallback is what every post used to send, and it is why feed
+					// distances have never meant anything.
+					...(pinned ?? CAMPUSES[campus]),
 				},
 				photo_urls: photos,
 				publish,
@@ -385,6 +410,29 @@ export function PostFood() {
 						value={placement}
 						onChangeText={setPlacement}
 					/>
+
+					{/* Pinning is what makes "0.4 mi away" mean anything on the feed.
+					    Without it the post lands at the middle of the campus. */}
+					<View className="mb-4">
+						<Button
+							variant={pinned ? "secondary" : "outline"}
+							size="sm"
+							haptic="tap"
+							loading={location.status === "locating"}
+							onPress={() => void pinCurrentLocation()}
+						>
+							{pinned ? "Location pinned — tap to update" : "Pin my location"}
+						</Button>
+						<Text className="font-body text-gray-400 text-xs mt-1.5">
+							{pinned
+								? "People will be told how far they are from here."
+								: location.status === "denied"
+									? `Location permission is off, so this posts at the centre of ${campus}.`
+									: location.status === "unavailable"
+										? `Couldn't get a location, so this posts at the centre of ${campus}.`
+										: `Optional. Without it, this posts at the centre of ${campus}.`}
+						</Text>
+					</View>
 
 					<Text className="font-body-semibold text-gray-900 mb-2">
 						When to publish

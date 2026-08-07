@@ -35,7 +35,15 @@
           "cameraPermission": "EcoEats uses the camera so you can take a photo of the food you're posting."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "EcoEats uses your location to show how far away each pickup is, and to place food you post at the right spot on campus.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

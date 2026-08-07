@@ -15,6 +15,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useNow } from "@/hooks/useNow";
 import { ApiError } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
@@ -47,13 +48,21 @@ export function RecipientFeed() {
 		return () => clearTimeout(t);
 	}, [query]);
 
+	// Asked for on arrival, because "what's near me" is the whole screen. The
+	// feed does not wait for it: the first page loads without coordinates and
+	// re-fetches once a fix arrives, so a slow or refused permission costs a
+	// distance label, never the food itself.
+	const { coords } = useDeviceLocation({ auto: true });
+
 	const filters = useCallback(
 		() => ({
 			dietary: dietary.length ? dietary : undefined,
 			maxMinutes: soonOnly ? SOON_MINUTES : undefined,
 			q: debouncedQuery || undefined,
+			lat: coords?.lat,
+			lng: coords?.lng,
 		}),
-		[dietary, soonOnly, debouncedQuery],
+		[dietary, soonOnly, debouncedQuery, coords],
 	);
 
 	const load = useCallback(async () => {

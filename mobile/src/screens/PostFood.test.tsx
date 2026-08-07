@@ -14,6 +14,16 @@ jest.mock("@/lib/listings", () => ({
 	},
 }));
 jest.mock("@/lib/uploads", () => ({ uploadPhoto: jest.fn() }));
+jest.mock("expo-location", () => ({ Accuracy: { Balanced: 3, High: 4 } }));
+
+const mockRequestLocation = jest.fn();
+jest.mock("@/hooks/useDeviceLocation", () => ({
+	useDeviceLocation: () => ({
+		coords: null,
+		status: "idle",
+		request: mockRequestLocation,
+	}),
+}));
 jest.mock("expo-image-picker", () => ({ launchImageLibraryAsync: jest.fn() }));
 jest.mock("@/hooks/useSpeech", () => ({
 	useSpeech: () => ({
@@ -225,6 +235,52 @@ describe("PostFood", () => {
 
 			expect(await screen.findByText("Slow down a moment.")).toBeTruthy();
 			expect(mockReplace).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("where the food is", () => {
+		it("pins the post to the host's actual position once they ask it to", async () => {
+			// The campus-centre fallback is covered by the publishing suite above;
+			// this is the case that makes a feed distance mean anything.
+			mockRequestLocation.mockResolvedValue({ lat: 33.4212, lng: -111.9327 });
+			render(<PostFood />);
+			fillRequired();
+			setDescription("Cheese and pepperoni");
+
+			fireEvent.press(screen.getByText("Pin my location"));
+			await screen.findByText("Location pinned — tap to update");
+			fireEvent.press(screen.getByText("Publish Post"));
+
+			await waitFor(() =>
+				expect(mockCreate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						location: expect.objectContaining({
+							lat: 33.4212,
+							lng: -111.9327,
+						}),
+					}),
+				),
+			);
+		});
+
+		it("still publishes, at the campus centre, when location is refused", async () => {
+			// A refused permission must never block a post going up.
+			mockRequestLocation.mockResolvedValue(null);
+			render(<PostFood />);
+			fillRequired();
+			setDescription("Cheese and pepperoni");
+
+			fireEvent.press(screen.getByText("Pin my location"));
+			await waitFor(() => expect(mockRequestLocation).toHaveBeenCalled());
+			fireEvent.press(screen.getByText("Publish Post"));
+
+			await waitFor(() =>
+				expect(mockCreate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						location: expect.objectContaining({ lat: 33.4242 }),
+					}),
+				),
+			);
 		});
 	});
 

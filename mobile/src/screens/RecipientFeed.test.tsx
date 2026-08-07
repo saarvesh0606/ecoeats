@@ -15,6 +15,18 @@ jest.mock("@/lib/listings", () => ({
 }));
 jest.mock("@/lib/listingStream", () => ({ subscribeToListings: jest.fn() }));
 
+// Denied by default. The feed has to be fully usable without a location, so
+// that is the state most of this suite should be exercising.
+const mockRequestLocation = jest.fn(async () => null as unknown);
+jest.mock("@/hooks/useDeviceLocation", () => ({
+	useDeviceLocation: () => mockUseDeviceLocation(),
+}));
+const mockUseDeviceLocation = jest.fn(() => ({
+	coords: null as { lat: number; lng: number } | null,
+	status: "denied",
+	request: mockRequestLocation,
+}));
+
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock("@/hooks/useNow", () => ({
@@ -42,6 +54,13 @@ function streamEvent(overrides: Partial<ListingStreamEvent> = {}): ListingStream
 describe("RecipientFeed", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		// clearAllMocks resets calls, not return values, so a test that grants
+		// location would otherwise leak coordinates into every test after it.
+		mockUseDeviceLocation.mockReturnValue({
+			coords: null,
+			status: "denied",
+			request: mockRequestLocation,
+		});
 		mockFeed.mockResolvedValue({ items: [makeListing()], nextCursor: null });
 		mockSubscribe.mockImplementation(async (cb) => {
 			emit = cb;
@@ -58,6 +77,41 @@ describe("RecipientFeed", () => {
 		render(<RecipientFeed />);
 		return await screen.findByText("Discover");
 	}
+
+	describe("location", () => {
+		it("asks the server for distances once it knows where you are", async () => {
+			mockUseDeviceLocation.mockReturnValue({
+				coords: { lat: 33.4212, lng: -111.9327 },
+				status: "granted",
+				request: mockRequestLocation,
+			});
+
+			render(<RecipientFeed />);
+
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenCalledWith(
+					expect.objectContaining({ lat: 33.4212, lng: -111.9327 }),
+				),
+			);
+		});
+
+		it("still lists food when location is refused, just without distances", async () => {
+			// Location is an enhancement, never a gate. A refused permission must
+			// not cost the user the feed itself.
+			mockUseDeviceLocation.mockReturnValue({
+				coords: null,
+				status: "denied",
+				request: mockRequestLocation,
+			});
+
+			render(<RecipientFeed />);
+
+			expect(await screen.findByText("Leftover pizza")).toBeTruthy();
+			expect(mockFeed).toHaveBeenCalledWith(
+				expect.objectContaining({ lat: undefined, lng: undefined }),
+			);
+		});
+	});
 
 	describe("search", () => {
 		it("waits for a pause before asking the server", async () => {
