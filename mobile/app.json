@@ -38,6 +38,13 @@
       "expo-font",
       "expo-notifications",
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "EcoEats uses the microphone so you can describe food by speaking instead of typing.",
+          "speechRecognitionPermission": "EcoEats turns what you say into the description of the food you're posting."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "EcoEats uses your location to show how far away each pickup is, and to place food you post at the right spot on campus.",

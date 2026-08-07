@@ -6,12 +6,14 @@
  * thing a recording indicator has to tell you honestly is whether you are being
  * picked up.
  *
- * Web only, via the Web Audio API. On native `available` stays false and the UI
- * shows the timer without bars — same policy as useSpeech, which is also
- * web-only until the device build adds expo-speech-recognition.
+ * Two sources, matching the two recognisers in useSpeech. On web the Web Audio
+ * API measures the microphone directly. On a phone the level comes from the
+ * recogniser itself, which already has the mic open and reports loudness as it
+ * listens — opening a second capture alongside it would fight over the device.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useSpeechRecognitionEvent } from "expo-speech-recognition";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
 /** Bars drawn in the waveform; also the length of the rolling history. */
@@ -31,10 +33,34 @@ interface UseAudioLevels {
 	available: boolean;
 }
 
+/**
+ * The recogniser reports a float between -2 and 10, where anything below 0 is
+ * inaudible. Speech lands well short of the top of that range, so the divisor
+ * is smaller than 10 — otherwise ordinary talking would barely lift the bars.
+ *
+ * ⚠️ Chosen to match the feel of the web path, not measured on hardware. If the
+ * bars look dead or permanently maxed on a real phone, this is the number.
+ */
+const NATIVE_LOUDNESS_CEILING = 6;
+
 export function useAudioLevels(active: boolean): UseAudioLevels {
 	const [levels, setLevels] = useState<number[]>(silentHistory);
 	const [available, setAvailable] = useState(false);
 	const historyRef = useRef<number[]>(silentHistory());
+
+	const pushLevel = useCallback((level: number) => {
+		historyRef.current = [...historyRef.current.slice(1), level];
+		setLevels(historyRef.current);
+	}, []);
+
+	// Native: the recogniser is already holding the microphone and tells us how
+	// loud it is. Emitted only while it runs, so this is silent on web and
+	// whenever nothing is listening.
+	useSpeechRecognitionEvent("volumechange", (event) => {
+		if (Platform.OS === "web" || !active) return;
+		setAvailable(true);
+		pushLevel(Math.max(0, Math.min(1, event.value / NATIVE_LOUDNESS_CEILING)));
+	});
 
 	useEffect(() => {
 		if (!active || Platform.OS !== "web" || typeof window === "undefined") {
