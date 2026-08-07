@@ -94,6 +94,16 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = True
     sweep_interval_seconds: int = 60
 
+    # --- push notifications ----------------------------------------------
+    # Expo fronts APNs and FCM, so no vendor credentials live here: the APNs
+    # key and FCM service account are uploaded to the Expo project instead.
+    # This switch exists so tests and local work never reach the network, and
+    # so delivery can be turned off without a deploy.
+    push_enabled: bool = True
+    # Optional. Only needed once the Expo project enables "enhanced security"
+    # for push, which requires every send to be signed.
+    expo_access_token: str | None = None
+
     # --- rate limiting ---------------------------------------------------
     # Redis is the shared store for multi-instance production; without a URL the
     # limiter falls back to in-memory (single process only — dev and tests).

@@ -69,6 +69,9 @@ def settings(test_database_url: str) -> Settings:
         # In-memory limiter and event bus — no shared Redis state bleeding
         # across tests. The Redis backends have their own dedicated tests.
         redis_url=None,
+        # No test may reach Expo's push service. test_push.py drives the
+        # sender directly with a stubbed HTTP client instead.
+        push_enabled=False,
         # Fixed, fake Cloudinary credentials so the signing endpoint can be
         # tested without reaching the network or reading the real secret.
         cloudinary_cloud_name="test-cloud",

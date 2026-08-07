@@ -7,6 +7,7 @@ migrations will silently omit it.
 
 from api.db import Base
 from api.models.claim import Claim
+from api.models.device import DeviceToken
 from api.models.enums import (
     ALLOWED_EMAIL_DOMAIN,
     EXPIRY_CHOICES,
@@ -28,6 +29,7 @@ __all__ = [
     "Base",
     "Claim",
     "ClaimStatus",
+    "DeviceToken",
     "Listing",
     "ListingPhoto",
     "ListingStatus",

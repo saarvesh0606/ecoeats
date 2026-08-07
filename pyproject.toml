@@ -18,6 +18,9 @@ dependencies = [
     "firebase-admin>=6.5",
     "redis>=5.0",
     "sentry-sdk[fastapi]>=2.0",
+    # Push delivery calls Expo's HTTP API from the running service, so this is
+    # no longer a test-only client. It was under [dev] until push existed.
+    "httpx>=0.28",
 ]
 
 [project.optional-dependencies]

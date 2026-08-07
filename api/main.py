@@ -18,6 +18,7 @@ from api.monitoring import init_sentry
 from api.ratelimit import RateLimitMiddleware, build_limiter
 from api.routers import (
     claims_router,
+    devices_router,
     listings_router,
     notifications_router,
     uploads_router,
@@ -202,6 +203,7 @@ def create_app(
     v1.include_router(claims_router)
     v1.include_router(uploads_router)
     v1.include_router(notifications_router)
+    v1.include_router(devices_router)
     app.include_router(v1)
 
     return app
