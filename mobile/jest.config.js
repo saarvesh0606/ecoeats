@@ -2,6 +2,9 @@
 module.exports = {
 	preset: "jest-expo",
 	setupFiles: ["<rootDir>/jest.setup.js"],
+	// Testing Library's own async budget is separate from testTimeout below, and
+	// is the tighter of the two. See the file for why it has to be raised.
+	setupFilesAfterEnv: ["<rootDir>/jest.setup-after-env.js"],
 	moduleNameMapper: {
 		"^@/(.*)$": "<rootDir>/src/$1",
 	},
