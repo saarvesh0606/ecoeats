@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FeedFilterSheet } from "@/components/FeedFilterSheet";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
@@ -37,7 +38,12 @@ export function RecipientFeed() {
 	const [error, setError] = useState<string | null>(null);
 
 	const [dietary, setDietary] = useState<string[]>([]);
-	const [soonOnly, setSoonOnly] = useState(false);
+	// Undefined means no limit. The chip flips it to SOON_MINUTES and back; the
+	// filter sheet can set any window the server supports. One piece of state
+	// either way, so the two controls can never disagree.
+	const [maxMinutes, setMaxMinutes] = useState<number | undefined>(undefined);
+	const [radiusMiles, setRadiusMiles] = useState<number | undefined>(undefined);
+	const [filtersOpen, setFiltersOpen] = useState(false);
 	// Server-side search: `query` is what the user is typing, `debouncedQuery` is
 	// what we actually send — so we re-fetch after they pause, not per keystroke.
 	const [query, setQuery] = useState("");
@@ -57,12 +63,16 @@ export function RecipientFeed() {
 	const filters = useCallback(
 		() => ({
 			dietary: dietary.length ? dietary : undefined,
-			maxMinutes: soonOnly ? SOON_MINUTES : undefined,
+			maxMinutes,
+			// The server rejects a radius outright when it has no origin to measure
+			// from, so it is dropped whenever there is no fix — including the case
+			// where permission is revoked after a distance was already chosen.
+			radiusMiles: coords ? radiusMiles : undefined,
 			q: debouncedQuery || undefined,
 			lat: coords?.lat,
 			lng: coords?.lng,
 		}),
-		[dietary, soonOnly, debouncedQuery, coords],
+		[dietary, maxMinutes, radiusMiles, debouncedQuery, coords],
 	);
 
 	const load = useCallback(async () => {
@@ -157,6 +167,12 @@ export function RecipientFeed() {
 		);
 	}
 
+	const clearFilters = useCallback(() => {
+		setDietary([]);
+		setMaxMinutes(undefined);
+		setRadiusMiles(undefined);
+	}, []);
+
 	const onRefresh = useCallback(() => {
 		setRefreshing(true);
 		// Fires when the pull actually triggers, which is the moment the gesture
@@ -181,7 +197,13 @@ export function RecipientFeed() {
 		);
 	}
 
-	const filtersActive = dietary.length > 0 || soonOnly;
+	// Counts what is actually being sent, so the badge can't advertise a distance
+	// filter that the missing-coordinates guard above is quietly dropping.
+	const activeCount =
+		dietary.length +
+		(maxMinutes !== undefined ? 1 : 0) +
+		(coords && radiusMiles !== undefined ? 1 : 0);
+	const filtersActive = activeCount > 0;
 	const searching = debouncedQuery.length > 0;
 	const chips = ["all", "soon", ...DIETARY_TAGS];
 
@@ -230,9 +252,30 @@ export function RecipientFeed() {
 						>
 							<Ionicons name="close-circle" size={18} color="#9CA3AF" />
 						</Pressable>
-					) : (
-						<Ionicons name="options-outline" size={18} color="#9CA3AF" />
-					)}
+					) : null}
+					{/* Stays put while typing — filtering a search is exactly when you
+					    want it, and it used to be displaced by the clear button. */}
+					<Pressable
+						onPress={() => {
+							haptics.tap();
+							setFiltersOpen(true);
+						}}
+						hitSlop={8}
+						className={query ? "ml-3" : ""}
+						accessibilityRole="button"
+						accessibilityLabel={
+							activeCount ? `Filters, ${activeCount} active` : "Filters"
+						}
+					>
+						<Ionicons
+							name="options-outline"
+							size={18}
+							color={filtersActive ? "#1B4332" : "#9CA3AF"}
+						/>
+						{filtersActive ? (
+							<View className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-forest-700" />
+						) : null}
+					</Pressable>
 				</View>
 			</View>
 
@@ -250,7 +293,7 @@ export function RecipientFeed() {
 						const on = isAll
 							? !filtersActive
 							: isSoon
-								? soonOnly
+								? maxMinutes !== undefined
 								: dietary.includes(item);
 						const label = isAll
 							? "All"
@@ -262,10 +305,13 @@ export function RecipientFeed() {
 								onPress={() => {
 									haptics.select();
 									if (isAll) {
-										setDietary([]);
-										setSoonOnly(false);
+										clearFilters();
 									} else if (isSoon) {
-										setSoonOnly((v) => !v);
+										// The chip is the shortcut; the sheet sets any other
+										// window. Toggling off clears whichever one is set.
+										setMaxMinutes((v) =>
+											v === undefined ? SOON_MINUTES : undefined,
+										);
 									} else {
 										toggleDietary(item);
 									}
@@ -338,13 +384,7 @@ export function RecipientFeed() {
 							</Text>
 							{filtersActive && !searching && (
 								<View className="mt-6">
-									<Button
-										variant="outline"
-										onPress={() => {
-											setDietary([]);
-											setSoonOnly(false);
-										}}
-									>
+									<Button variant="outline" onPress={clearFilters}>
 										Clear filters
 									</Button>
 								</View>
@@ -353,6 +393,19 @@ export function RecipientFeed() {
 					}
 				/>
 			)}
+
+			<FeedFilterSheet
+				visible={filtersOpen}
+				onClose={() => setFiltersOpen(false)}
+				maxMinutes={maxMinutes}
+				onMaxMinutes={setMaxMinutes}
+				radiusMiles={radiusMiles}
+				onRadiusMiles={setRadiusMiles}
+				dietary={dietary}
+				onToggleDietary={toggleDietary}
+				onClearAll={clearFilters}
+				hasLocation={coords !== null}
+			/>
 		</SafeAreaView>
 	);
 }

@@ -232,6 +232,139 @@ describe("RecipientFeed", () => {
 		});
 	});
 
+	describe("filter sheet", () => {
+		const AT_TEMPE = { lat: 33.4212, lng: -111.9327 };
+
+		function grantLocation() {
+			mockUseDeviceLocation.mockReturnValue({
+				coords: AT_TEMPE,
+				status: "granted",
+				request: mockRequestLocation,
+			});
+		}
+
+		async function openSheet() {
+			fireEvent.press(screen.getByLabelText(/^Filters/));
+			return await screen.findByText("Expiring within");
+		}
+
+		it("opens from the icon in the search bar", async () => {
+			await renderFeed();
+			expect(await openSheet()).toBeTruthy();
+		});
+
+		it("sets a tighter window than the chip offers", async () => {
+			// The chip is a single fixed 20 minutes; this is the point of the sheet.
+			await renderFeed();
+			await openSheet();
+
+			fireEvent.press(screen.getByText("15m"));
+
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ maxMinutes: 15 }),
+				),
+			);
+		});
+
+		it("filters by distance once it knows where you are", async () => {
+			grantLocation();
+			render(<RecipientFeed />);
+			await screen.findByText("Discover");
+			await openSheet();
+
+			fireEvent.press(screen.getByText("0.5 mi"));
+
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ radiusMiles: 0.5, ...AT_TEMPE }),
+				),
+			);
+		});
+
+		it("explains distance instead of offering it when location is refused", async () => {
+			// Location is an enhancement, never a gate — and the server rejects a
+			// radius with no origin, so a control here could only ever fail.
+			await renderFeed();
+			await openSheet();
+
+			expect(
+				screen.getByText("Turn on location to filter by how far away food is."),
+			).toBeTruthy();
+			expect(screen.queryByText("0.5 mi")).toBeNull();
+		});
+
+		it("drops the distance filter if the fix is lost", async () => {
+			// Permission can be revoked after a radius was already chosen. Sending
+			// radius_miles without lat/lng is a 400 from the server, so the feed
+			// must quietly stop asking for it rather than start failing.
+			grantLocation();
+			render(<RecipientFeed />);
+			await screen.findByText("Discover");
+			await openSheet();
+			fireEvent.press(screen.getByText("1 mi"));
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ radiusMiles: 1 }),
+				),
+			);
+
+			mockUseDeviceLocation.mockReturnValue({
+				coords: null,
+				status: "denied",
+				request: mockRequestLocation,
+			});
+			screen.rerender(<RecipientFeed />);
+
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ radiusMiles: undefined }),
+				),
+			);
+		});
+
+		it("stays reachable while a search is typed", async () => {
+			// The icon used to be displaced by the clear button, so filtering a
+			// search — exactly when you want it — was impossible.
+			await renderFeed();
+			fireEvent.changeText(
+				screen.getByPlaceholderText("Search food, meals, or locations"),
+				"pizza",
+			);
+
+			expect(await screen.findByLabelText("Clear search")).toBeTruthy();
+			expect(await openSheet()).toBeTruthy();
+		});
+
+		it("clears everything from one button", async () => {
+			await renderFeed();
+			fireEvent.press(screen.getByText("vegetarian"));
+			await openSheet();
+			fireEvent.press(screen.getByText("30m"));
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ maxMinutes: 30, dietary: ["vegetarian"] }),
+				),
+			);
+
+			fireEvent.press(screen.getByText("Clear all"));
+
+			await waitFor(() =>
+				expect(mockFeed).toHaveBeenLastCalledWith(
+					expect.objectContaining({ maxMinutes: undefined, dietary: undefined }),
+				),
+			);
+		});
+
+		it("counts the filters actually being applied", async () => {
+			await renderFeed();
+			fireEvent.press(screen.getByText("vegetarian"));
+			fireEvent.press(screen.getByText("Expiring soon"));
+
+			expect(await screen.findByLabelText("Filters, 2 active")).toBeTruthy();
+		});
+	});
+
 	describe("live updates", () => {
 		it("applies a quantity change without refetching", async () => {
 			await renderFeed();
