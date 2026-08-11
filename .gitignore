@@ -8,6 +8,17 @@
 secrets/
 *service-account*.json
 *firebase-adminsdk*.json
+# Signing and push material, wherever it lands. Unlike a leaked password these
+# cannot be rotated by editing a file — the key itself has to be revoked.
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+
+# Logs and coverage
+*.log
+coverage/
 
 # Python
 __pycache__/
@@ -41,6 +52,10 @@ app.*.symbols
 app.*.map.json
 
 # Editors / OS
+# Local agent tooling, not project code. settings.local.json is machine-scoped
+# by convention and carries absolute paths from this developer's home
+# directory; nothing here is useful to anyone cloning the repo.
+.claude/
 .vscode/
 .idea/
 *.iml

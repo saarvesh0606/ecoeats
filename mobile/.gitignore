@@ -4,6 +4,34 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+.eas/
+
+# Native projects. This app uses continuous native generation: `expo prebuild`
+# rebuilds both from app.json, so they are build output, not source — and a
+# stale committed copy silently overrides the config it was generated from.
+# Anchored with a leading slash so they cannot also match flutter_app/ios/,
+# which IS tracked.
+/ios/
+/android/
+
+# Signing and push credentials. Never commit these: an APNs key, an Android
+# keystore or a provisioning profile in a repo is a real compromise, and one
+# that cannot be undone by deleting the file later. EAS issues several of
+# these during an iOS build, and they land in this directory by default.
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+*.cer
+google-services.json
+GoogleService-Info.plist
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
 
 # Env — the Firebase web config values are public, but keep .env local anyway
 .env
