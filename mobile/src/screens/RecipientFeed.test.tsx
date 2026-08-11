@@ -369,9 +369,13 @@ describe("RecipientFeed", () => {
 		it("applies a quantity change without refetching", async () => {
 			await renderFeed();
 			const before = mockFeed.mock.calls.length;
+			expect(screen.getByText("4 portions")).toBeTruthy();
 
 			act(() => emit(streamEvent({ listing_id: "l1", quantity_remaining: 2 })));
 
+			// The count moves on the card itself — someone else claiming used to
+			// be invisible until the listing ran out and the card vanished.
+			expect(await screen.findByText("2 portions")).toBeTruthy();
 			// The card stays; no round trip was needed to move the number.
 			expect(screen.getByText("Leftover pizza")).toBeTruthy();
 			expect(mockFeed).toHaveBeenCalledTimes(before);

@@ -18,6 +18,12 @@ interface ListingCardProps {
 /** Under this, the countdown turns red and pulses — the food is about to go. */
 const URGENT_SECONDS = 5 * 60;
 
+/**
+ * At or below this the supply is the thing to hurry for, not the clock, so the
+ * count escalates the same way the countdown does.
+ */
+const LOW_STOCK = 3;
+
 export function ListingCard({
 	listing,
 	now,
@@ -45,6 +51,13 @@ export function ListingCard({
 	}
 
 	const urgent = listing.seconds_remaining <= URGENT_SECONDS;
+	const scarce = listing.quantity_remaining <= LOW_STOCK;
+	// "portions", not "left": formatTimeLeft already renders "30m left", and two
+	// chips ending in the same word read as a pair of times — especially aloud,
+	// where the label would run "30m left, 8 left".
+	const portions = `${listing.quantity_remaining} portion${
+		listing.quantity_remaining === 1 ? "" : "s"
+	}`;
 
 	return (
 		<PressableScale
@@ -52,7 +65,7 @@ export function ListingCard({
 			className="bg-white rounded-card overflow-hidden border border-gray-100"
 			// Not accessibilityRole="button": the card contains its own bookmark
 			// button, and a button nested in a button is invalid HTML on web.
-			accessibilityLabel={`${listing.title}, ${timeLeft}`}
+			accessibilityLabel={`${listing.title}, ${timeLeft}, ${portions}`}
 		>
 			<View className="relative">
 				{cover ? (
@@ -84,6 +97,18 @@ export function ListingCard({
 				{distance && (
 					<View className="absolute bottom-3 left-3 bg-black/50 rounded-full px-2.5 py-1">
 						<Text className="font-body-medium text-xs text-white">{distance}</Text>
+					</View>
+				)}
+
+				{/* What's left, live. The feed already receives quantity over SSE, but
+				    with no number on the card a claim made elsewhere could only show
+				    as the card silently vanishing — the supply running down, which is
+				    the thing worth watching, was invisible until it hit zero. */}
+				{listing.quantity_remaining > 0 && (
+					<View
+						className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 ${scarce ? "bg-red-600" : "bg-black/50"}`}
+					>
+						<Text className="font-body-medium text-xs text-white">{portions}</Text>
 					</View>
 				)}
 			</View>

@@ -62,6 +62,49 @@ describe("ListingCard", () => {
 		expect(getByText("vegetarian")).toBeTruthy();
 	});
 
+	describe("how much is left", () => {
+		it("shows the portions remaining", () => {
+			const { getByText } = render(
+				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			);
+			expect(getByText("8 portions")).toBeTruthy();
+		});
+
+		it("says portion, singular, for the last one", () => {
+			const { getByText } = render(
+				<ListingCard
+					listing={makeListing({ quantity_remaining: 1 })}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
+			);
+			expect(getByText("1 portion")).toBeTruthy();
+		});
+
+		it("does not say 'left', which the countdown already owns", () => {
+			// Two chips ending in the same word read as a pair of times, and the
+			// accessibility label would run "30m left, 8 left".
+			const { getByText, queryByText } = render(
+				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			);
+			expect(getByText("8 portions")).toBeTruthy();
+			expect(queryByText("8 left")).toBeNull();
+		});
+
+		it("keeps the count off a card with nothing left", () => {
+			// The server filters these out and SSE removes them, so this is a guard
+			// against a "0 portions" chip flashing up mid-update.
+			const { queryByText } = render(
+				<ListingCard
+					listing={makeListing({ quantity_remaining: 0 })}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
+			);
+			expect(queryByText("0 portions")).toBeNull();
+		});
+	});
+
 	it("fires onPress when tapped", () => {
 		const onPress = jest.fn();
 		// The card now also contains a bookmark button, so target the card by its
