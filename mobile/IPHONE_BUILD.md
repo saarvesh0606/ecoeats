@@ -49,8 +49,9 @@ npx eas-cli build --profile development --platform ios
 ```
 
 When it finishes, it shows a QR code. Scan it with the iPhone camera and install
-**EcoEats** — a custom version of Expo Go with our native code (image picker,
-and later maps and speech) baked in.
+**EcoEats** — a custom version of Expo Go with our native code baked in: the
+image picker, haptics, location, the realtime feed, push, and the device speech
+recogniser.
 
 ## Every day after that
 
@@ -106,12 +107,58 @@ dev shortcuts:
 - `mobile/.env` → `EXPO_PUBLIC_DEV_AUTH=false`
 - backend `.env` → `DEV_AUTH_BYPASS=false`
 
-## Still to build before/with this step
+## Before you build — pre-flight
 
-- **Map screen** — needs `react-native-maps` (native), so it only runs on this
-  dev build, not the browser. Add its location permission strings to app.json
-  when it's wired.
-- **Native voice** — the description mic uses the browser's speech engine today;
-  the device build will use `expo-speech-recognition`, which needs
-  `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` added
-  to app.json at that point.
+Run this first, from `mobile/`. Everything it catches is invisible to the web
+build and would otherwise surface as a build failure after you have already
+paid:
+
+```bash
+npx expo-doctor
+```
+
+**17 of 18 is the expected result.** The single failure is `jest-expo` and
+`@types/jest` sitting ahead of SDK 55 deliberately — both are dev-only, neither
+enters a native build, and the test suite needs them. Don't "fix" it.
+
+> **There is no local iOS check available on Windows.** No simulator, and
+> `npx expo prebuild --platform ios` refuses to run here — Expo generates iOS
+> project files only on macOS or Linux. The EAS build is the first real signal
+> about iOS, which is why the pre-flight above is worth the minute it takes.
+
+## What the device build brings that the browser can't
+
+All of this is written and CI-green, but **none of it has ever run on
+hardware.** This build is the first time any of it executes for real, so expect
+to find things:
+
+- **Haptics** — the whole app is wired for feedback (`src/lib/haptics.ts`).
+- **Location** — real GPS distances on the feed, and hosts pinning a post where
+  they stand.
+- **Native speech** — the description mic moves off the browser engine onto the
+  device recogniser. Its permission strings come from the
+  `expo-speech-recognition` config plugin; nothing to add to `app.json` by hand.
+- **Push notifications** — see below.
+- **The app icon and the splash screen**, which only exist once compiled.
+
+**Maps need nothing here.** Directions hand off to the phone's own Apple Maps
+through an https link, so there is no native map renderer and no extra
+permission. `react-native-maps` was deliberately never added.
+
+> If the build fails, suspect **`expo-speech-recognition`** first. No release of
+> it targets SDK 55 — we pin `3.1.3` (built for 54) on the reasoning that an
+> older Expo Modules API usually still compiles against a newer one. If it
+> breaks, try `56.0.1`.
+
+## Push notifications need one more thing
+
+Both halves of the code are complete, but push delivers nothing until:
+
+1. **`npx eas-cli init` has run** (step 2 above). The client reads the EAS
+   `projectId` to get a token; without it push stays dormant *by design*, not
+   broken.
+2. **An APNs key is on file with EAS**, which needs the Apple Developer
+   account. EAS offers to create one for you during the build.
+
+It cannot be tested on the web or in Expo Go — Expo push runs over APNs, and
+neither has it. This device build is the only way to see push work at all.
