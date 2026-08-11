@@ -4,8 +4,14 @@
     "slug": "ecoeats",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "ecoeats",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#163827"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ecoeats.app",
@@ -16,6 +22,10 @@
     },
     "android": {
       "package": "com.ecoeats.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#163827"
+      },
       "permissions": [
         "CAMERA",
         "READ_MEDIA_IMAGES"
