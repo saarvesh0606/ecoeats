@@ -122,3 +122,24 @@ export async function updateProfile(patch: {
 }): Promise<UserProfile> {
 	return api.patch<UserProfile>("/users/me", patch);
 }
+
+/**
+ * Switch account type.
+ *
+ * Deliberately not part of `updateProfile`: the server refuses this with a 409
+ * while the account still has food in flight — a host with live posts, or a
+ * recipient holding a reserved portion — because the two roles are the two
+ * halves of a handover. Callers must be ready for that rejection and show its
+ * message, which names exactly what is outstanding.
+ *
+ * Asking for the role you already have is a no-op, not an error, so a caller
+ * never has to check first.
+ *
+ * POST rather than PUT: the API's CORS allowlist carries no PUT, and a PUT here
+ * failed the browser preflight while passing every test — pytest sends no
+ * preflight and this module is mocked under Jest. State transitions on this API
+ * are POSTs anyway (see the claim pickup/cancel routes).
+ */
+export async function changeRole(role: UserRole): Promise<UserProfile> {
+	return api.post<UserProfile>("/users/me/role", { role });
+}

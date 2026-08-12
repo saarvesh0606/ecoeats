@@ -1,26 +1,79 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
-import { ApiError, updateProfile } from "@/lib/api";
+import { ApiError, changeRole, updateProfile } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
 import { DIETARY_TAGS } from "@/lib/listings";
+
+/** Where each role's app begins. Switching lands here, because the tab the
+ *  user was standing on may not exist for the role they just became. */
+const HOME_FOR_ROLE = { organizer: "/posts", recipient: "/feed" } as const;
 
 export function Profile() {
 	const { profile, applyProfile, signOut } = useAuth();
 	const toast = useToast();
+	const confirm = useConfirm();
+	const router = useRouter();
 
 	const [name, setName] = useState(profile?.name ?? "");
 	const [prefs, setPrefs] = useState<string[]>(profile?.dietary_prefs ?? []);
 	const [saving, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [switching, setSwitching] = useState(false);
+	// Separate from `error`: a refused switch has to be readable next to the
+	// button that was refused, not up beside Save where it would look like the
+	// name failed to save.
+	const [roleError, setRoleError] = useState<string | null>(null);
 
 	const isRecipient = profile?.role === "recipient";
+	const nextRole = isRecipient ? "organizer" : "recipient";
+	const nextLabel = isRecipient ? "host" : "recipient";
+
+	async function onSwitchRole() {
+		const ok = await confirm({
+			title: `Switch to a ${nextLabel} account?`,
+			message: isRecipient
+				? "You'll be able to post surplus food, and you'll stop seeing the food feed. You can switch back whenever you like."
+				: "You'll be able to claim food near you, and you'll stop being able to post. You can switch back whenever you like.",
+			confirmLabel: `Become a ${nextLabel}`,
+			// Reversible, and nothing is deleted — the red treatment would
+			// overstate it. The server refuses the switch outright if anything is
+			// actually at stake.
+			destructive: false,
+		});
+		if (!ok) return;
+
+		setRoleError(null);
+		setSwitching(true);
+		try {
+			const updated = await changeRole(nextRole);
+			applyProfile(updated);
+			haptics.success();
+			toast.show(`You're now a ${nextLabel}.`);
+			// The tab bar rebuilds itself from profile.role, but the route under it
+			// does not: a host standing on /profile has no /feed to fall back to.
+			// Replace rather than push, so Back can't return to the other role's app.
+			router.replace(HOME_FOR_ROLE[updated.role]);
+		} catch (err) {
+			haptics.error();
+			// A 409 here is the server naming what is still outstanding — live
+			// posts, or a portion someone reserved. That message is the whole
+			// point, so it is surfaced verbatim rather than flattened.
+			setRoleError(
+				err instanceof ApiError ? err.message : "Couldn't switch. Try again.",
+			);
+		} finally {
+			setSwitching(false);
+		}
+	}
 
 	const dirty =
 		name.trim() !== (profile?.name ?? "") ||
@@ -127,6 +180,25 @@ export function Profile() {
 				</Button>
 
 				<View className="mt-10 pt-6 border-t border-gray-200">
+					<Text className="font-body-semibold text-gray-900 mb-1">
+						Account type
+					</Text>
+					<Text className="font-body text-gray-500 text-sm mb-3">
+						{isRecipient
+							? "You're set up to find and claim food."
+							: "You're set up to post surplus food."}
+					</Text>
+					{roleError && (
+						<Text className="font-body text-red-500 text-sm mb-3">
+							{roleError}
+						</Text>
+					)}
+					<Button variant="outline" onPress={onSwitchRole} loading={switching}>
+						{`Switch to a ${nextLabel} account`}
+					</Button>
+				</View>
+
+				<View className="mt-8 pt-6 border-t border-gray-200">
 					<Button variant="outline" onPress={signOut}>
 						Sign out
 					</Button>

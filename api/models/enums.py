@@ -9,10 +9,15 @@ from enum import StrEnum
 
 
 class UserRole(StrEnum):
-    """Permanent account type, chosen at signup.
+    """Account type, chosen at signup and switchable from the profile.
 
     An organizer posts surplus food; a recipient claims it. The two get
     different interfaces.
+
+    Not permanent, but not free either: a switch is refused while the account
+    has food in flight, because the two roles are the two halves of a handover
+    and dropping one mid-transaction strands the other. See
+    POST /users/me/role.
     """
 
     ORGANIZER = "organizer"

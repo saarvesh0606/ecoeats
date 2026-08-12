@@ -64,7 +64,7 @@ export default function RoleScreen() {
 				How will you use EcoEats?
 			</Text>
 			<Text className="font-body text-gray-500 text-center mt-2 mb-8">
-				This sets up your account. It stays the same afterward.
+				This sets up your account. You can change it later in your profile.
 			</Text>
 
 			<Text className="font-body-semibold text-gray-500 mb-3">I want to…</Text>

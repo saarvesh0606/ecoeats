@@ -42,5 +42,6 @@ export function apiModuleMock() {
 		api: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), del: jest.fn() },
 		fetchProfile: jest.fn(),
 		updateProfile: jest.fn(),
+		changeRole: jest.fn(),
 	};
 }

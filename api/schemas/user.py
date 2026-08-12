@@ -36,7 +36,8 @@ class RegisterProfile(BaseModel):
     role: UserRole = Field(
         description=(
             "organizer to post surplus food, recipient to claim it. "
-            "Permanent — it decides which interface the account gets."
+            "Decides which interface the account gets. Changeable later via "
+            "POST /users/me/role, but not while food is in flight."
         )
     )
     name: str | None = Field(
@@ -48,9 +49,31 @@ class RegisterProfile(BaseModel):
 
 
 class UpdateProfile(BaseModel):
-    """Partial update. Role is absent on purpose — it is a permanent account
-    type, not a preference."""
+    """Partial update.
+
+    Role is still absent on purpose, but the reason changed: it is no longer
+    permanent, it is *conditional*. Switching account type can strand food
+    someone is already walking toward, so it has preconditions to check and a
+    409 to raise, none of which fits a partial-update endpoint that silently
+    applies whatever it is handed. It lives at POST /users/me/role instead.
+    """
 
     name: str | None = Field(default=None, min_length=1, max_length=200)
     avatar_url: str | None = Field(default=None, max_length=2048)
     dietary_prefs: list[str] | None = Field(default=None, max_length=20)
+
+
+class ChangeRole(BaseModel):
+    """Body for switching account type after registration.
+
+    Separate from UpdateProfile because this is not a preference edit: it
+    changes which half of the app the account can reach, and it is refused
+    outright while the user has obligations outstanding.
+    """
+
+    role: UserRole = Field(
+        description=(
+            "The account type to switch to. Requesting the current role is a "
+            "no-op, not an error."
+        )
+    )
