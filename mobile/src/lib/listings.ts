@@ -159,6 +159,10 @@ export interface HostImpact {
 	meals_shared: number;
 	people_fed: number;
 	active_posts: number;
+	/** ⚠️ ESTIMATED pounds diverted, derived server-side from `meals_shared` —
+	 *  nobody weighs anything. Every surface showing it must mark it an
+	 *  estimate; see POUNDS_PER_PORTION in api/schemas/listing.py. */
+	pounds_saved: number;
 }
 
 /** A host's cumulative impact, computed server-side from completed pickups. */

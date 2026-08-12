@@ -33,7 +33,12 @@ describe("OrganizerHome", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockListings.mockResolvedValue([]);
-		mockImpact.mockResolvedValue({ meals_shared: 0, people_fed: 0, active_posts: 0 });
+		mockImpact.mockResolvedValue({
+			meals_shared: 0,
+			people_fed: 0,
+			active_posts: 0,
+			pounds_saved: 0,
+		});
 		mockPublish.mockResolvedValue(makeListing());
 	});
 
@@ -48,6 +53,7 @@ describe("OrganizerHome", () => {
 			meals_shared: 12,
 			people_fed: 7,
 			active_posts: 3,
+			pounds_saved: 14.4,
 		});
 		render(<OrganizerHome />);
 
@@ -56,6 +62,33 @@ describe("OrganizerHome", () => {
 		await waitFor(() => expect(screen.getByText("12")).toBeTruthy());
 		expect(screen.getByText("7")).toBeTruthy();
 		expect(screen.getByText("3")).toBeTruthy();
+	});
+
+	it("marks the poundage an estimate, and keeps one decimal", async () => {
+		// The number is derived from portions, never weighed. Shipping it
+		// unqualified would be a claim the backend cannot support, so the
+		// hedge is part of the feature, not decoration.
+		mockImpact.mockResolvedValue({
+			meals_shared: 12,
+			people_fed: 7,
+			active_posts: 3,
+			pounds_saved: 14.4,
+		});
+		render(<OrganizerHome />);
+
+		expect(
+			await screen.findByText(/≈ 14.4 lbs kept out of a landfill/),
+		).toBeTruthy();
+		expect(screen.getByText(/est. from portions shared/)).toBeTruthy();
+	});
+
+	it("hides the poundage until there is something to report", async () => {
+		// A host who has shared nothing gets no "≈0.0 lbs" — an empty impact
+		// card should read as unstarted, not as a measured zero.
+		render(<OrganizerHome />);
+
+		await screen.findByText("Meals Shared");
+		expect(screen.queryByText(/lbs kept out of a landfill/)).toBeNull();
 	});
 
 	describe("tabs", () => {

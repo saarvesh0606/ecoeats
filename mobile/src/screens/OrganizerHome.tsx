@@ -161,6 +161,20 @@ export function OrganizerHome() {
 					<Stat n={impact?.people_fed ?? 0} label="People Fed" />
 					<Stat n={impact?.active_posts ?? 0} label="Active Posts" />
 				</View>
+
+				{/* Pounds diverted is the unit food-recovery reporting speaks in, so
+				    it earns a place here — but it is derived from portions, not
+				    weighed. It sits as a footer line rather than a fourth Stat both
+				    because four tiles crowd a phone and because "est." needs to be
+				    read in the same breath as the number, which a tile label can't
+				    do. Hidden until there is something to report, so a new host
+				    isn't greeted by "≈0.0 lbs". */}
+				{(impact?.pounds_saved ?? 0) > 0 && (
+					<Text className="font-body text-forest-100 text-xs mt-3 pt-3 border-t border-forest-700">
+						≈ {impact?.pounds_saved.toFixed(1)} lbs kept out of a landfill
+						<Text className="text-forest-300"> · est. from portions shared</Text>
+					</Text>
+				)}
 			</View>
 
 			{/* Tabs */}

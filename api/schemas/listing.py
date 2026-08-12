@@ -188,6 +188,18 @@ class ListingOut(BaseModel):
         )
 
 
+#: Pounds of food per portion. Food-recovery reporting is denominated in
+#: pounds diverted, but asking a host to weigh a tray of leftovers on the
+#: posting path would cost more than the number is worth — and would be
+#: guessed anyway. This is the sector's standard meal-to-pound conversion
+#: (Feeding America's 1.2 lb meal equivalent), so a figure derived from it is
+#: comparable with how ASU and every food bank already count.
+#:
+#: ⚠️ It is an ESTIMATE and every surface that shows it must say so. Do not
+#: present a derived weight as a measurement.
+POUNDS_PER_PORTION = 1.2
+
+
 class HostImpact(BaseModel):
     """A host's real cumulative impact, computed from completed pickups."""
 
@@ -197,6 +209,17 @@ class HostImpact(BaseModel):
     people_fed: int
     #: Posts currently live.
     active_posts: int
+
+    @computed_field
+    @property
+    def pounds_saved(self) -> float:
+        """Estimated pounds of food kept out of a landfill.
+
+        Derived from `meals_shared` rather than stored, so the two can never
+        disagree and no migration is needed to start reporting it. See
+        `POUNDS_PER_PORTION` for why this is an estimate by design.
+        """
+        return round(self.meals_shared * POUNDS_PER_PORTION, 1)
 
 
 class ListingFeed(BaseModel):
