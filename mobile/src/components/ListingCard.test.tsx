@@ -115,4 +115,38 @@ describe("ListingCard", () => {
 		fireEvent.press(getByLabelText(/Leftover pizza/));
 		expect(onPress).toHaveBeenCalledTimes(1);
 	});
+
+	describe("accessibility", () => {
+		// These run under jest-expo's default (iOS) platform, which is the point:
+		// the role is deliberately native-only. Platform is NOT mocked to check the
+		// web branch — mocking RN's Platform module breaks its own re-export
+		// ("Cannot read properties of undefined (reading 'OS')").
+		it("announces the card as a button, not as text", () => {
+			// Without a role a screen reader reads the card out as plain text and
+			// gives no indication the whole thing opens the listing.
+			const { getByLabelText } = render(
+				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			);
+			const card = getByLabelText(/Leftover pizza/);
+			expect(card.props.accessibilityRole).toBe("button");
+			expect(card.props.accessibilityHint).toBe("Opens the listing");
+		});
+
+		it("keeps the bookmark a separate control with its own label", () => {
+			// The nesting is the reason the role was withheld everywhere before. On
+			// native both must stay independently focusable, so this pins that the
+			// card's label never swallows the bookmark's.
+			const { getByLabelText } = render(
+				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			);
+			expect(getByLabelText("Save for later")).toBeTruthy();
+		});
+
+		it("reads the time and the amount left in the label", () => {
+			const { getByLabelText } = render(
+				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			);
+			expect(getByLabelText(/Leftover pizza, 30m left, 8 portions/)).toBeTruthy();
+		});
+	});
 });

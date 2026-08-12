@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Platform, Pressable, Text, View } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
@@ -23,6 +23,24 @@ const URGENT_SECONDS = 5 * 60;
  * count escalates the same way the countdown does.
  */
 const LOW_STOCK = 3;
+
+/**
+ * The card is tappable, and a screen reader has to say so — without a role it
+ * is announced as plain text and there is nothing to tell you the whole card
+ * opens the listing.
+ *
+ * ⚠️ Withheld on web ONLY, and for one specific reason: the card holds its own
+ * bookmark button, and react-native-web turns this role into a real `<button>`
+ * element, so declaring it there nests a button inside a button — invalid HTML,
+ * and the inner control can become unreachable. Native has no such rule: a row
+ * with a secondary action is the ordinary iOS/Android list pattern and both
+ * VoiceOver and TalkBack expose the two as separate focusable elements.
+ *
+ * So this is deliberately NOT symmetric. The earlier code dropped the role on
+ * every platform to satisfy the web constraint, which quietly spent native
+ * accessibility — the shipping target's accessibility — on a web-only problem.
+ */
+const CARD_ROLE = Platform.OS === "web" ? undefined : ("button" as const);
 
 export function ListingCard({
 	listing,
@@ -63,9 +81,9 @@ export function ListingCard({
 		<PressableScale
 			onPress={onPress}
 			className="bg-white rounded-card overflow-hidden border border-gray-100"
-			// Not accessibilityRole="button": the card contains its own bookmark
-			// button, and a button nested in a button is invalid HTML on web.
+			accessibilityRole={CARD_ROLE}
 			accessibilityLabel={`${listing.title}, ${timeLeft}, ${portions}`}
+			accessibilityHint="Opens the listing"
 		>
 			<View className="relative">
 				{cover ? (
