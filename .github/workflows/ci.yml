@@ -67,3 +67,33 @@ jobs:
       - name: Lint (biome)
         run: npm run lint
       - run: npx jest --ci
+
+  flutter:
+    name: Flutter · analyze + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          # Pinned to the version used locally, so a green run here means the
+          # same thing it does on the developer's machine.
+          flutter-version: "3.44.8"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze
+        # Infos are not fatal: ~20 style lints came with this code and failing
+        # on them would mean the job is red before it has told anyone anything.
+        # Warnings and errors still fail — verified by injecting one.
+        run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - name: Build web
+        # Deliberately built without --dart-define-from-file. CI has no
+        # Firebase config and should not need one: the app is meant to fall
+        # back to its in-memory repositories when the keys are absent, so this
+        # step also proves that fallback still compiles.
+        run: flutter build web --no-tree-shake-icons
