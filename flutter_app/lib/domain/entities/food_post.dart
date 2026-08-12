@@ -10,6 +10,13 @@ class FoodPostEntity {
   final double hostRating;
   final String title;
   final String description;
+
+  /// Free-text allergen warning, straight from the host.
+  /// The API carries this and the entity had nowhere to put it, so the
+  /// warning was being dropped on the way in — on a food app that is the
+  /// one field you cannot afford to lose.
+  final String? allergens;
+
   final List<String> imageUrls;
   final int totalQuantity;
   final int remainingQuantity;
@@ -17,6 +24,14 @@ class FoodPostEntity {
   final String locationName;
   final String locationAddress;
   final String? locationNotes;
+
+  /// Where the food actually is. The API requires a coordinate on every
+  /// listing and computes distance from it; this client had none, so posts had
+  /// nowhere to be. Defaults to the Tempe campus centre, the same fallback the
+  /// other client uses when a host has not dropped a pin.
+  final double lat;
+  final double lng;
+
   final double distanceMiles;
   final DateTime expiresAt;
   final DateTime createdAt;
@@ -31,6 +46,7 @@ class FoodPostEntity {
     this.hostRating = 5.0,
     required this.title,
     required this.description,
+    this.allergens,
     this.imageUrls = const [],
     required this.totalQuantity,
     required this.remainingQuantity,
@@ -38,6 +54,8 @@ class FoodPostEntity {
     required this.locationName,
     required this.locationAddress,
     this.locationNotes,
+    this.lat = 33.4242,
+    this.lng = -111.9281,
     this.distanceMiles = 0.0,
     required this.expiresAt,
     required this.createdAt,
@@ -64,6 +82,7 @@ class FoodPostEntity {
     double? hostRating,
     String? title,
     String? description,
+    String? allergens,
     List<String>? imageUrls,
     int? totalQuantity,
     int? remainingQuantity,
@@ -71,6 +90,8 @@ class FoodPostEntity {
     String? locationName,
     String? locationAddress,
     String? locationNotes,
+    double? lat,
+    double? lng,
     double? distanceMiles,
     DateTime? expiresAt,
     DateTime? createdAt,
@@ -85,6 +106,7 @@ class FoodPostEntity {
       hostRating: hostRating ?? this.hostRating,
       title: title ?? this.title,
       description: description ?? this.description,
+      allergens: allergens ?? this.allergens,
       imageUrls: imageUrls ?? this.imageUrls,
       totalQuantity: totalQuantity ?? this.totalQuantity,
       remainingQuantity: remainingQuantity ?? this.remainingQuantity,
@@ -92,6 +114,8 @@ class FoodPostEntity {
       locationName: locationName ?? this.locationName,
       locationAddress: locationAddress ?? this.locationAddress,
       locationNotes: locationNotes ?? this.locationNotes,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
       distanceMiles: distanceMiles ?? this.distanceMiles,
       expiresAt: expiresAt ?? this.expiresAt,
       createdAt: createdAt ?? this.createdAt,

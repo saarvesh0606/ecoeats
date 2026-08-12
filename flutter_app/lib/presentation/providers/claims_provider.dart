@@ -12,10 +12,9 @@ final getMyClaimsUseCaseProvider = Provider<GetMyClaimsUseCase>((ref) {
 });
 
 final claimFoodUseCaseProvider = Provider<ClaimFoodUseCase>((ref) {
-  return ClaimFoodUseCase(
-    ref.watch(claimRepositoryProvider),
-    ref.watch(postRepositoryProvider),
-  );
+  // Only the claim repository now — the post repository was here so the use
+  // case could decrement the stock itself, which is the server's job.
+  return ClaimFoodUseCase(ref.watch(claimRepositoryProvider));
 });
 
 // ─── Claims State ─────────────────────────────────────────────────────────────

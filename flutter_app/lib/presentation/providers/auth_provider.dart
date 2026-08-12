@@ -1,3 +1,6 @@
+import 'package:ecoeats/data/api/api_client.dart';
+import 'package:ecoeats/data/repositories/api_claim_repository.dart';
+import 'package:ecoeats/data/repositories/api_post_repository.dart';
 import 'package:ecoeats/data/repositories/mock_auth_repository.dart';
 import 'package:ecoeats/data/repositories/mock_claim_repository.dart';
 import 'package:ecoeats/data/repositories/mock_post_repository.dart';
@@ -8,6 +11,30 @@ import 'package:ecoeats/domain/repositories/post_repository.dart';
 import 'package:ecoeats/domain/usecases/sign_in_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Whether to talk to the real API instead of the in-memory mocks.
+///
+/// `flutter run --dart-define=ECOEATS_USE_API=true`
+///
+/// Off by default on purpose: the API rejects every request without a
+/// verified `@asu.edu` Firebase token, and this client has no Firebase yet.
+/// Flipping this on before that lands gets a wall of 401s, not data.
+const bool kUseApi = bool.fromEnvironment('ECOEATS_USE_API');
+
+// ─── API plumbing ─────────────────────────────────────────────────────────────
+
+/// Where the bearer token comes from.
+///
+/// Deliberately empty for now rather than faked. Overriding this provider is
+/// the single place Firebase has to hook into — no repository or screen needs
+/// to know where the token came from.
+final authTokenProvider = Provider<TokenProvider>((ref) {
+  return () async => null;
+});
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient(tokenProvider: ref.watch(authTokenProvider));
+});
+
 // ─── Repository Providers ────────────────────────────────────────────────────
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -15,11 +42,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final postRepositoryProvider = Provider<PostRepository>((ref) {
-  return MockPostRepository();
+  return kUseApi
+      ? ApiPostRepository(ref.watch(apiClientProvider))
+      : MockPostRepository();
 });
 
 final claimRepositoryProvider = Provider<ClaimRepository>((ref) {
-  return MockClaimRepository();
+  return kUseApi
+      ? ApiClaimRepository(ref.watch(apiClientProvider))
+      : MockClaimRepository();
 });
 
 // ─── Use Case Providers ───────────────────────────────────────────────────────
