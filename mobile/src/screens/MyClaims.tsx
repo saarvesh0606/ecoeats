@@ -75,7 +75,7 @@ function PickupChecklist() {
 			</Text>
 			{PICKUP_STEPS.map((step) => (
 				<View key={step} className="flex-row gap-2 py-1">
-					<Ionicons name="checkmark-circle" size={18} color="#1B4332" />
+					<Ionicons name="checkmark-circle" size={18} color="#0C3226" />
 					<Text className="font-body text-gray-600 text-sm flex-1">{step}</Text>
 				</View>
 			))}
@@ -217,7 +217,7 @@ export function MyClaims() {
 									/>
 								) : (
 									<View className="w-16 h-16 rounded-xl bg-forest-50 items-center justify-center">
-										<Ionicons name="fast-food-outline" size={22} color="#86d6ad" />
+										<Ionicons name="fast-food-outline" size={22} color="#A8CFBD" />
 									</View>
 								)}
 								<View className="flex-1">

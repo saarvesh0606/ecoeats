@@ -16,7 +16,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/playfair-display": "^0.4.2",
     "expo": "~55.0.15",
     "expo-constants": "~55.0.14",

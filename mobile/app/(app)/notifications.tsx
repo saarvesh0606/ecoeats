@@ -15,7 +15,7 @@ export default function NotificationsScreen() {
 					accessibilityRole="button"
 					accessibilityLabel="Back"
 				>
-					<Ionicons name="chevron-back" size={24} color="#163827" />
+					<Ionicons name="chevron-back" size={24} color="#0C3226" />
 				</Pressable>
 				<Text className="font-display-bold text-2xl text-forest-800">
 					Notifications

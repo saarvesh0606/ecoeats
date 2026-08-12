@@ -162,7 +162,7 @@ export default function ManageListing() {
 					/>
 				) : (
 					<View className="w-14 h-14 rounded-xl bg-forest-50 items-center justify-center">
-						<Ionicons name="fast-food-outline" size={20} color="#86d6ad" />
+						<Ionicons name="fast-food-outline" size={20} color="#A8CFBD" />
 					</View>
 				)}
 				<View className="flex-1">
@@ -254,7 +254,7 @@ export default function ManageListing() {
 					accessibilityRole="button"
 					accessibilityLabel="Back to your posts"
 				>
-					<Ionicons name="chevron-back" size={24} color="#163827" />
+					<Ionicons name="chevron-back" size={24} color="#0C3226" />
 				</Pressable>
 				<Text className="font-display-bold text-2xl text-forest-800">
 					Post Management

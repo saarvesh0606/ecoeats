@@ -83,7 +83,7 @@ export default function RoleScreen() {
 									: "border-gray-200 bg-white"
 							}`}
 						>
-							{choice.renderIcon(active ? "#ffffff" : "#1B4332")}
+							{choice.renderIcon(active ? "#ffffff" : "#0C3226")}
 							<Text
 								className={`font-display-bold text-lg mt-3 ${
 									active ? "text-white" : "text-gray-900"

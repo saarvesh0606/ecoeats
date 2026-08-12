@@ -84,7 +84,7 @@ export function NotificationsList() {
 								<Ionicons
 									name="notifications-outline"
 									size={16}
-									color="#1B4332"
+									color="#0C3226"
 								/>
 							</View>
 							<View className="flex-1">

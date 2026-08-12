@@ -70,7 +70,7 @@ export default function TabsLayout() {
 		<Tabs
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: "#1B4332",
+				tabBarActiveTintColor: "#0C3226",
 				tabBarInactiveTintColor: "#9CA3AF",
 				tabBarStyle: {
 					backgroundColor: "#FFFFFF",
@@ -79,7 +79,7 @@ export default function TabsLayout() {
 					paddingBottom: 8,
 					paddingTop: 6,
 				},
-				tabBarLabelStyle: { fontSize: 11, fontFamily: "DMSans_500Medium" },
+				tabBarLabelStyle: { fontSize: 11, fontFamily: "Inter_500Medium" },
 			}}
 		>
 			{TABS.map((tab) => (

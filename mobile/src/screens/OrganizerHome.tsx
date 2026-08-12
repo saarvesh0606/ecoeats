@@ -147,7 +147,7 @@ export function OrganizerHome() {
 					accessibilityRole="button"
 					accessibilityLabel="Notifications"
 				>
-					<Ionicons name="notifications-outline" size={24} color="#1B4332" />
+					<Ionicons name="notifications-outline" size={24} color="#0C3226" />
 				</Pressable>
 			</View>
 
@@ -212,7 +212,7 @@ export function OrganizerHome() {
 											<Ionicons
 												name="fast-food-outline"
 												size={22}
-												color="#86d6ad"
+												color="#A8CFBD"
 											/>
 										</View>
 									)}

@@ -35,7 +35,7 @@ export function EmptyBell() {
 				}}
 			/>
 			<View style={{ transform: [{ translateY: 2 - pulse * 5 }] }}>
-				<Ionicons name="notifications-outline" size={34} color="#1B4332" />
+				<Ionicons name="notifications-outline" size={34} color="#0C3226" />
 			</View>
 		</View>
 	);

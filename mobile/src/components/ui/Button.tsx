@@ -26,7 +26,7 @@ interface ButtonProps {
 }
 
 const COLORS = {
-	forest: "#1B4332",
+	forest: "#0C3226",
 	white: "#FFFFFF",
 };
 

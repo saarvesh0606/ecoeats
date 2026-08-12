@@ -1,9 +1,9 @@
 import {
-	DMSans_400Regular,
-	DMSans_500Medium,
-	DMSans_600SemiBold,
-	DMSans_700Bold,
-} from "@expo-google-fonts/dm-sans";
+	Inter_400Regular,
+	Inter_500Medium,
+	Inter_600SemiBold,
+	Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import {
 	PlayfairDisplay_500Medium,
 	PlayfairDisplay_600SemiBold,
@@ -109,10 +109,10 @@ export default function RootLayout() {
 		PlayfairDisplay_500Medium,
 		PlayfairDisplay_600SemiBold,
 		PlayfairDisplay_700Bold,
-		DMSans_400Regular,
-		DMSans_500Medium,
-		DMSans_600SemiBold,
-		DMSans_700Bold,
+		Inter_400Regular,
+		Inter_500Medium,
+		Inter_600SemiBold,
+		Inter_700Bold,
 	});
 
 	const [minimumElapsed, setMinimumElapsed] = useState(false);

@@ -62,7 +62,7 @@ function Ripple({ clock, phase }: { clock: Animated.Value; phase: number }) {
 				height: LOGO_SIZE,
 				borderRadius: LOGO_SIZE / 2,
 				borderWidth: 2,
-				borderColor: "#86d6ad",
+				borderColor: "#A8CFBD",
 				opacity,
 				transform: [{ scale }],
 			}}
@@ -108,7 +108,7 @@ export function Splash() {
 						borderRadius: LOGO_SIZE / 2,
 					}}
 				>
-					<Ionicons name="leaf" size={30} color="#86d6ad" />
+					<Ionicons name="leaf" size={30} color="#A8CFBD" />
 				</View>
 			</View>
 

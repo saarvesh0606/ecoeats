@@ -226,7 +226,7 @@ export function RecipientFeed() {
 					accessibilityRole="button"
 					accessibilityLabel="Notifications"
 				>
-					<Ionicons name="notifications-outline" size={24} color="#1B4332" />
+					<Ionicons name="notifications-outline" size={24} color="#0C3226" />
 				</Pressable>
 			</View>
 
@@ -270,7 +270,7 @@ export function RecipientFeed() {
 						<Ionicons
 							name="options-outline"
 							size={18}
-							color={filtersActive ? "#1B4332" : "#9CA3AF"}
+							color={filtersActive ? "#0C3226" : "#9CA3AF"}
 						/>
 						{filtersActive ? (
 							<View className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-forest-700" />

@@ -6,22 +6,45 @@ module.exports = {
 	theme: {
 		extend: {
 			colors: {
+				// Rebased onto the Flutter client's palette so the two read as one
+				// product. Its tokens are placed at the steps that already carry
+				// the same job here rather than being renamed: primaryGreen is the
+				// deep brand green (this app's most-used shade), successEmerald is
+				// the mid green, and inversePrimary is the light-on-dark tint.
 				forest: {
-					DEFAULT: "#1B4332",
-					50: "#f0faf4",
-					100: "#dcf5e7",
-					200: "#bbead0",
-					300: "#86d6ad",
-					400: "#52b788",
-					500: "#2d9163",
-					600: "#1e7450",
-					700: "#1B4332",
-					800: "#163827",
-					900: "#0f2a1d",
+					DEFAULT: "#0C3226", // Flutter primaryGreen
+					50: "#f1f7f4",
+					100: "#dcebe4",
+					200: "#b9d7c9",
+					300: "#A8CFBD", // Flutter inversePrimary
+					400: "#5e9a80",
+					500: "#3d7a61",
+					600: "#2D6A4F", // Flutter successEmerald
+					700: "#16452f",
+					800: "#0C3226", // Flutter primaryGreen
+					900: "#07211a",
 				},
 				lime: {
 					DEFAULT: "#52B788",
 					accent: "#74C69D",
+				},
+				// Warm neutrals from the Flutter design. It carries a fuller
+				// surface ramp than this app had, which is what gives its cards
+				// and chips their separation against the cream.
+				surface: {
+					DEFAULT: "#F0EEE9",
+					low: "#F5F3EE",
+					high: "#EAE8E3",
+					highest: "#E4E2DD",
+					dim: "#DBDAD5",
+				},
+				ink: {
+					DEFAULT: "#1B1C19", // onSurface
+					muted: "#414845", // onSurfaceVariant
+				},
+				outline: {
+					DEFAULT: "#717974",
+					variant: "#C1C8C3",
 				},
 				// ASU brand. Maroon is the primary mark colour; gold is the ASU
 				// accent, with a muted bronze for the editorial subtitle rule.
@@ -35,19 +58,20 @@ module.exports = {
 					DEFAULT: "#FFC627",
 					muted: "#B08D3F",
 				},
-				cream: "#F8F6F0",
+				cream: "#FBF9F4", // Flutter backgroundCream
 			},
-			// Editorial pairing: Playfair Display (serif) for headings, DM Sans for
-			// body. Weight variants are explicit families because custom fonts do
-			// not synthesise weight on native — use font-display-bold etc.
+			// Editorial pairing: Playfair Display (serif) for headings, Inter for
+			// body — the pairing the Flutter client uses. Weight variants are
+			// explicit families because custom fonts do not synthesise weight on
+			// native — use font-display-bold etc.
 			fontFamily: {
 				display: ["PlayfairDisplay_600SemiBold"],
 				"display-medium": ["PlayfairDisplay_500Medium"],
 				"display-bold": ["PlayfairDisplay_700Bold"],
-				body: ["DMSans_400Regular"],
-				"body-medium": ["DMSans_500Medium"],
-				"body-semibold": ["DMSans_600SemiBold"],
-				"body-bold": ["DMSans_700Bold"],
+				body: ["Inter_400Regular"],
+				"body-medium": ["Inter_500Medium"],
+				"body-semibold": ["Inter_600SemiBold"],
+				"body-bold": ["Inter_700Bold"],
 			},
 			borderRadius: {
 				card: "16px",

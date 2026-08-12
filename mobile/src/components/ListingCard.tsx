@@ -130,7 +130,7 @@ export function ListingCard({
 						<Ionicons
 							name={saved ? "bookmark" : "bookmark-outline"}
 							size={20}
-							color={saved ? "#1B4332" : "#9CA3AF"}
+							color={saved ? "#0C3226" : "#9CA3AF"}
 						/>
 					</Pressable>
 				</View>

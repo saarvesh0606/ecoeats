@@ -22,7 +22,7 @@ export default function AppLayout() {
 				headerShown: false,
 				animation: "slide_from_right",
 				gestureEnabled: true,
-				contentStyle: { backgroundColor: "#F8F6F0" },
+				contentStyle: { backgroundColor: "#FBF9F4" },
 			}}
 		>
 			<Stack.Screen name="(tabs)" options={{ animation: "none" }} />

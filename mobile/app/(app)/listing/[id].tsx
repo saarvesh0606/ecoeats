@@ -33,7 +33,7 @@ function DetailRow({
 }) {
 	return (
 		<View className="flex-row gap-3 py-2">
-			<Ionicons name={icon} size={18} color="#1B4332" style={{ marginTop: 1 }} />
+			<Ionicons name={icon} size={18} color="#0C3226" style={{ marginTop: 1 }} />
 			<View className="flex-1">
 				<Text className="font-body-semibold text-gray-900 text-sm">{label}</Text>
 				<Text className="font-body text-gray-600 text-sm mt-0.5">{value}</Text>
@@ -264,7 +264,7 @@ export default function ListingDetail() {
 						accessibilityRole="button"
 						accessibilityLabel="Go back"
 					>
-						<Ionicons name="chevron-back" size={22} color="#163827" />
+						<Ionicons name="chevron-back" size={22} color="#0C3226" />
 					</Pressable>
 					<Pressable
 						onPress={onShare}
@@ -273,7 +273,7 @@ export default function ListingDetail() {
 						accessibilityRole="button"
 						accessibilityLabel="Share this listing"
 					>
-						<Ionicons name="share-outline" size={20} color="#163827" />
+						<Ionicons name="share-outline" size={20} color="#0C3226" />
 					</Pressable>
 					<View className="absolute bottom-4 left-4 bg-forest-900 rounded-full px-3 py-1">
 						<Text className="font-body-semibold text-xs text-white">
@@ -352,7 +352,7 @@ export default function ListingDetail() {
 								onPress={() => void onDirections()}
 								accessibilityLabel={`Directions to ${listing.building}`}
 								icon={
-									<Ionicons name="navigate-outline" size={16} color="#1B4332" />
+									<Ionicons name="navigate-outline" size={16} color="#0C3226" />
 								}
 							>
 								Get Directions
@@ -363,7 +363,7 @@ export default function ListingDetail() {
 					{/* Shared by */}
 					<View className="flex-row items-center gap-3 mt-5 mb-2">
 						<View className="w-10 h-10 rounded-full bg-forest-100 items-center justify-center">
-							<Ionicons name="person-outline" size={20} color="#1B4332" />
+							<Ionicons name="person-outline" size={20} color="#0C3226" />
 						</View>
 						<View className="flex-1">
 							<Text className="font-body text-gray-400 text-xs">Shared by</Text>
@@ -412,7 +412,7 @@ export default function ListingDetail() {
 							accessibilityRole="button"
 							accessibilityLabel="Fewer portions"
 						>
-							<Ionicons name="remove-circle-outline" size={30} color="#1B4332" />
+							<Ionicons name="remove-circle-outline" size={30} color="#0C3226" />
 						</Pressable>
 						<Text className="font-display-bold text-xl text-gray-900 w-6 text-center">
 							{qty}
@@ -423,7 +423,7 @@ export default function ListingDetail() {
 							accessibilityRole="button"
 							accessibilityLabel="More portions"
 						>
-							<Ionicons name="add-circle-outline" size={30} color="#1B4332" />
+							<Ionicons name="add-circle-outline" size={30} color="#0C3226" />
 						</Pressable>
 					</View>
 				)}
