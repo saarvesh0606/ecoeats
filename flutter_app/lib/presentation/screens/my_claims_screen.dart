@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/claim.dart';
 import 'package:ecoeats/presentation/providers/claims_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:ecoeats/presentation/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class MyClaimsScreen extends ConsumerStatefulWidget {
   const MyClaimsScreen({super.key});
@@ -19,21 +19,17 @@ class MyClaimsScreen extends ConsumerStatefulWidget {
 
 class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
   Timer? _timer;
-  int _secondsRemaining = 22 * 60 + 47; // 22:47
 
   @override
   void initState() {
     super.initState();
-    _startCountdown();
-  }
-
-  void _startCountdown() {
+    // One clock that only asks for a repaint; every card works out its own
+    // remaining time from its own pickup window. This was a single counter
+    // seeded at 22:47 and shared by the whole screen — harmless while a bug
+    // meant only one card ever rendered, and wrong the moment they all did,
+    // because every claim would have counted down in lockstep.
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_secondsRemaining > 0) {
-        setState(() => _secondsRemaining--);
-      } else {
-        _timer?.cancel();
-      }
+      if (mounted) setState(() {});
     });
   }
 
@@ -85,7 +81,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
         children: [
           Text(
             'My Claims',
-            style: GoogleFonts.ebGaramond(
+            style: AppFonts.display(
               fontSize: 28,
               fontWeight: FontWeight.w500,
               color: AppColors.onSurface,
@@ -94,7 +90,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
           const SizedBox(height: 4),
           Text(
             'Your reserved food and pickup info.',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 13,
               color: AppColors.onSurfaceVariant,
             ),
@@ -138,7 +134,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                   ),
                   child: Text(
                     label,
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
@@ -157,13 +153,17 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
   Widget _buildClaimsList(List<ClaimEntity> claims) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      // One row per claim, then a single how-to card at the end. This used to
+      // render claims.first at index 0 and the how-to card at every other
+      // index, so three claims showed as one claim followed by three copies of
+      // the same instructions.
       itemCount: claims.length + 1,
       itemBuilder: (context, index) {
-        if (index == 0) {
+        if (index < claims.length) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _buildClaimCard(claims.first)
-                .animate()
+            child: _buildClaimCard(claims[index])
+                .animate(delay: (index * 80).ms)
                 .fadeIn()
                 .slideY(begin: 0.1),
           );
@@ -177,8 +177,12 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
   }
 
   Widget _buildClaimCard(ClaimEntity claim) {
-    final minutes = _secondsRemaining ~/ 60;
-    final seconds = _secondsRemaining % 60;
+    // Derived from this claim's own pickup window, so it is right after a
+    // rebuild, a resume, or a device clock change — a decremented counter
+    // drifts on all three.
+    final remaining = claim.timeRemaining ?? Duration.zero;
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds % 60;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -188,7 +192,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
         border: Border.all(color: AppColors.surfaceDim),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -205,12 +209,9 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                   width: 120,
                   height: 150,
                   child: claim.postImageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: claim.postImageUrl!,
+                      ? AppImage(
+                          source: claim.postImageUrl,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
-                            color: AppColors.surfaceContainerLow,
-                          ),
                         )
                       : Container(color: AppColors.surfaceContainerLow),
                 ),
@@ -224,7 +225,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                     children: [
                       Text(
                         'RESERVED',
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryGreen,
@@ -234,7 +235,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         claim.postTitle,
-                        style: GoogleFonts.ebGaramond(
+                        style: AppFonts.display(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                           color: AppColors.onSurface,
@@ -244,7 +245,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         claim.locationName,
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 11,
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -252,7 +253,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                       const SizedBox(height: 14),
                       Text(
                         'Pickup window',
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.onSurface,
@@ -262,7 +263,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                         claim.pickupTimeDisplay.isNotEmpty
                             ? claim.pickupTimeDisplay
                             : '10:00 AM – 12:00 PM',
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: AppColors.onSurface,
@@ -280,7 +281,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
             children: [
               Text(
                 'Time remaining',
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: AppColors.onSurfaceVariant,
@@ -296,7 +297,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                     padding: const EdgeInsets.only(bottom: 20, left: 4, right: 4),
                     child: Text(
                       ':',
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 32,
                         fontWeight: FontWeight.w500,
                         color: AppColors.onSurface,
@@ -324,7 +325,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
               ),
               child: Text(
                 'View Details',
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -342,7 +343,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 40,
             fontWeight: FontWeight.w500,
             color: AppColors.onSurface,
@@ -353,7 +354,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
         const SizedBox(height: 4),
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 9,
             fontWeight: FontWeight.w700,
             color: AppColors.onSurfaceVariant,
@@ -380,7 +381,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
         border: Border.all(color: AppColors.surfaceDim),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -391,7 +392,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
         children: [
           Text(
             'How to Pick Up',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: AppColors.onSurface,
@@ -410,7 +411,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
                   Expanded(
                     child: Text(
                       text,
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 13,
                         color: AppColors.onSurfaceVariant,
                         height: 1.5,
@@ -441,7 +442,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
             const SizedBox(height: 16),
             Text(
               'No claims yet',
-              style: GoogleFonts.ebGaramond(
+              style: AppFonts.display(
                 fontSize: 22,
                 color: AppColors.onSurface,
               ),
@@ -449,7 +450,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
             const SizedBox(height: 8),
             Text(
               'Find food near you and claim it!',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 14,
                 color: AppColors.onSurfaceVariant,
               ),
@@ -467,7 +468,7 @@ class _MyClaimsScreenState extends ConsumerState<MyClaimsScreen> {
               ),
               child: Text(
                 'Discover Food',
-                style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w600),
+                style: AppFonts.body(fontWeight: FontWeight.w600),
               ),
             ),
           ],

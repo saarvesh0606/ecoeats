@@ -1,12 +1,13 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/presentation/providers/posts_provider.dart';
 import 'package:ecoeats/presentation/providers/voice_recording_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:ecoeats/presentation/widgets/audio_waveform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class VoicePostScreen extends ConsumerStatefulWidget {
   const VoicePostScreen({super.key});
@@ -65,7 +66,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
           Expanded(
             child: Text(
               'Create a Post',
-              style: GoogleFonts.ebGaramond(
+              style: AppFonts.display(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
                 color: AppColors.onSurface,
@@ -77,7 +78,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
             onPressed: () {},
             child: Text(
               'Save Draft',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppColors.onSurface,
@@ -95,7 +96,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -126,7 +127,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   )
@@ -135,7 +136,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
@@ -153,7 +154,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
           state.recordingState == RecordingState.recording
               ? 'Listening...'
               : 'Tap to speak about the food',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 14,
             color: AppColors.onSurfaceVariant,
             fontWeight: FontWeight.w500,
@@ -193,7 +194,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
           width: 64,
           child: Text(
             formatDuration(state.duration),
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: AppColors.primaryGreen,
@@ -246,7 +247,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
             },
             child: Text(
               'Cancel',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: AppColors.onSurface,
@@ -268,7 +269,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.hankenGrotesk(
+        style: AppFonts.body(
           fontSize: 14,
           color: AppColors.onSurface,
           height: 1.6,
@@ -283,7 +284,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
       children: [
         Text(
           'Add Photos',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: AppColors.onSurface,
@@ -296,15 +297,15 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
             scrollDirection: Axis.horizontal,
             children: [
               _buildPhotoThumbnail(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuD7cstN-qE9shtgHctHzywBV4XAEgiN9cvhWg7cvJs5-i6qu2d9lNNFZy1luZCUk4i82WM_38-V3z4wiGn0fTVN1Bxc40OGLpsQC1ArSDPKnnanh7kOBsUd_79YRvDxqRFb9nWz_KuvpgHlgFXs80CyGusEBHtRZfnEcxZaFd_mMTyPQfEgu8WnYbER32SpDjU0Ons5o2cgNDcQVx3VqMmgb5LJmsrxQFxNfKF7sqfz5KWsL2GKzGiLIw',
+                'assets/images/food_grain_bowl.jpg',
               ),
               const SizedBox(width: 10),
               _buildPhotoThumbnail(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuCmgk4JMcVzVatuKEhS9H6Q4zMUMPIPs1OZ7R9x9d-QqIrUHVOPT7wbTOuTaM4tZIhlkU3LgvEwavmQPM-nmBkGS2TiLBwKTkqGjQEHYOISeNrRstNrfNxxSBk9AWn4ZELWqkKwxEK055jibJHYMXMyVRgCFtDhwZ5kouhoL5sVmWwalQ0Xoi_rTBUaT_-CRI3gDApDvsS4VJrGtEeCvouTeIl6RIESEVhVB0TR6geR9RrLGkN70CVl7Q',
+                'assets/images/food_pasta.jpg',
               ),
               const SizedBox(width: 10),
               _buildPhotoThumbnail(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuC1ErupoO8Y7E24dH95DEXydN-7__v2NucZonWm5mE5W3UdgwzOq9C_c8GO2VjGYjJnz0HQC0vckSMnwa2NEiA3ib_S6WT43AcvhrrfEYGD4oR6a7xgQ5CGK48KnSyZSw0aQfhFVL9tGTWnP8-eB1BCy2xzFDr9rkwiDq7n00swJgahKhwXTWXLqeJotjLMZgwZWkoQuqfZgNa5XuaVHbmFm7mQ1tYq--x3DHbxSPlyFUlAbwxzHSq-iA',
+                'assets/images/food_pastries.jpg',
               ),
               const SizedBox(width: 10),
               _buildAddPhotoButton(),
@@ -321,13 +322,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
       child: SizedBox(
         width: 84,
         height: 84,
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            color: AppColors.surfaceContainerLow,
-          ),
-        ),
+        child: AppImage(source: url, fit: BoxFit.cover),
       ),
     );
   }
@@ -375,7 +370,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
         ),
         child: Text(
           'Next: Review & Publish',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -408,7 +403,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
             ),
             child: Text(
               'Next: Review & Publish',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -426,7 +421,7 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -435,13 +430,13 @@ class _VoicePostScreenState extends ConsumerState<VoicePostScreen> {
         const SizedBox(height: 6),
         TextField(
           maxLines: maxLines,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 15,
             color: AppColors.onSurface,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.hankenGrotesk(
+            hintStyle: AppFonts.body(
               color: AppColors.onSurfaceVariant,
             ),
             filled: true,

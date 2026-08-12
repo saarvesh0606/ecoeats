@@ -1,6 +1,6 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 enum NavItem { discover, map, myClaims, profile }
 
@@ -24,7 +24,7 @@ class RecipientBottomNavBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -98,7 +98,7 @@ class _NavBarItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryGreen.withOpacity(0.08)
+              ? AppColors.primaryGreen.withValues(alpha: 0.08)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
         ),
@@ -113,7 +113,7 @@ class _NavBarItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: color,

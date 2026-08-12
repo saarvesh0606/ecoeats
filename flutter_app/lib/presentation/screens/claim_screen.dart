@@ -1,14 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/food_post.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:ecoeats/presentation/providers/claims_provider.dart';
 import 'package:ecoeats/presentation/providers/posts_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ClaimScreen extends ConsumerWidget {
   const ClaimScreen({super.key});
@@ -72,7 +72,7 @@ class ClaimScreen extends ConsumerWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.5),
+                    Colors.black.withValues(alpha: 0.5),
                     Colors.transparent,
                   ],
                 ),
@@ -107,9 +107,9 @@ class ClaimScreen extends ConsumerWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
       ),
@@ -123,12 +123,9 @@ class ClaimScreen extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           post.imageUrls.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: post.imageUrls.first,
+              ? AppImage(
+                  source: post.imageUrls.first,
                   fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    color: AppColors.primaryGreen,
-                  ),
                 )
               : Container(color: AppColors.primaryGreen),
           // Time badge
@@ -147,7 +144,7 @@ class ClaimScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '${post.minutesLeft}',
-                    style: GoogleFonts.ebGaramond(
+                    style: AppFonts.display(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -156,7 +153,7 @@ class ClaimScreen extends ConsumerWidget {
                   ),
                   Text(
                     'min left',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 9,
                       color: Colors.white,
                       letterSpacing: 0.5,
@@ -179,7 +176,7 @@ class ClaimScreen extends ConsumerWidget {
         children: [
           Text(
             post.title,
-            style: GoogleFonts.ebGaramond(
+            style: AppFonts.display(
               fontSize: 28,
               fontWeight: FontWeight.w600,
               color: AppColors.primaryGreen,
@@ -189,14 +186,14 @@ class ClaimScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             post.locationName,
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 14,
               color: AppColors.onSurfaceVariant,
             ),
           ),
           Text(
             '${post.distanceMiles} mi away',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppColors.onSurfaceVariant,
@@ -205,7 +202,7 @@ class ClaimScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             post.description,
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 15,
               color: AppColors.onSurface,
               height: 1.6,
@@ -225,7 +222,7 @@ class ClaimScreen extends ConsumerWidget {
                 ),
                 child: Text(
                   tag.displayName,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.onSurface,
@@ -248,7 +245,7 @@ class ClaimScreen extends ConsumerWidget {
           Center(
             child: Text(
               "You'll have 15 minutes to confirm pickup.",
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 12,
                 color: AppColors.onSurfaceVariant,
               ),
@@ -265,7 +262,7 @@ class ClaimScreen extends ConsumerWidget {
       children: [
         Text(
           'Pickup Details',
-          style: GoogleFonts.ebGaramond(
+          style: AppFonts.display(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: AppColors.primaryGreen,
@@ -312,7 +309,7 @@ class ClaimScreen extends ConsumerWidget {
               width: 48,
               child: Text(
                 label,
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primaryGreen,
@@ -324,7 +321,7 @@ class ClaimScreen extends ConsumerWidget {
                 width: 240,
                 child: Text(
                   content,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 13,
                     color: AppColors.onSurface,
                     height: 1.5,
@@ -346,7 +343,7 @@ class ClaimScreen extends ConsumerWidget {
           children: [
             Text(
               'Shared by',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primaryGreen,
@@ -356,13 +353,13 @@ class ClaimScreen extends ConsumerWidget {
             CircleAvatar(
               radius: 18,
               backgroundImage: post.hostAvatarUrl != null
-                  ? NetworkImage(post.hostAvatarUrl!)
+                  ? AppImage.providerFor(post.hostAvatarUrl)
                   : null,
               backgroundColor: AppColors.surfaceContainerHigh,
               child: post.hostAvatarUrl == null
                   ? Text(
                       post.hostName[0],
-                      style: GoogleFonts.hankenGrotesk(fontWeight: FontWeight.w600),
+                      style: AppFonts.body(fontWeight: FontWeight.w600),
                     )
                   : null,
             ),
@@ -372,7 +369,7 @@ class ClaimScreen extends ConsumerWidget {
               children: [
                 Text(
                   post.hostName,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: AppColors.onSurface,
@@ -380,7 +377,7 @@ class ClaimScreen extends ConsumerWidget {
                 ),
                 Text(
                   'ASU Student',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 11,
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -395,7 +392,7 @@ class ClaimScreen extends ConsumerWidget {
             const SizedBox(width: 2),
             Text(
               '${post.hostRating} ',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.onSurface,
@@ -403,7 +400,7 @@ class ClaimScreen extends ConsumerWidget {
             ),
             Text(
               '(28)',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 12,
                 color: AppColors.onSurfaceVariant,
               ),
@@ -436,7 +433,7 @@ class ClaimScreen extends ConsumerWidget {
                         SnackBar(
                           content: Text(
                             '✅ Claimed! You have 15 minutes to pick up.',
-                            style: GoogleFonts.hankenGrotesk(),
+                            style: AppFonts.body(),
                           ),
                           backgroundColor: AppColors.primaryGreen,
                           behavior: SnackBarBehavior.floating,
@@ -465,7 +462,7 @@ class ClaimScreen extends ConsumerWidget {
                   )
                 : Text(
                     'Claim This Food',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),

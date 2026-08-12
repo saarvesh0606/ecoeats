@@ -62,6 +62,31 @@ final selectedPostProvider = FutureProvider<FoodPostEntity?>((ref) async {
 
 // ─── Host Posts ───────────────────────────────────────────────────────────────
 
+enum HostPostsTab { active, scheduled, past }
+
+final hostPostsTabProvider = StateProvider<HostPostsTab>(
+  (ref) => HostPostsTab.active,
+);
+
+/// Which of a host's posts belong under each tab.
+///
+/// Kept beside the tab state rather than in the screen so the counts on the
+/// tabs and the rows beneath them can never disagree — they previously did,
+/// with the labels hardcoded to "Active (3)" above a list that was empty.
+List<FoodPostEntity> postsForTab(List<FoodPostEntity> posts, HostPostsTab tab) {
+  switch (tab) {
+    case HostPostsTab.active:
+      return posts.where((p) => p.status == PostStatus.live).toList();
+    case HostPostsTab.scheduled:
+      return posts.where((p) => p.status == PostStatus.scheduled).toList();
+    case HostPostsTab.past:
+      return posts
+          .where((p) =>
+              p.status == PostStatus.ended || p.status == PostStatus.outOfStock)
+          .toList();
+  }
+}
+
 final hostPostsProvider = FutureProvider<List<FoodPostEntity>>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return Future.value([]);
@@ -132,8 +157,10 @@ final postDraftProvider = StateProvider<PostDraft>((ref) => const PostDraft());
 
 class CreatePostNotifier extends StateNotifier<AsyncValue<FoodPostEntity?>> {
   final CreatePostUseCase _useCase;
+  final Ref _ref;
 
-  CreatePostNotifier(this._useCase) : super(const AsyncValue.data(null));
+  CreatePostNotifier(this._useCase, this._ref)
+      : super(const AsyncValue.data(null));
 
   Future<FoodPostEntity?> publishPost({
     required String hostId,
@@ -155,11 +182,20 @@ class CreatePostNotifier extends StateNotifier<AsyncValue<FoodPostEntity?>> {
           expiresAt: draft.expiresAt,
         ));
     state = result;
+
+    // A published post has to appear on the host's own dashboard and on the
+    // recipient feed, and it moves the impact numbers. None of those refetch
+    // on their own.
+    if (!result.hasError) {
+      _ref.invalidate(hostPostsProvider);
+      _ref.invalidate(discoverPostsProvider);
+      _ref.invalidate(hostImpactProvider);
+    }
     return result.valueOrNull;
   }
 }
 
 final createPostNotifierProvider =
     StateNotifierProvider<CreatePostNotifier, AsyncValue<FoodPostEntity?>>((ref) {
-  return CreatePostNotifier(ref.watch(createPostUseCaseProvider));
+  return CreatePostNotifier(ref.watch(createPostUseCaseProvider), ref);
 });

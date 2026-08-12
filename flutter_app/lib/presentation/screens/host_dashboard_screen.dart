@@ -1,14 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/food_post.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:ecoeats/presentation/providers/posts_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:ecoeats/presentation/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HostDashboardScreen extends ConsumerWidget {
   const HostDashboardScreen({super.key});
@@ -18,6 +18,7 @@ class HostDashboardScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final impactAsync = ref.watch(hostImpactProvider);
     final postsAsync = ref.watch(hostPostsProvider);
+    final tab = ref.watch(hostPostsTabProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8F5),
@@ -53,11 +54,15 @@ class HostDashboardScreen extends ConsumerWidget {
                       error: (_, __) => const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 20),
-                    _buildTabs(),
+                    _buildTabs(ref, postsAsync.valueOrNull ?? const [], tab),
                     const SizedBox(height: 16),
                     Text(
-                      'Your Active Posts',
-                      style: GoogleFonts.hankenGrotesk(
+                      switch (tab) {
+                        HostPostsTab.active => 'Your Active Posts',
+                        HostPostsTab.scheduled => 'Scheduled Posts',
+                        HostPostsTab.past => 'Past Posts',
+                      },
+                      style: AppFonts.body(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.onSurface,
@@ -65,7 +70,8 @@ class HostDashboardScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     postsAsync.when(
-                      data: (posts) => _buildPostList(context, posts),
+                      data: (posts) =>
+                          _buildPostList(context, postsForTab(posts, tab), tab),
                       loading: () => const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primaryGreen,
@@ -102,7 +108,7 @@ class HostDashboardScreen extends ConsumerWidget {
               children: [
                 Text(
                   'Host Dashboard',
-                  style: GoogleFonts.ebGaramond(
+                  style: AppFonts.display(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
                     color: AppColors.onSurface,
@@ -110,7 +116,7 @@ class HostDashboardScreen extends ConsumerWidget {
                 ),
                 Text(
                   'Good to share, Sun Devil.',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 13,
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -157,7 +163,7 @@ class HostDashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryGreen.withOpacity(0.3),
+            color: AppColors.primaryGreen.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -171,13 +177,13 @@ class HostDashboardScreen extends ConsumerWidget {
             children: [
               Text(
                 'Impact This Week',
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.white,
                 ),
               ),
-              Icon(Icons.eco, color: AppColors.statusGold.withOpacity(0.8), size: 28),
+              Icon(Icons.eco, color: AppColors.statusGold.withValues(alpha: 0.8), size: 28),
             ],
           ),
           const SizedBox(height: 16),
@@ -185,9 +191,9 @@ class HostDashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildImpactStat('${impact['mealsShared'] ?? 0}', 'Meals Shared'),
-              Container(width: 1, height: 40, color: Colors.white.withOpacity(0.2)),
+              Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.2)),
               _buildImpactStat('${impact['foodSavedLbs'] ?? 0}.3', 'lbs Food Saved'),
-              Container(width: 1, height: 40, color: Colors.white.withOpacity(0.2)),
+              Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.2)),
               _buildImpactStat('${impact['peopleFed'] ?? 0}', 'People Fed'),
             ],
           ),
@@ -202,7 +208,7 @@ class HostDashboardScreen extends ConsumerWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 28,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -212,9 +218,9 @@ class HostDashboardScreen extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 10,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
           textAlign: TextAlign.center,
         ),
@@ -222,26 +228,40 @@ class HostDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTabs() {
+  /// Counts come from the posts themselves. They used to be written into the
+  /// labels by hand, so the tabs advertised three active posts above an empty
+  /// list and the bug read as a rendering fault instead of a data one.
+  Widget _buildTabs(WidgetRef ref, List<FoodPostEntity> posts, HostPostsTab tab) {
+    final activeCount = postsForTab(posts, HostPostsTab.active).length;
+    final scheduledCount = postsForTab(posts, HostPostsTab.scheduled).length;
+
     return DefaultTabController(
       length: 3,
+      initialIndex: tab.index,
       child: TabBar(
+        onTap: (index) => ref.read(hostPostsTabProvider.notifier).state =
+            HostPostsTab.values[index],
         labelColor: AppColors.onSurface,
         unselectedLabelColor: AppColors.onSurfaceVariant,
         indicatorColor: AppColors.primaryGreen,
         indicatorWeight: 2,
-        labelStyle: GoogleFonts.hankenGrotesk(fontSize: 13, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.hankenGrotesk(fontSize: 13, fontWeight: FontWeight.w500),
-        tabs: const [
-          Tab(text: 'Active (3)'),
-          Tab(text: 'Scheduled (1)'),
-          Tab(text: 'Past'),
+        labelStyle: AppFonts.body(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            AppFonts.body(fontSize: 13, fontWeight: FontWeight.w500),
+        tabs: [
+          Tab(text: 'Active ($activeCount)'),
+          Tab(text: 'Scheduled ($scheduledCount)'),
+          const Tab(text: 'Past'),
         ],
       ),
     );
   }
 
-  Widget _buildPostList(BuildContext context, List<FoodPostEntity> posts) {
+  Widget _buildPostList(
+    BuildContext context,
+    List<FoodPostEntity> posts,
+    HostPostsTab tab,
+  ) {
     if (posts.isEmpty) {
       return Center(
         child: Padding(
@@ -251,8 +271,13 @@ class HostDashboardScreen extends ConsumerWidget {
               Icon(Icons.restaurant_outlined, size: 48, color: AppColors.outlineVariant),
               const SizedBox(height: 12),
               Text(
-                'No active posts yet.\nCreate your first food post!',
-                style: GoogleFonts.hankenGrotesk(
+                switch (tab) {
+                  HostPostsTab.active =>
+                    'No active posts yet.\nCreate your first food post!',
+                  HostPostsTab.scheduled => 'Nothing scheduled.',
+                  HostPostsTab.past => 'No finished posts yet.',
+                },
+                style: AppFonts.body(
                   color: AppColors.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
@@ -296,13 +321,9 @@ class HostDashboardScreen extends ConsumerWidget {
                 width: 100,
                 height: 100,
                 child: post.imageUrls.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: post.imageUrls.first,
+                    ? AppImage(
+                        source: post.imageUrls.first,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(
-                          color: AppColors.surfaceContainerLow,
-                          child: const Icon(Icons.restaurant),
-                        ),
                       )
                     : Container(
                         color: AppColors.surfaceContainerLow,
@@ -317,7 +338,7 @@ class HostDashboardScreen extends ConsumerWidget {
                 children: [
                   Text(
                     post.title,
-                    style: GoogleFonts.ebGaramond(
+                    style: AppFonts.display(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF0C3226),
@@ -328,7 +349,7 @@ class HostDashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     post.locationName,
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 12,
                       color: const Color(0xFF0C3226),
                       fontWeight: FontWeight.w500,
@@ -341,7 +362,7 @@ class HostDashboardScreen extends ConsumerWidget {
                       const SizedBox(width: 2),
                       Text(
                         '${post.distanceMiles}mi away',
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 11,
                           color: AppColors.onSurfaceVariant,
                         ),
@@ -362,7 +383,7 @@ class HostDashboardScreen extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         'Live',
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.successEmerald,
@@ -378,7 +399,7 @@ class HostDashboardScreen extends ConsumerWidget {
               children: [
                 Text(
                   '${post.remainingQuantity}',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     color: AppColors.onSurface,
@@ -387,7 +408,7 @@ class HostDashboardScreen extends ConsumerWidget {
                 ),
                 Text(
                   'left\nof ${post.totalQuantity} servings',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 10,
                     color: AppColors.onSurfaceVariant,
                     height: 1.3,
@@ -409,7 +430,7 @@ class HostDashboardScreen extends ConsumerWidget {
       icon: const Icon(Icons.add, size: 18),
       label: Text(
         'Create New Post',
-        style: GoogleFonts.hankenGrotesk(
+        style: AppFonts.body(
           fontWeight: FontWeight.w500,
           fontSize: 15,
         ),

@@ -13,12 +13,12 @@ class MockPostRepository implements PostRepository {
         hostName: 'Taylor M.',
         hostRating: 4.9,
         hostAvatarUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCwAKyXFNWNzj_b37553ibxDnmR5xtcGP3Mw8FOGhfAeZYwjQEZ-ubKUgCHgq6rWLvSNS4LeVqva_vcxqAp2FqZgGccLvQKE0WrwDExES-mHewAFdaJvDMGor_lrbIx5SvtUqXFUfHRqwgOOHVdOSYUpAeuJ4pyWdZ3l1fv1rOSacguJx7d3dXVSTF7vVWnJatXifv2Rg_GwHGEPG45_JrubLSOFnjMRJ8n5e8aVKhzqclSQ8dcS30PQw',
+            'assets/images/icon_host.png',
         title: 'Mediterranean Grain Bowl',
         description:
             'Fresh grains, roasted veggies, hummus, tahini dressing, and feta. Freshly made this morning. Great option for lunch!',
         imageUrls: [
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDRCHsinZkphEoPsa0Jo1XCpNtvI5RZQc3WV7kDvhVrvCnZhoWYuTgkI-AGCSaTtzd59040ludUe1gifRBLbkmIkReMexstr157-rCxA1P1ySP6dDd07lZ26TKo0Socc5qR3D9m16JBd-Em6Dh_zaJRTWTDgdJjvPBcEgiH4-4Odvdb8KOaN4OISSQ8-kS4oSJquJcS7k1D4tXq8sBQaG5TmCg_DTHoRf0CrTBAu4k9HsAOOnH0HsuCbQ',
+          'assets/images/food_grain_bowl.jpg',
         ],
         totalQuantity: 45,
         remainingQuantity: 32,
@@ -41,7 +41,7 @@ class MockPostRepository implements PostRepository {
         description:
             'Fresh pasta primavera with seasonal vegetables and herbs. Vegetarian-friendly.',
         imageUrls: [
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDStacsLmlmtxqCedHxhCUsgLENo2nq6QUGKSlXBr3klEOjSp5ZL0UQtsRaeXVf0vIrBdYaXBU2sgA_ol08tkBwHzc19jAl5XHu9qsnIVsWp-nfYxhXKm3LQLe6YukdNA-yZj1EKBsYywdAXHUdDUdxL_dA62OCORGdVW-9R94SLMJa69zZmoSQsjUkJIAJODnUsZ9sW0C6V-NRq0d-SpxtilvpJFXLOmj7ckzz4z7aTcnpLvdNqp4tRA',
+          'assets/images/food_pasta.jpg',
         ],
         totalQuantity: 30,
         remainingQuantity: 18,
@@ -63,7 +63,7 @@ class MockPostRepository implements PostRepository {
         description:
             'Assorted breakfast pastries from this morning — croissants, muffins, and scones.',
         imageUrls: [
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCPLNBi8BJ30FzyaFB3M0HEQosBJ3_-8JICpsEc9pj39OKb68rxM_POhJwyOaLOWsMnSBaU8QoKofc1m4iRvXqIGTXtF3nwvuZyuF2Ybb-fRD-H6WgsX1-KeaHORLTRs1sUWe0HMKUKPFRa_YqXKnfXCnl2VnPyP387SbfLzLJEqngej8rx5I0xVmUw6TET7FMJ6jJCNYniQjdSgMQCnC5SzUzVLE8p_DhN1kiaOr_EbKEUXF1KVlAVNg',
+          'assets/images/food_pastries.jpg',
         ],
         totalQuantity: 12,
         remainingQuantity: 8,

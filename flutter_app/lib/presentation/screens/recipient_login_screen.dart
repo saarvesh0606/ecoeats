@@ -1,11 +1,11 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/user.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class RecipientLoginScreen extends ConsumerStatefulWidget {
   const RecipientLoginScreen({super.key});
@@ -110,7 +110,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
         const SizedBox(height: 20),
         Text(
           'Welcome to EcoEats',
-          style: GoogleFonts.ebGaramond(
+          style: AppFonts.display(
             fontSize: 28,
             fontWeight: FontWeight.w500,
             color: AppColors.onSurface,
@@ -120,7 +120,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
         const SizedBox(height: 6),
         Text(
           'Share more. Waste less. Impact together.',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 16,
             color: AppColors.onSurfaceVariant,
           ),
@@ -131,7 +131,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
   }
 
   Widget _buildDivider() {
-    return Divider(color: AppColors.outlineVariant.withOpacity(0.5));
+    return Divider(color: AppColors.outlineVariant.withValues(alpha: 0.5));
   }
 
   Widget _buildCommunitySection() {
@@ -139,7 +139,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
       children: [
         Text(
           'ASU COMMUNITY ONLY',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
@@ -149,7 +149,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
         const SizedBox(height: 4),
         Text(
           'Use your asu.edu email to continue.',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 16,
             color: AppColors.onSurfaceVariant,
           ),
@@ -173,7 +173,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                 child: TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     color: AppColors.onSurface,
@@ -202,7 +202,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
             const SizedBox(width: 4),
             Text(
               'Verified ASU email',
-              style: GoogleFonts.hankenGrotesk(
+              style: AppFonts.body(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.onSurfaceVariant,
@@ -221,7 +221,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
       children: [
         Text(
           'I want to...',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -266,7 +266,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                 const SizedBox(height: 10),
                 Text(
                   title,
-                  style: GoogleFonts.ebGaramond(
+                  style: AppFonts.display(
                     fontSize: 22,
                     fontWeight: FontWeight.w500,
                     color: isSelected ? Colors.white : AppColors.onSurface,
@@ -275,10 +275,10 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 13,
                     color: isSelected
-                        ? Colors.white.withOpacity(0.8)
+                        ? Colors.white.withValues(alpha: 0.8)
                         : AppColors.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
@@ -312,7 +312,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
   Widget _buildFooterText() {
     return Text(
       'EcoEats is for ASU students, staff, and community members.',
-      style: GoogleFonts.ebGaramond(
+      style: AppFonts.display(
         fontSize: 16,
         color: AppColors.onSurfaceVariant,
         height: 1.4,
@@ -345,7 +345,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                 children: [
                   Text(
                     'Continue',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -365,7 +365,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Text(
         'By continuing, you agree to our\nTerms of Service and Privacy Policy.',
-        style: GoogleFonts.hankenGrotesk(
+        style: AppFonts.body(
           fontSize: 11,
           color: AppColors.onSurfaceVariant,
           height: 1.5,
@@ -404,7 +404,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                       color: AppColors.onSurfaceVariant,

@@ -15,7 +15,7 @@ class MockClaimRepository implements ClaimRepository {
         userId: 'current_user',
         postTitle: 'Mediterranean Grain Bowl',
         postImageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuAEKshJ0sL3eFDBPAmnVE3OkTRpEdPnpbFwbpatzWHIi-Jq0fLAS93FGx6QBGQ0ubjapcMOvspLy-vJMOXnfD8gcvoRaA8ykqlouX0dT6ow8r3gr9YjTPftHcY-yZNAYHGndPLoZsYV-GwyG0EBZZhxhc4XXURyVbuRFB_btzteROfe3siB-tAXh356iBwfXLul_uON3fNBBQeVw93y5Snm1ceY7XPhOqyB2CAErpvb52R5S_KPHmEOYg',
+            'assets/images/food_grain_bowl.jpg',
         locationName: 'Hassayampa Academic Village',
         locationAddress: '699 S Mill Ave, Tempe, AZ 85281',
         status: ClaimStatus.reserved,

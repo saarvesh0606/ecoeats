@@ -1,11 +1,12 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/user.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HostSignInScreen extends ConsumerStatefulWidget {
   const HostSignInScreen({super.key});
@@ -115,12 +116,9 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                 stops: [0.6, 1.0],
               ).createShader(rect),
               blendMode: BlendMode.dstIn,
-              child: Image.network(
-                'https://lh3.googleusercontent.com/aida/AP1WRLv-wTpffw_Gp2bFKC2-mnxhNp-R47gqUWINnpxW6eP5GScrjQfmGhi9ZTn7Np005KgJfUIJ5GJdENl2ORB5bAUXNvPYEP8BmGvKzEkqZxyhYMD1hyrFRkCp7uvBrBj4UoSg48QVEZy0Fy3Iv33w-2fj-qYi-RdbaruZh8uphxz1pWda7cqvrvg2fdQzFbrT2Q0Sd6I8PZknZbN_CpR6Gf2wL2KvC3wOfBBCQyn6hJD-t7sUkhuWlA8CvvwM',
+              child: const AppImage(
+                source: 'assets/images/asu_campus.jpg',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.primaryGreen,
-                ),
               ),
             ),
           ),
@@ -134,7 +132,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                 children: [
                   Text(
                     'Welcome to EcoEats',
-                    style: GoogleFonts.ebGaramond(
+                    style: AppFonts.display(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: AppColors.onSurface,
@@ -144,7 +142,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Share more. Waste less. Impact together.',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 13,
                       color: AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
@@ -176,7 +174,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                 child: TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: AppColors.onSurface,
@@ -188,7 +186,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                     ),
                     border: InputBorder.none,
                     hintText: 'Enter your @asu.edu email',
-                    hintStyle: GoogleFonts.hankenGrotesk(
+                    hintStyle: AppFonts.body(
                       color: AppColors.onSurfaceVariant,
                     ),
                     filled: false,
@@ -211,7 +209,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             'Use your asu.edu email to continue',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 12,
               color: AppColors.onSurfaceVariant,
             ),
@@ -227,14 +225,14 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F4EA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEBE5D8).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFFEBE5D8).withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'ASU COMMUNITY ONLY',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.asuMaroon,
@@ -244,7 +242,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
           const SizedBox(height: 4),
           Text(
             'EcoEats is for students, faculty,\nand staff at Arizona State University.',
-            style: GoogleFonts.hankenGrotesk(
+            style: AppFonts.body(
               fontSize: 13,
               color: AppColors.onSurface,
               height: 1.4,
@@ -261,7 +259,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
       children: [
         Text(
           'I want to...',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -314,7 +312,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                   const SizedBox(height: 12),
                   Text(
                     isHost ? 'Host' : 'Recipient',
-                    style: GoogleFonts.ebGaramond(
+                    style: AppFonts.display(
                       fontSize: 20,
                       color: isSelected ? Colors.white : AppColors.onSurface,
                     ),
@@ -324,10 +322,10 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                     isHost
                         ? 'I have extra food\nto share.'
                         : 'I want to find\nfood near me.',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: AppFonts.body(
                       fontSize: 11,
                       color: isSelected
-                          ? Colors.white.withOpacity(0.8)
+                          ? Colors.white.withValues(alpha: 0.8)
                           : AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
@@ -393,7 +391,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
               children: [
                 Text(
                   'Continue',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -416,7 +414,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
             children: [
               TextSpan(
                 text: 'ASU ',
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.onSurface,
@@ -424,7 +422,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
               ),
               TextSpan(
                 text: 'Single Sign-On',
-                style: GoogleFonts.hankenGrotesk(
+                style: AppFonts.body(
                   fontSize: 13,
                   color: AppColors.onSurface,
                 ),

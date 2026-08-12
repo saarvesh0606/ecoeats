@@ -85,10 +85,14 @@ class ClaimEntity {
     );
   }
 
+  // Status is part of equality for the same reason as on FoodPostEntity: a
+  // claim that moves from reserved to picked up must be seen as different, or
+  // the tab it belongs to never re-renders.
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is ClaimEntity && id == other.id;
+      identical(this, other) ||
+      other is ClaimEntity && id == other.id && status == other.status;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, status);
 }

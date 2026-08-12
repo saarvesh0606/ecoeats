@@ -54,12 +54,12 @@ class AppShadows {
 
   static List<BoxShadow> card = [
     BoxShadow(
-      color: const Color(0xFF0C3226).withOpacity(0.04),
+      color: const Color(0xFF0C3226).withValues(alpha: 0.04),
       blurRadius: 20,
       offset: const Offset(0, 4),
     ),
     BoxShadow(
-      color: Colors.black.withOpacity(0.02),
+      color: Colors.black.withValues(alpha: 0.02),
       blurRadius: 4,
       offset: const Offset(0, 2),
     ),
@@ -67,7 +67,7 @@ class AppShadows {
 
   static List<BoxShadow> button = [
     BoxShadow(
-      color: const Color(0xFF0C3226).withOpacity(0.15),
+      color: const Color(0xFF0C3226).withValues(alpha: 0.15),
       blurRadius: 14,
       offset: const Offset(0, 4),
     ),

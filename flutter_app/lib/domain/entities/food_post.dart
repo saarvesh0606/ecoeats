@@ -100,12 +100,21 @@ class FoodPostEntity {
     );
   }
 
+  // The fields that change over a post's life take part in equality, not just
+  // the id. Riverpod skips notifying listeners when new state == old state, so
+  // an id-only comparison made a refetched post with one fewer serving equal
+  // to the stale one — watchers never rebuilt and the quantity on screen sat
+  // still while the data underneath it moved.
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is FoodPostEntity && id == other.id;
+      identical(this, other) ||
+      other is FoodPostEntity &&
+          id == other.id &&
+          remainingQuantity == other.remainingQuantity &&
+          status == other.status;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, remainingQuantity, status);
 }
 
 extension DietaryTagExtension on DietaryTag {

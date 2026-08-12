@@ -1,5 +1,5 @@
+import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   AppTheme._();
@@ -72,7 +72,7 @@ class AppTheme {
         foregroundColor: onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.ebGaramond(
+        titleTextStyle: AppFonts.display(
           fontSize: 22,
           fontWeight: FontWeight.w500,
           color: onSurface,
@@ -88,7 +88,7 @@ class AppTheme {
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
-          textStyle: GoogleFonts.hankenGrotesk(
+          textStyle: AppFonts.body(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -102,7 +102,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(100),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: GoogleFonts.hankenGrotesk(
+          textStyle: AppFonts.body(
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
@@ -116,7 +116,7 @@ class AppTheme {
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        hintStyle: GoogleFonts.hankenGrotesk(
+        hintStyle: AppFonts.body(
           color: onSurfaceVariant,
           fontSize: 16,
         ),
@@ -124,7 +124,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: surfaceContainerHigh,
         selectedColor: primaryGreen,
-        labelStyle: GoogleFonts.hankenGrotesk(fontSize: 13),
+        labelStyle: AppFonts.body(fontSize: 13),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
         ),
@@ -142,11 +142,11 @@ class AppTheme {
         backgroundColor: backgroundCream,
         selectedItemColor: primaryGreen,
         unselectedItemColor: onSurfaceVariant,
-        selectedLabelStyle: GoogleFonts.hankenGrotesk(
+        selectedLabelStyle: AppFonts.body(
           fontSize: 10,
           fontWeight: FontWeight.w700,
         ),
-        unselectedLabelStyle: GoogleFonts.hankenGrotesk(
+        unselectedLabelStyle: AppFonts.body(
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -157,81 +157,81 @@ class AppTheme {
 
   static TextTheme _buildTextTheme() {
     return TextTheme(
-      displayLarge: GoogleFonts.ebGaramond(
+      displayLarge: AppFonts.display(
         fontSize: 48,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.02 * 48,
         height: 56 / 48,
       ),
-      displayMedium: GoogleFonts.ebGaramond(
+      displayMedium: AppFonts.display(
         fontSize: 40,
         fontWeight: FontWeight.w600,
         height: 48 / 40,
       ),
-      displaySmall: GoogleFonts.ebGaramond(
+      displaySmall: AppFonts.display(
         fontSize: 32,
         fontWeight: FontWeight.w500,
         height: 40 / 32,
       ),
-      headlineLarge: GoogleFonts.ebGaramond(
+      headlineLarge: AppFonts.display(
         fontSize: 32,
         fontWeight: FontWeight.w500,
         height: 40 / 32,
       ),
-      headlineMedium: GoogleFonts.ebGaramond(
+      headlineMedium: AppFonts.display(
         fontSize: 28,
         fontWeight: FontWeight.w500,
         height: 34 / 28,
       ),
-      headlineSmall: GoogleFonts.ebGaramond(
+      headlineSmall: AppFonts.display(
         fontSize: 24,
         fontWeight: FontWeight.w500,
         height: 32 / 24,
       ),
-      titleLarge: GoogleFonts.hankenGrotesk(
+      titleLarge: AppFonts.body(
         fontSize: 22,
         fontWeight: FontWeight.w600,
         height: 28 / 22,
         letterSpacing: 0.01 * 22,
       ),
-      titleMedium: GoogleFonts.hankenGrotesk(
+      titleMedium: AppFonts.body(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         height: 28 / 20,
         letterSpacing: 0.01 * 20,
       ),
-      titleSmall: GoogleFonts.hankenGrotesk(
+      titleSmall: AppFonts.body(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         height: 20 / 14,
         letterSpacing: 0.1,
       ),
-      bodyLarge: GoogleFonts.hankenGrotesk(
+      bodyLarge: AppFonts.body(
         fontSize: 18,
         fontWeight: FontWeight.w400,
         height: 28 / 18,
       ),
-      bodyMedium: GoogleFonts.hankenGrotesk(
+      bodyMedium: AppFonts.body(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         height: 24 / 16,
       ),
-      bodySmall: GoogleFonts.hankenGrotesk(
+      bodySmall: AppFonts.body(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         height: 20 / 14,
       ),
-      labelLarge: GoogleFonts.hankenGrotesk(
+      labelLarge: AppFonts.body(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
       ),
-      labelMedium: GoogleFonts.hankenGrotesk(
+      labelMedium: AppFonts.body(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
-      labelSmall: GoogleFonts.hankenGrotesk(
+      labelSmall: AppFonts.body(
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.05 * 10,

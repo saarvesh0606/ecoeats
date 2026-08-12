@@ -19,7 +19,15 @@ class MockAuthRepository implements AuthRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 800));
     final user = UserEntity(
-      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      // Hosts get the fixed id the seeded posts are owned by. A timestamp id
+      // never matched `hostId: 'host_001'`, so the host dashboard filtered its
+      // own posts out and was empty on every run — the tabs above it still
+      // counted them, which is what made it look like a rendering fault rather
+      // than an identity one. Recipients have nothing keyed to them, so a
+      // unique id is still fine there.
+      id: role == UserRole.host
+          ? 'host_001'
+          : 'user_${DateTime.now().millisecondsSinceEpoch}',
       email: email,
       displayName: _nameFromEmail(email),
       role: role,

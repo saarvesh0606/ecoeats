@@ -1,11 +1,13 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
+import 'package:ecoeats/core/constants/app_fonts.dart';
+import 'package:ecoeats/domain/entities/food_post.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:ecoeats/presentation/providers/posts_provider.dart';
+import 'package:ecoeats/presentation/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ReviewPublishScreen extends ConsumerStatefulWidget {
   const ReviewPublishScreen({super.key});
@@ -18,9 +20,9 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
   int _expirySelection = 0; // 0=today, 1=tomorrow, 2=within2days
 
   final List<String> _previewImages = [
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuB9zimbwYwKxjh4EAu5JDKxDYMoZaz5L5NFQgPgdhnNq6ZtK2_l0j_gS4PepF7YPdXCaHckGN8R_Jif8vcZH3Nnt97oKqG_wem0uWeXtr6yjsJxkj-txau6xrOqKE4aaiM6GuJSxL1DyKSh7_ThoIyVdt3NbahftnOj10BUd-bflMg63cJuhEZb7IrHXm71q6qnfoSeyBgNnTyPCAG1pMW2-TFYN0JWu9MRkgAXVZqVMSc2u0iLUkk1ig',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDyL2iYZKVEMfOE1xJXinCmaOXi9eJlBiK68_AEAHPk4R0_0n_DScxbrC130b4B_rbO0zHuSV78fYLQX4LQDmejQ2SJIoi-RrzJFebfl15ojQT1Ia9UMBmS56soOItMS5tmzoiXpFOPTrItwzEYe6uBm69_cl_0guUs1z-MdoN5Ul_rzGZfOKWzON_9nNZZMnpyf1w3EGgT4ZtQ9enLL9C7SSqs4di3jSCIhHW5plCpfiRGUybt9zTEDw',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBdhEnjE8SOtqePb3nlyUjTAyEWFSnrvlMeekoLgr19dz4o9R_EuM1g_FHQDxK-HbeazUUggIVC6i81tE6DhDFFpY8yzQc5JM1PHy9DCDLAn8Ju23WGDmJrY_QM1ajSiWf9yYPouM3nfQHe1lxfwCTNb387nzEUu_f7y_Dk0JE74PLW05j-jW2GfJ0_2vlaH3_nNLtjOazjJT8j8tJxgQfokaThuSQ6Mo5zA6hVIQu2XYMKT8HmpN-mog',
+    'assets/images/food_grain_bowl.jpg',
+    'assets/images/food_pasta.jpg',
+    'assets/images/food_pastries.jpg',
   ];
 
   @override
@@ -50,7 +52,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                       .fadeIn()
                       .slideY(begin: 0.1),
                   const SizedBox(height: 24),
-                  _buildListRows()
+                  _buildListRows(draft)
                       .animate(delay: 200.ms)
                       .fadeIn(),
                   const SizedBox(height: 24),
@@ -79,7 +81,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         Expanded(
           child: Text(
             'Review & Publish',
-            style: GoogleFonts.ebGaramond(
+            style: AppFonts.display(
               fontSize: 22,
               fontWeight: FontWeight.w500,
               color: AppColors.onSurface,
@@ -98,7 +100,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
       children: [
         Text(
           'Photos',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -114,8 +116,8 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                     padding: const EdgeInsets.only(right: 10),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        url,
+                      child: AppImage(
+                        source: url,
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -148,7 +150,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
       children: [
         Text(
           'Post Details',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -160,7 +162,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +171,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                 'Title',
                 draft.title.isNotEmpty ? draft.title : 'Mediterranean Grain Bowl',
               ),
-              Divider(color: AppColors.outlineVariant.withOpacity(0.4), height: 24),
+              Divider(color: AppColors.outlineVariant.withValues(alpha: 0.4), height: 24),
               _buildDetailRow(
                 'Description',
                 draft.description.isNotEmpty
@@ -190,7 +192,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: AppColors.onSurfaceVariant,
@@ -199,7 +201,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColors.onSurface,
@@ -211,10 +213,22 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
     );
   }
 
-  Widget _buildListRows() {
+  Widget _buildListRows(PostDraft draft) {
+    // Read from the draft that is about to be published. These were fixed
+    // strings — the screen showed "45 servings" and then published a draft
+    // whose quantity was whatever the form had actually collected, so the
+    // confirmation step confirmed something that was never posted.
     final rows = [
-      ('Quantity', '45 servings'),
-      ('Dietary / Allergies', 'Vegetarian · Gluten-Free'),
+      (
+        'Quantity',
+        '${draft.quantity} serving${draft.quantity == 1 ? '' : 's'}',
+      ),
+      (
+        'Dietary / Allergies',
+        draft.dietaryTags.isEmpty
+            ? 'None specified'
+            : draft.dietaryTags.map((t) => t.displayName).join(' · '),
+      ),
     ];
 
     return Column(
@@ -230,7 +244,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                     Expanded(
                       child: Text(
                         label,
-                        style: GoogleFonts.hankenGrotesk(
+                        style: AppFonts.body(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.onSurface,
@@ -239,7 +253,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                     ),
                     Text(
                       value,
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 14,
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -249,7 +263,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                   ],
                 ),
               ),
-              Divider(color: AppColors.outlineVariant.withOpacity(0.4), height: 1),
+              Divider(color: AppColors.outlineVariant.withValues(alpha: 0.4), height: 1),
             ],
           );
         }),
@@ -264,7 +278,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                   children: [
                     Text(
                       'Pickup Location (exact)',
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.onSurface,
@@ -273,7 +287,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Memorial Union - MU Market\n301 E Orange Mall, Tempe, AZ 85281',
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 14,
                         color: AppColors.onSurface,
                         height: 1.4,
@@ -281,7 +295,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                     ),
                     Text(
                       'Inside Market Pickup Shelf',
-                      style: GoogleFonts.hankenGrotesk(
+                      style: AppFonts.body(
                         fontSize: 12,
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -304,7 +318,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
       children: [
         Text(
           'Best By / Expires',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.onSurface,
@@ -329,7 +343,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                 ),
                 child: Text(
                   e.value,
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: isSelected ? Colors.white : AppColors.onSurface,
@@ -342,7 +356,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         const SizedBox(height: 8),
         Text(
           'Expires today at 6:00 PM',
-          style: GoogleFonts.hankenGrotesk(
+          style: AppFonts.body(
             fontSize: 12,
             color: AppColors.onSurfaceVariant,
           ),
@@ -364,7 +378,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
             end: Alignment.topCenter,
             colors: [
               const Color(0xFFFDFCF9),
-              const Color(0xFFFDFCF9).withOpacity(0),
+              const Color(0xFFFDFCF9).withValues(alpha: 0),
             ],
           ),
         ),
@@ -387,7 +401,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                 )
               : Text(
                   'Publish Post',
-                  style: GoogleFonts.hankenGrotesk(
+                  style: AppFonts.body(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.5,
@@ -398,23 +412,59 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
     );
   }
 
+  /// When the chosen "Best By" window actually ends.
+  ///
+  /// `_expirySelection` was only ever written — nothing read it, so whichever
+  /// chip the host picked, the post went out with the draft's default.
+  DateTime _expiresAtFor(int selection) {
+    final now = DateTime.now();
+    switch (selection) {
+      case 1:
+        return DateTime(now.year, now.month, now.day + 1, 23, 59);
+      case 2:
+        return DateTime(now.year, now.month, now.day + 2, 23, 59);
+      default:
+        return DateTime(now.year, now.month, now.day, 23, 59);
+    }
+  }
+
   Future<void> _onPublish(BuildContext context) async {
     final user = ref.read(currentUserProvider);
-    final draft = ref.read(postDraftProvider);
     final notifier = ref.read(createPostNotifierProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
 
-    await notifier.publishPost(
+    final draft = ref
+        .read(postDraftProvider)
+        .copyWith(expiresAt: _expiresAtFor(_expirySelection));
+
+    final post = await notifier.publishPost(
       hostId: user?.id ?? 'host_demo',
       hostName: user?.displayName ?? 'Host',
       draft: draft,
     );
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+
+    // A failed publish used to still announce success and navigate away, so
+    // the post silently never existed.
+    if (post == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text("Couldn't publish that post.", style: AppFonts.body()),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    messenger.showSnackBar(
       SnackBar(
         content: Text(
           '🎉 Post published successfully!',
-          style: GoogleFonts.hankenGrotesk(),
+          style: AppFonts.body(),
         ),
         backgroundColor: AppColors.primaryGreen,
         behavior: SnackBarBehavior.floating,

@@ -57,7 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               title: 'Mediterranean Grain Bowl',
               description: 'Fresh grain bowl',
               imageUrls: [
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuDRCHsinZkphEoPsa0Jo1XCpNtvI5RZQc3WV7kDvhVrvCnZhoWYuTgkI-AGCSaTtzd59040ludUe1gifRBLbkmIkReMexstr157-rCxA1P1ySP6dDd07lZ26TKo0Socc5qR3D9m16JBd-Em6Dh_zaJRTWTDgdJjvPBcEgiH4-4Odvdb8KOaN4OISSQ8-kS4oSJquJcS7k1D4tXq8sBQaG5TmCg_DTHoRf0CrTBAu4k9HsAOOnH0HsuCbQ'
+                'assets/images/food_grain_bowl.jpg'
               ],
               totalQuantity: 45,
               remainingQuantity: 18,

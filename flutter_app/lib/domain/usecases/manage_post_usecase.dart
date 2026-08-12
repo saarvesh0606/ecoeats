@@ -17,6 +17,17 @@ class ManagePostUseCase {
     await _repository.updatePostStatus(postId, PostStatus.ended);
   }
 
+  /// Put an out-of-stock post back on the feed.
+  ///
+  /// Marking out of stock was a one-way door: a host who tapped it by mistake,
+  /// or who found more food, had no way back and had to create the post again.
+  /// Ending a post stays final — that one is meant to be.
+  Future<void> restock(String postId, int quantity) async {
+    if (quantity <= 0) throw Exception('Restocking needs a positive quantity');
+    await _repository.updateQuantity(postId, quantity);
+    await _repository.updatePostStatus(postId, PostStatus.live);
+  }
+
   /// Update the quantity remaining
   Future<void> adjustQuantity(String postId, int newQuantity) async {
     if (newQuantity < 0) throw Exception('Quantity cannot be negative');
