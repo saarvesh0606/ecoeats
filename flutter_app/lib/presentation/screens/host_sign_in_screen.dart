@@ -3,6 +3,7 @@ import 'package:ecoeats/core/constants/app_fonts.dart';
 import 'package:ecoeats/domain/entities/user.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:ecoeats/presentation/widgets/app_image.dart';
+import 'package:ecoeats/presentation/widgets/password_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,11 +18,14 @@ class HostSignInScreen extends ConsumerStatefulWidget {
 
 class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
   final _emailController = TextEditingController(text: 'host@asu.edu');
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.host;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -29,6 +33,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
     final notifier = ref.read(authNotifierProvider.notifier);
     await notifier.signIn(
       email: _emailController.text.trim(),
+      password: _passwordController.text,
       role: _selectedRole,
     );
     if (!mounted) return;
@@ -73,6 +78,14 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                       .animate()
                       .fadeIn(delay: 200.ms)
                       .slideY(begin: 0.2),
+                  const SizedBox(height: 12),
+                  PasswordField(
+                    controller: _passwordController,
+                    obscured: _obscurePassword,
+                    onToggleObscured: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    onSubmitted: (_) => _onContinue(),
+                  ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.2),
                   const SizedBox(height: 12),
                   _buildCommunityNotice()
                       .animate()

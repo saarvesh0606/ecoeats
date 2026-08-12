@@ -8,11 +8,16 @@ class SignInUseCase {
 
   Future<UserEntity> call({
     required String email,
+    required String password,
     required UserRole role,
   }) async {
     if (!_repository.isValidAsuEmail(email)) {
       throw Exception('Please use a valid @asu.edu email address.');
     }
-    return _repository.signIn(email: email, role: role);
+    return _repository.signIn(
+      email: email,
+      password: password,
+      role: role,
+    );
   }
 }

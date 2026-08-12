@@ -15,6 +15,9 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<UserEntity> signIn({
     required String email,
+    // Ignored: there is nothing to check it against. Kept so the mock and the
+    // real repository stay interchangeable.
+    required String password,
     required UserRole role,
   }) async {
     await Future.delayed(const Duration(milliseconds: 800));

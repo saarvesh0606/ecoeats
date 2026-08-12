@@ -1,5 +1,6 @@
 import 'package:ecoeats/core/constants/app_constants.dart';
 import 'package:ecoeats/core/constants/app_fonts.dart';
+import 'package:ecoeats/presentation/widgets/password_field.dart';
 import 'package:ecoeats/domain/entities/user.dart';
 import 'package:ecoeats/presentation/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -16,17 +17,21 @@ class RecipientLoginScreen extends ConsumerStatefulWidget {
 
 class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
   final _emailController = TextEditingController(text: 'sun.devils@asu.edu');
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.recipient;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _onContinue() async {
     await ref.read(authNotifierProvider.notifier).signIn(
           email: _emailController.text.trim(),
+      password: _passwordController.text,
           role: _selectedRole,
         );
     if (!mounted) return;
@@ -69,6 +74,14 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
                   .animate()
                   .fadeIn(delay: 300.ms)
                   .slideY(begin: 0.1),
+              const SizedBox(height: 12),
+              PasswordField(
+                controller: _passwordController,
+                obscured: _obscurePassword,
+                onToggleObscured: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+                onSubmitted: (_) => _onContinue(),
+              ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1),
               const SizedBox(height: 24),
               _buildDivider(),
               const SizedBox(height: 24),

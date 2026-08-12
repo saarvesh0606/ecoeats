@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local build config passed via --dart-define-from-file. Holds the Firebase
+# web config; those values are public by design for web apps, but they stay
+# local for the same reason mobile/.env does — the repo is not where project
+# configuration belongs. Copy dart_define.example.json to get started.
+dart_define.json

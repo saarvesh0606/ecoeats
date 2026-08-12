@@ -92,16 +92,51 @@ class HostDashboardScreen extends ConsumerWidget {
     );
   }
 
+  /// Signing out is confirmed because it is easy to hit by accident and
+  /// getting back in now costs a password.
+  ///
+  /// The router's redirect handles the navigation — it watches the current
+  /// user, so clearing the session moves the app on its own.
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Sign out?',
+          style: AppFonts.display(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          "You'll need your ASU email and password to get back in.",
+          style: AppFonts.body(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      await ref.read(authNotifierProvider.notifier).signOut();
+    }
+  }
+
   Widget _buildHeader(BuildContext context, WidgetRef ref, String name) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         children: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.menu),
+            onPressed: () => _confirmSignOut(context, ref),
+            icon: const Icon(Icons.logout),
             color: AppColors.onSurface,
             padding: EdgeInsets.zero,
+            tooltip: 'Sign out',
           ),
           Expanded(
             child: Column(
@@ -115,7 +150,9 @@ class HostDashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'Good to share, Sun Devil.',
+                  // The name was passed in and then ignored, so every host was
+                  // greeted as "Sun Devil".
+                  'Good to share, $name.',
                   style: AppFonts.body(
                     fontSize: 13,
                     color: AppColors.onSurfaceVariant,
