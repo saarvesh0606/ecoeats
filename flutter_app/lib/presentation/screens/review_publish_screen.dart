@@ -17,7 +17,9 @@ class ReviewPublishScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
-  int _expirySelection = 0; // 0=today, 1=tomorrow, 2=within2days
+  /// One of [kExpiryWindowMinutes]. Defaults to the longest, which is what a
+  /// host most often wants and is still only an hour.
+  int _expiryMinutes = kExpiryWindowMinutes.last;
 
   final List<String> _previewImages = [
     'assets/images/food_grain_bowl.jpg',
@@ -312,12 +314,13 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
   }
 
   Widget _buildExpirySection() {
-    final options = ['Today', 'Tomorrow', 'Within 2 Days'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Best By / Expires',
+          // "Best By" suggested a date. This is a collection window measured in
+          // minutes, so it now says what it is.
+          'Pick up within',
           style: AppFonts.body(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -327,10 +330,11 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
-          children: options.asMap().entries.map((e) {
-            final isSelected = _expirySelection == e.key;
+          runSpacing: 8,
+          children: kExpiryWindowMinutes.map((minutes) {
+            final isSelected = _expiryMinutes == minutes;
             return GestureDetector(
-              onTap: () => setState(() => _expirySelection = e.key),
+              onTap: () => setState(() => _expiryMinutes = minutes),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -338,11 +342,13 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
                   color: isSelected ? AppColors.primaryGreen : Colors.white,
                   borderRadius: BorderRadius.circular(100),
                   border: Border.all(
-                    color: isSelected ? AppColors.primaryGreen : AppColors.outlineVariant,
+                    color: isSelected
+                        ? AppColors.primaryGreen
+                        : AppColors.outlineVariant,
                   ),
                 ),
                 child: Text(
-                  e.value,
+                  expiryWindowLabel(minutes),
                   style: AppFonts.body(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -355,7 +361,9 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Expires today at 6:00 PM',
+          // Computed from the actual choice. This line used to read "Expires
+          // today at 6:00 PM" no matter what was selected, or when.
+          'Expires at ${_formatClockTime(_expiresAt())}',
           style: AppFonts.body(
             fontSize: 12,
             color: AppColors.onSurfaceVariant,
@@ -363,6 +371,12 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
         ),
       ],
     );
+  }
+
+  String _formatClockTime(DateTime time) {
+    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${time.hour >= 12 ? 'PM' : 'AM'}';
   }
 
   Widget _buildBottomAction(BuildContext context, AsyncValue createState) {
@@ -412,21 +426,9 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
     );
   }
 
-  /// When the chosen "Best By" window actually ends.
-  ///
-  /// `_expirySelection` was only ever written — nothing read it, so whichever
-  /// chip the host picked, the post went out with the draft's default.
-  DateTime _expiresAtFor(int selection) {
-    final now = DateTime.now();
-    switch (selection) {
-      case 1:
-        return DateTime(now.year, now.month, now.day + 1, 23, 59);
-      case 2:
-        return DateTime(now.year, now.month, now.day + 2, 23, 59);
-      default:
-        return DateTime(now.year, now.month, now.day, 23, 59);
-    }
-  }
+  /// When the selected window runs out.
+  DateTime _expiresAt() =>
+      DateTime.now().add(Duration(minutes: _expiryMinutes));
 
   Future<void> _onPublish(BuildContext context) async {
     final user = ref.read(currentUserProvider);
@@ -435,7 +437,7 @@ class _ReviewPublishScreenState extends ConsumerState<ReviewPublishScreen> {
 
     final draft = ref
         .read(postDraftProvider)
-        .copyWith(expiresAt: _expiresAtFor(_expirySelection));
+        .copyWith(expiresAt: _expiresAt());
 
     final post = await notifier.publishPost(
       hostId: user?.id ?? 'host_demo',

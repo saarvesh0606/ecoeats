@@ -41,7 +41,9 @@ class CreatePostUseCase {
       locationName: locationName,
       locationAddress: locationAddress,
       locationNotes: locationNotes,
-      expiresAt: expiresAt ?? DateTime.now().add(const Duration(hours: 6)),
+      // Six hours was the old default and the API would never have accepted it.
+      expiresAt: expiresAt ??
+          DateTime.now().add(Duration(minutes: kExpiryWindowMinutes.last)),
       createdAt: DateTime.now(),
       status: PostStatus.live,
     );

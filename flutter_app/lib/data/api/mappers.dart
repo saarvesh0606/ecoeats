@@ -108,24 +108,19 @@ List<DietaryTag> dietaryFromApi(List<dynamic>? values) {
 
 // ─── Expiry ───────────────────────────────────────────────────────────────────
 
-/// The only windows the API accepts, in minutes.
-const List<int> kExpiryChoices = [15, 20, 30, 45, 60];
-
-/// Turns a target time into one of the allowed windows.
+/// Turns a target time into one of [kExpiryWindowMinutes].
 ///
-/// ⚠️ The two sides disagree here and the API is the one that is right. This
-/// client's create flow offers "Today / Tomorrow / Within 2 Days", but a
-/// listing can live at most **60 minutes** — that limit is deliberate, since
-/// the whole point is food being collected before it spoils. Anything longer
-/// is therefore clamped to an hour, which means a host choosing "Tomorrow"
-/// does not get tomorrow. The picker needs replacing with these five choices;
-/// clamping keeps the call legal until it is.
+/// The picker now only produces these windows, so in normal use this converts
+/// rather than corrects. It still snaps rather than trusting the input, because
+/// `expiresAt` is a `DateTime` on the entity and nothing in the type stops a
+/// caller — a draft restored from storage, a test, a future screen — handing it
+/// something the server would reject with a 422.
 int expiryMinutesFrom(DateTime? expiresAt) {
-  if (expiresAt == null) return 60;
+  if (expiresAt == null) return kExpiryWindowMinutes.last;
   final minutes = expiresAt.difference(DateTime.now()).inMinutes;
-  if (minutes <= kExpiryChoices.first) return kExpiryChoices.first;
-  if (minutes >= kExpiryChoices.last) return kExpiryChoices.last;
-  return kExpiryChoices.reduce(
+  if (minutes <= kExpiryWindowMinutes.first) return kExpiryWindowMinutes.first;
+  if (minutes >= kExpiryWindowMinutes.last) return kExpiryWindowMinutes.last;
+  return kExpiryWindowMinutes.reduce(
     (a, b) => (a - minutes).abs() <= (b - minutes).abs() ? a : b,
   );
 }

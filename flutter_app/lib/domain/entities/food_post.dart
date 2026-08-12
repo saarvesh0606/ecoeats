@@ -1,3 +1,19 @@
+/// How long a post may stay up, in minutes — the only windows that exist.
+///
+/// This is a product rule, not an API detail, which is why it lives here: food
+/// is posted to be collected before it spoils, so an hour is the longest a
+/// listing can live. Day-level expiry was considered and deliberately rejected.
+///
+/// The picker and the request builder both read this list, so the screen cannot
+/// offer a window the server would refuse. It previously offered "Today /
+/// Tomorrow / Within 2 Days" — none of which the API accepts — and a host
+/// choosing Tomorrow silently got an hour.
+const List<int> kExpiryWindowMinutes = [15, 20, 30, 45, 60];
+
+/// The label for a window, e.g. `15m`, `1h`.
+String expiryWindowLabel(int minutes) =>
+    minutes >= 60 ? '${minutes ~/ 60}h' : '${minutes}m';
+
 enum PostStatus { draft, live, scheduled, outOfStock, ended }
 
 enum DietaryTag { vegetarian, vegan, glutenFree, containsDairy, containsNuts, halal, kosher }
