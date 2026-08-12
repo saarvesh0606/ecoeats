@@ -43,8 +43,20 @@ export default function VerifyEmailScreen() {
 			<Text className="font-body text-gray-500 text-center mt-3 mb-2">
 				We sent a verification link to
 			</Text>
-			<Text className="font-body-semibold text-gray-900 text-center mb-10">
+			<Text className="font-body-semibold text-gray-900 text-center mb-3">
 				{firebaseUser?.email}
+			</Text>
+
+			{/* Said up front, not only after a resend. Firebase sends these from
+			    noreply@<project>.firebaseapp.com — a domain shared across every
+			    Firebase project and heavily abused for phishing, so it carries
+			    poor sender reputation. Gmail was confirmed to file it as spam;
+			    university gateways quarantine it. Until custom SMTP is
+			    configured, "check your spam folder" is not boilerplate here, it
+			    is the single most useful thing this screen can say. */}
+			<Text className="font-body text-gray-500 text-sm text-center mb-10">
+				It can take a minute. Check your spam or junk folder — these often
+				land there.
 			</Text>
 
 			{message && (
