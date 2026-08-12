@@ -55,3 +55,19 @@ services:
       # deployed. Native iOS builds don't need this (no browser CORS).
       - key: ALLOWED_ORIGINS
         sync: false
+      # --- optional: error tracking ---
+      # Sentry stays completely dormant until this is set (api/monitoring.py
+      # returns early with no DSN), so an unset value is a supported state, not
+      # a broken one. Declared here rather than added straight to the dashboard
+      # so Render prompts for it and the service documents its own inputs.
+      #
+      # `sync: false` because a DSN is a write credential in practice: it can't
+      # read your data, but anyone holding it can post events into the project
+      # and burn the free-tier quota.
+      #
+      # Traces are deliberately NOT enabled — SENTRY_TRACES_SAMPLE_RATE defaults
+      # to 0.0, so this captures errors only. Performance tracing bills against
+      # the same free quota and would spend it on a service whose failure modes
+      # are all exceptions.
+      - key: SENTRY_DSN
+        sync: false
