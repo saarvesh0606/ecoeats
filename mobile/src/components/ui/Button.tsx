@@ -65,13 +65,32 @@ export function Button({
 	testID,
 }: ButtonProps) {
 	const feel = haptic ?? VARIANT_FEEL[variant];
+	/**
+	 * ⚠️ NO `active:` VARIANTS HERE. They made every button on iOS untappable.
+	 *
+	 * These classes land on the plain View inside PressableScale, and
+	 * NativeWind's native runtime converts any View carrying a pseudo-class
+	 * into a Pressable so it can track press state (css-interop's
+	 * render-component: `component = Pressable`). That produced a Pressable
+	 * nested inside PressableScale's own Pressable; the inner one took the
+	 * responder and forwarded to its own `onPress`, which is undefined because
+	 * the View is only ever given a className. Every press was swallowed.
+	 *
+	 * Invisible on web, where the same variants compile to real CSS and no
+	 * upgrade happens — so the whole suite and every browser pass stayed green
+	 * while no button worked on a phone.
+	 *
+	 * The press feedback is PressableScale's spring dip, which is what that
+	 * component exists for; its own docstring argues a scale reads as physical
+	 * where a colour swap does not. So nothing was lost closing this.
+	 */
 	const variantStyles: Record<ButtonVariant, string> = {
-		primary: "bg-forest-700 active:bg-forest-800",
-		secondary: "bg-lime active:bg-lime-accent",
-		outline: "bg-transparent border-2 border-forest-700 active:bg-forest-50",
-		ghost: "bg-transparent active:bg-forest-50",
+		primary: "bg-forest-700",
+		secondary: "bg-lime",
+		outline: "bg-transparent border-2 border-forest-700",
+		ghost: "bg-transparent",
 		// Destructive, and styled to look it — ending a post can't be undone.
-		danger: "bg-transparent border-2 border-red-300 active:bg-red-50",
+		danger: "bg-transparent border-2 border-red-300",
 	};
 
 	const textVariantStyles: Record<ButtonVariant, string> = {

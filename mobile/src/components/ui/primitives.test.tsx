@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { Animated, Text } from "react-native";
 import { haptics } from "@/lib/haptics";
 import { AnimatedNumber } from "./AnimatedNumber";
@@ -316,6 +318,82 @@ describe("FadeInItem", () => {
 			expect(view.props.style.opacity.__getValue()).toBe(1);
 		} finally {
 			timing.mockRestore();
+		}
+	});
+});
+
+/**
+ * NativeWind pseudo-class variants must not appear in this app's classNames.
+ *
+ * `active:`, `hover:` and `focus:` compile to real CSS on web, but on native
+ * css-interop has to observe the press itself, and to do that it rewrites any
+ * plain `View` carrying one into a `Pressable` (its render-component does
+ * `component = Pressable`). Inside PressableScale that produced a Pressable
+ * nested in a Pressable: the inner one won the responder and forwarded to its
+ * own `onPress`, which is undefined because a styled View is never given one.
+ * Every Button in the app was untappable on iOS, and only on iOS.
+ *
+ * Checked as source rather than behaviour because the rest of this file cannot
+ * see it: `fireEvent.press` walks up from the matched node and calls the first
+ * `onPress` it finds, so it never models the responder arbitration that is the
+ * entire bug. "Button > calls onPress" above passed throughout.
+ *
+ * It lives in this suite rather than its own file on purpose — a 23rd suite
+ * adds a worker, and the extra parallel load reliably times out
+ * `RecipientFeed > search` on this machine.
+ *
+ * On a component that is already a Pressable there is no upgrade and no
+ * nesting, so a variant there is safe. Nothing needs one today; if that
+ * changes, narrow this to the plain-View case rather than deleting it.
+ */
+describe("NativeWind pseudo-class variants", () => {
+	const ROOTS = ["src", "app"];
+
+	/**
+	 * A variant is followed immediately by a utility name, no space:
+	 * `active:bg-forest-800`. A TypeScript property is `active: boolean`, with
+	 * one. Requiring the absence of that space is what keeps Waveform's
+	 * `active: boolean` prop out of the results.
+	 *
+	 * An earlier version also demanded the line contain "class", which sounded
+	 * reasonable and matched nothing — these live in a `variantStyles` record,
+	 * not on a className= line — so it passed against the real bug. Re-verify
+	 * any edit by reintroducing `active:bg-forest-800` and watching this fail.
+	 */
+	const VARIANT = /\b(active|hover|focus):[a-z[]/;
+
+	function sourceFiles(dir: string): string[] {
+		const out: string[] = [];
+		for (const entry of readdirSync(dir)) {
+			const path = join(dir, entry);
+			if (statSync(path).isDirectory()) {
+				out.push(...sourceFiles(path));
+			} else if (/\.tsx?$/.test(entry) && !/\.test\.tsx?$/.test(entry)) {
+				out.push(path);
+			}
+		}
+		return out;
+	}
+
+	const root = (name: string) => join(__dirname, "..", "..", "..", name);
+
+	it("appear nowhere in app source", () => {
+		const offenders = ROOTS.flatMap((name) => sourceFiles(root(name))).filter(
+			(file) =>
+				readFileSync(file, "utf8")
+					.split("\n")
+					// Prose explaining this very rule must not trip it.
+					.filter((line) => !line.trimStart().startsWith("*"))
+					.some((line) => VARIANT.test(line)),
+		);
+
+		expect(offenders).toEqual([]);
+	});
+
+	it("covers the directories it claims to", () => {
+		// A path typo would silently scan nothing and pass forever.
+		for (const name of ROOTS) {
+			expect(sourceFiles(root(name)).length).toBeGreaterThan(5);
 		}
 	});
 });
