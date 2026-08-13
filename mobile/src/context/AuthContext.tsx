@@ -69,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	/** Fetch the profile for an already-verified identity. */
 	const resolveProfile = useCallback(async () => {
+		// Hold the app on the splash while this is in flight. Without it the
+		// caller's screen stays mounted and idle for as long as the request
+		// takes — and on a sleeping free-tier API that is 30–60s, which reads
+		// as a sign-in button that did nothing rather than one still working.
+		setStatus("loading");
 		try {
 			const loaded = await fetchProfile();
 			setProfile(loaded);
