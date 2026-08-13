@@ -20,6 +20,7 @@
     "@expo-google-fonts/playfair-display": "^0.4.2",
     "expo": "~55.0.15",
     "expo-constants": "~55.0.14",
+    "expo-dev-client": "~55.0.37",
     "expo-device": "~55.0.19",
     "expo-font": "~55.0.8",
     "expo-haptics": "~55.0.16",
