@@ -17,7 +17,9 @@
       "bundleIdentifier": "com.ecoeats.app",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
-        "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting."
+        "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting.",
+        "NSSpeechRecognitionUsageDescription": "EcoEats turns what you say into the description of the food you're posting.",
+        "NSMicrophoneUsageDescription": "EcoEats uses the microphone so you can describe food by speaking instead of typing."
       }
     },
     "android": {
@@ -27,8 +29,11 @@
         "backgroundColor": "#163827"
       },
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -65,6 +70,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "dfd4f7ff-351b-4265-b29a-678573d5197d"
+      }
+    },
+    "owner": "saarvesh"
   }
 }
