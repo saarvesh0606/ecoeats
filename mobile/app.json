@@ -19,7 +19,8 @@
         "NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
         "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting.",
         "NSSpeechRecognitionUsageDescription": "EcoEats turns what you say into the description of the food you're posting.",
-        "NSMicrophoneUsageDescription": "EcoEats uses the microphone so you can describe food by speaking instead of typing."
+        "NSMicrophoneUsageDescription": "EcoEats uses the microphone so you can describe food by speaking instead of typing.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
