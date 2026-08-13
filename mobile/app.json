@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ecoeats.app",
+      "bundleIdentifier": "com.saarvesh.ecoeats",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
         "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting.",
@@ -24,7 +24,7 @@
       }
     },
     "android": {
-      "package": "com.ecoeats.app",
+      "package": "com.saarvesh.ecoeats",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#163827"
