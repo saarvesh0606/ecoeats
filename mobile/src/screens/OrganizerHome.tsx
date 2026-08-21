@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -17,6 +17,7 @@ import {
 	publishListing,
 } from "@/lib/listings";
 import { formatLocation } from "@/lib/format";
+import { subscribeToListings } from "@/lib/listingStream";
 
 type Tab = "active" | "scheduled" | "past";
 
@@ -86,6 +87,53 @@ export function OrganizerHome() {
 			void load();
 		}, [load]),
 	);
+
+	// Live updates over SSE, the same stream the recipient feed uses.
+	//
+	// Focus alone was not enough: a host watching their own post while someone
+	// claimed it saw the count sit still until they navigated away and back.
+	// They are the person who most needs "3 portions left" to be true at a
+	// glance — they get a push about the claim, so the stale number beside it
+	// read as a bug.
+	const listingsRef = useRef(listings);
+	listingsRef.current = listings;
+
+	useEffect(() => {
+		let close = () => {};
+		let cancelled = false;
+
+		void subscribeToListings((event) => {
+			// The stream carries every host's listings. The recipient feed
+			// refetches on an unfamiliar id because a stranger's new post may
+			// belong in it; this dashboard only ever shows our own, so anything
+			// we don't already hold belongs to someone else and refetching on it
+			// would fire constantly for nothing.
+			if (!listingsRef.current.some((l) => l.id === event.listing_id)) return;
+
+			// Patch in place rather than dropping the row: the tabs are derived
+			// from `status`, so a cancelled or claimed-out post moves itself from
+			// Active to Past without anything here knowing which tab is showing.
+			setListings((prev) =>
+				prev.map((l) =>
+					l.id === event.listing_id
+						? {
+								...l,
+								quantity_remaining: event.quantity_remaining,
+								status: event.status as Listing["status"],
+							}
+						: l,
+				),
+			);
+		}).then((fn) => {
+			if (cancelled) fn();
+			else close = fn;
+		});
+
+		return () => {
+			cancelled = true;
+			close();
+		};
+	}, []);
 
 	if (loading) {
 		return (

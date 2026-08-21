@@ -1,4 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
+import type { ListingStreamEvent } from "@/lib/listingStream";
+import { subscribeToListings } from "@/lib/listingStream";
 import { fetchImpact, fetchMyListings, publishListing } from "@/lib/listings";
 import { makeListing, NOW } from "@/test-utils/fixtures";
 import { OrganizerHome } from "./OrganizerHome";
@@ -9,6 +17,7 @@ jest.mock("@/lib/listings", () => ({
 	fetchImpact: jest.fn(),
 	publishListing: jest.fn(),
 }));
+jest.mock("@/lib/listingStream", () => ({ subscribeToListings: jest.fn() }));
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
@@ -28,11 +37,31 @@ jest.mock("@/context/AuthContext", () => ({
 const mockListings = fetchMyListings as jest.MockedFunction<typeof fetchMyListings>;
 const mockImpact = fetchImpact as jest.MockedFunction<typeof fetchImpact>;
 const mockPublish = publishListing as jest.MockedFunction<typeof publishListing>;
+const mockSubscribe = subscribeToListings as jest.MockedFunction<
+	typeof subscribeToListings
+>;
+
+/** Fires an SSE event through whatever handler the screen registered. */
+let emit: (event: ListingStreamEvent) => void = () => {};
+
+function streamEvent(overrides: Partial<ListingStreamEvent> = {}): ListingStreamEvent {
+	return {
+		listing_id: "l1",
+		quantity_remaining: 3,
+		status: "active",
+		expires_at: new Date(NOW + 30 * 60_000).toISOString(),
+		...overrides,
+	};
+}
 
 describe("OrganizerHome", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockListings.mockResolvedValue([]);
+		mockSubscribe.mockImplementation(async (cb) => {
+			emit = cb;
+			return () => {};
+		});
 		mockImpact.mockResolvedValue({
 			meals_shared: 0,
 			people_fed: 0,
@@ -176,6 +205,62 @@ describe("OrganizerHome", () => {
 			await waitFor(() => expect(mockPublish).toHaveBeenCalledWith("d1"));
 			// Reloaded, so the row moves to Active without a manual refresh.
 			await waitFor(() => expect(mockListings.mock.calls.length).toBeGreaterThan(1));
+		});
+	});
+
+	describe("live updates", () => {
+		// The dashboard reloads on focus, which left a host staring at a stale
+		// count while someone claimed the food in front of them. They get a push
+		// about the claim, so the number beside it not moving read as a bug.
+		async function renderDashboard() {
+			mockListings.mockResolvedValue([
+				makeListing({ id: "l1", title: "Leftover pizza", quantity_remaining: 4 }),
+			]);
+			render(<OrganizerHome />);
+			return await screen.findByText("Leftover pizza");
+		}
+
+		it("moves the remaining count without a reload", async () => {
+			await renderDashboard();
+			const before = mockListings.mock.calls.length;
+			expect(screen.getByText("4 left")).toBeTruthy();
+
+			act(() => emit(streamEvent({ listing_id: "l1", quantity_remaining: 1 })));
+
+			expect(await screen.findByText("1 left")).toBeTruthy();
+			// No round trip was needed to move the number.
+			expect(mockListings).toHaveBeenCalledTimes(before);
+		});
+
+		it("moves a cancelled post off the Active tab", async () => {
+			// Status drives the tabs, so patching it in place is enough to
+			// relocate the row — nothing here needs to know which tab is showing.
+			await renderDashboard();
+
+			act(() =>
+				emit(
+					streamEvent({
+						listing_id: "l1",
+						status: "cancelled",
+						quantity_remaining: 4,
+					}),
+				),
+			);
+
+			await waitFor(() => expect(screen.queryByText("Leftover pizza")).toBeNull());
+		});
+
+		it("ignores a listing this host doesn't own", async () => {
+			// The stream carries every host's posts. The recipient feed refetches
+			// on an unfamiliar id because a stranger's post may belong in it; here
+			// it never can, and refetching would fire for every post on campus.
+			await renderDashboard();
+			const before = mockListings.mock.calls.length;
+
+			act(() => emit(streamEvent({ listing_id: "someone-elses" })));
+
+			await waitFor(() => expect(screen.getByText("4 left")).toBeTruthy());
+			expect(mockListings).toHaveBeenCalledTimes(before);
 		});
 	});
 
