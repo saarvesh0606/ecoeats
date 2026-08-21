@@ -7,12 +7,16 @@
  * other Firebase data service.
  */
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp, getApps, initializeApp } from "firebase/app";
+import * as firebaseAuth from "firebase/auth";
 import {
 	createUserWithEmailAndPassword,
 	getAuth,
 	GoogleAuthProvider,
+	initializeAuth,
 	onAuthStateChanged,
+	type Persistence,
 	sendEmailVerification,
 	signInWithEmailAndPassword,
 	signInWithPopup,
@@ -25,7 +29,41 @@ import { ALLOWED_EMAIL_DOMAIN, config } from "@/config";
 
 const app = getApps().length ? getApp() : initializeApp(config.firebase);
 
-export const auth = getAuth(app);
+/**
+ * Auth, with a session that outlives the app process.
+ *
+ * `getAuth()` on native defaults to **in-memory** persistence: the session
+ * lasts exactly as long as the JS runtime, so force-quitting the app signed the
+ * user out every single time. The browser build persists to `localStorage` by
+ * itself, which is precisely why months of web testing never showed this — the
+ * same blind spot as the untappable buttons and the CORS methods.
+ *
+ * `getReactNativePersistence` ships only in the react-native build of
+ * `firebase/auth`; the browser bundle doesn't export it and the published types
+ * don't declare it. Reading it off the namespace keeps one import that resolves
+ * correctly on both platforms, rather than a bare `require` the web bundler
+ * would have to be told to ignore.
+ */
+function createAuth() {
+	const rnPersistence = (
+		firebaseAuth as unknown as {
+			getReactNativePersistence?: (storage: unknown) => Persistence;
+		}
+	).getReactNativePersistence;
+
+	if (Platform.OS === "web" || !rnPersistence) return getAuth(app);
+
+	try {
+		return initializeAuth(app, { persistence: rnPersistence(AsyncStorage) });
+	} catch {
+		// Already initialised — this module re-ran under Fast Refresh. The
+		// existing instance keeps the persistence it was built with, so handing
+		// it back is correct rather than merely harmless.
+		return getAuth(app);
+	}
+}
+
+export const auth = createAuth();
 
 export type { FirebaseUser };
 
