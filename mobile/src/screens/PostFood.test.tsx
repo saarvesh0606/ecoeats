@@ -1,5 +1,14 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Alert } from "react-native";
 import { createListing } from "@/lib/listings";
+import { uploadPhoto } from "@/lib/uploads";
 import { makeListing } from "@/test-utils/fixtures";
 import { PostFood } from "./PostFood";
 
@@ -39,6 +48,10 @@ const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
 
 const mockCreate = createListing as jest.MockedFunction<typeof createListing>;
+const mockUpload = uploadPhoto as jest.MockedFunction<typeof uploadPhoto>;
+const mockPick = ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
+	typeof ImagePicker.launchImageLibraryAsync
+>;
 
 /** Fills every required field so a test can focus on one thing at a time. */
 function fillRequired(overrides: Partial<Record<string, string>> = {}) {
@@ -304,6 +317,84 @@ describe("PostFood", () => {
 			const body = mockCreate.mock.calls[0][0];
 			expect(body.publish).toBe("scheduled");
 			expect(typeof body.scheduled_for).toBe("string");
+		});
+	});
+
+	describe("photos", () => {
+		/** Pick and upload one photo, resolving once its thumbnail is on screen. */
+		async function addPhoto(url: string) {
+			mockPick.mockResolvedValue({
+				canceled: false,
+				assets: [{ uri: `file:///${url}` }],
+			} as never);
+			mockUpload.mockResolvedValue(url);
+			fireEvent.press(screen.getByText("+ Add"));
+			await screen.findByLabelText(`Remove photo`);
+		}
+
+		it("takes a photo back off the post", async () => {
+			// Adding one used to be final: there was no way to swap a wrong photo
+			// for the right one short of abandoning the post.
+			render(<PostFood />);
+			await addPhoto("https://cdn.test/one.jpg");
+
+			fireEvent.press(screen.getByLabelText("Remove photo"));
+
+			await waitFor(() =>
+				expect(screen.queryByLabelText("Remove photo")).toBeNull(),
+			);
+		});
+
+		it("doesn't post a photo that was removed", async () => {
+			render(<PostFood />);
+			await addPhoto("https://cdn.test/one.jpg");
+			fireEvent.press(screen.getByLabelText("Remove photo"));
+			await waitFor(() =>
+				expect(screen.queryByLabelText("Remove photo")).toBeNull(),
+			);
+
+			fillRequired();
+			setDescription("Cheese and pepperoni");
+			fireEvent.press(screen.getByText("Publish Post"));
+
+			await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+			expect(mockCreate.mock.calls[0][0].photo_urls).toEqual([]);
+		});
+	});
+
+	describe("clearing the form", () => {
+		it("offers nothing to clear on an untouched form", () => {
+			render(<PostFood />);
+			expect(screen.queryByLabelText("Clear this post")).toBeNull();
+		});
+
+		it("discards everything once confirmed", () => {
+			const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+			render(<PostFood />);
+			fillRequired();
+
+			fireEvent.press(screen.getByLabelText("Clear this post"));
+			// [cancel, destructive] — press the destructive one.
+			const buttons = alert.mock.calls[0][2];
+			act(() => buttons?.[1].onPress?.());
+
+			expect(screen.getByLabelText("Title").props.value).toBe("");
+			expect(screen.getByLabelText("Building").props.value).toBe("");
+			// Nothing left to lose, so the control retires itself.
+			expect(screen.queryByLabelText("Clear this post")).toBeNull();
+		});
+
+		it("keeps the form when the host backs out", () => {
+			// A long form behind a stray tap: the confirm has to actually mean it.
+			const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+			render(<PostFood />);
+			fillRequired();
+
+			fireEvent.press(screen.getByLabelText("Clear this post"));
+			const buttons = alert.mock.calls[0][2];
+			act(() => buttons?.[0].onPress?.());
+
+			expect(screen.getByLabelText("Title").props.value).toBe("Pizza");
 		});
 	});
 });

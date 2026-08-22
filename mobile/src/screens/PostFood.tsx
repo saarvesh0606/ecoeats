@@ -1,7 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
+	Alert,
 	Image,
 	KeyboardAvoidingView,
 	Platform,
@@ -127,6 +129,70 @@ export function PostFood() {
 		}
 	}
 
+	/**
+	 * Take a photo back off the post.
+	 *
+	 * The uploaded file itself is left where it is. Nothing else references it,
+	 * and an orphan in Cloudinary is a far smaller problem than a post that
+	 * ships with a photo the host tried to remove because a delete call failed.
+	 */
+	function removePhoto(url: string) {
+		haptics.select();
+		setPhotos((prev) => prev.filter((p) => p !== url));
+	}
+
+	/** Anything worth warning about before wiping the form. */
+	const dirty =
+		title !== "" ||
+		description !== "" ||
+		allergens !== "" ||
+		quantity !== "" ||
+		building !== "" ||
+		room !== "" ||
+		placement !== "" ||
+		tags.length > 0 ||
+		photos.length > 0 ||
+		pinned !== null ||
+		scheduleMode !== "now" ||
+		campus !== "Tempe" ||
+		expiry !== 30;
+
+	function clearForm() {
+		setTitle("");
+		setDescription("");
+		setEntryMode("voice");
+		setDescriptionSource("manual");
+		setAllergens("");
+		setTags([]);
+		setQuantity("");
+		setExpiry(30);
+		setCampus("Tempe");
+		setBuilding("");
+		setRoom("");
+		setPlacement("");
+		setPhotos([]);
+		setPinned(null);
+		setScheduleMode("now");
+		setError(null);
+		haptics.success();
+	}
+
+	/**
+	 * Confirm before discarding. This form is long enough that losing it to a
+	 * stray tap would be worse than the extra step — and there is no draft of
+	 * it anywhere until the host actually saves one.
+	 */
+	function confirmClear() {
+		Alert.alert(
+			"Clear this post?",
+			"Everything you have entered will be discarded.",
+			[
+				{ text: "Keep editing", style: "cancel" },
+				{ text: "Clear", style: "destructive", onPress: clearForm },
+			],
+		);
+	}
+
 	function validate(): string | null {
 		if (!title.trim()) return "Give the food a short title.";
 		if (!description.trim()) return "Describe the food.";
@@ -187,13 +253,30 @@ export function PostFood() {
 				className="flex-1"
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
 			>
-				<View className="px-5 pt-2 pb-3">
-					<Text className="font-display-bold text-3xl text-forest-800">
-						Create a Post
-					</Text>
-					<Text className="font-body text-gray-500 mt-0.5">
-						Share surplus food with the ASU community.
-					</Text>
+				<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
+					<View className="flex-1">
+						<Text className="font-display-bold text-3xl text-forest-800">
+							Create a Post
+						</Text>
+						<Text className="font-body text-gray-500 mt-0.5">
+							Share surplus food with the ASU community.
+						</Text>
+					</View>
+					{/* Only once there is something to lose — on an empty form this
+					    would be a control that does nothing. */}
+					{dirty && (
+						<Pressable
+							onPress={confirmClear}
+							accessibilityRole="button"
+							accessibilityLabel="Clear this post"
+							hitSlop={8}
+							className="pt-2 pl-3"
+						>
+							<Text className="font-body-medium text-sm text-forest-700">
+								Clear
+							</Text>
+						</Pressable>
+					)}
 				</View>
 
 				<ScrollView
@@ -206,11 +289,23 @@ export function PostFood() {
 					<Text className="font-body-semibold text-gray-900 mb-2">Photos</Text>
 					<View className="flex-row flex-wrap gap-2 mb-4">
 						{photos.map((url) => (
-							<Image
-								key={url}
-								source={{ uri: url }}
-								className="w-20 h-20 rounded-btn bg-gray-100"
-							/>
+							<View key={url} className="w-20 h-20">
+								<Image
+									source={{ uri: url }}
+									className="w-20 h-20 rounded-btn bg-gray-100"
+								/>
+								{/* The dot stays small so it doesn't cover the photo it
+								    belongs to; hitSlop is what makes it tappable. */}
+								<Pressable
+									onPress={() => removePhoto(url)}
+									accessibilityRole="button"
+									accessibilityLabel="Remove photo"
+									hitSlop={12}
+									className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-forest-800 items-center justify-center"
+								>
+									<Ionicons name="close" size={14} color="#FFFFFF" />
+								</Pressable>
+							</View>
 						))}
 						{photos.length < MAX_PHOTOS && (
 							<Pressable
