@@ -8,13 +8,25 @@ import {
 import { ToastProvider } from "@/components/ui/Toast";
 import { NotificationsList } from "./NotificationsList";
 
+jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+
+// The network calls are stubbed, but listingRouteFor stays real — it decides
+// which screen a tap opens, and a hand-written copy here would pass while the
+// app sent hosts to the wrong place.
 jest.mock("@/lib/notifications", () => ({
+	...jest.requireActual("@/lib/notifications"),
 	fetchNotifications: jest.fn(),
 	markNotificationsRead: jest.fn(),
 	deleteNotification: jest.fn(),
 }));
 
-jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
+
+let mockRole: "organizer" | "recipient" = "recipient";
+jest.mock("@/context/AuthContext", () => ({
+	useAuth: () => ({ profile: { role: mockRole } }),
+}));
 
 const mockFetch = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
 const mockRead = markNotificationsRead as jest.MockedFunction<typeof markNotificationsRead>;
@@ -52,6 +64,7 @@ describe("NotificationsList", () => {
 		jest.clearAllMocks();
 		mockRead.mockResolvedValue(undefined);
 		mockDelete.mockResolvedValue(undefined);
+		mockRole = "recipient";
 	});
 
 	it("shows the notifications it loaded", async () => {
@@ -220,6 +233,36 @@ describe("NotificationsList", () => {
 			expect(screen.getByText("Today")).toBeTruthy();
 			expect(screen.queryByText("Yesterday")).toBeNull();
 			expect(screen.queryByText("Earlier")).toBeNull();
+		});
+	});
+
+	describe("where a tap goes", () => {
+		const tappable = note({
+			message: "Sam claimed Leftover pizza",
+			listing_id: "l9",
+			listing_title: "Leftover pizza",
+		});
+
+		it("sends a recipient to the listing they could claim", async () => {
+			mockRole = "recipient";
+			mockFetch.mockResolvedValue({ items: [tappable], unread_count: 0 });
+			renderList();
+
+			fireEvent.press(await screen.findByLabelText(tappable.message));
+
+			expect(mockPush).toHaveBeenCalledWith("/listing/l9");
+		});
+
+		it("sends a host to the screen that manages their own post", async () => {
+			// A host's notifications are about food they posted. The listing screen
+			// offered them the chance to reserve their own food, which is nonsense.
+			mockRole = "organizer";
+			mockFetch.mockResolvedValue({ items: [tappable], unread_count: 0 });
+			renderList();
+
+			fireEvent.press(await screen.findByLabelText(tappable.message));
+
+			expect(mockPush).toHaveBeenCalledWith("/manage/l9");
 		});
 	});
 });

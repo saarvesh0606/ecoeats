@@ -1,12 +1,10 @@
 import {
-	act,
 	fireEvent,
 	render,
 	screen,
 	waitFor,
 } from "@testing-library/react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
 import { createListing } from "@/lib/listings";
 import { uploadPhoto } from "@/lib/uploads";
 import { makeListing } from "@/test-utils/fixtures";
@@ -47,6 +45,14 @@ jest.mock("@/hooks/useSpeech", () => ({
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
 
+// The app's own dialog, not Alert or window.confirm — see ConfirmDialog, which
+// exists because a browser dialog blocks the JS thread and can't carry the
+// product's voice. Tests decide its answer.
+const mockConfirm = jest.fn(async () => true);
+jest.mock("@/components/ui/ConfirmDialog", () => ({
+	useConfirm: () => mockConfirm,
+}));
+
 const mockCreate = createListing as jest.MockedFunction<typeof createListing>;
 const mockUpload = uploadPhoto as jest.MockedFunction<typeof uploadPhoto>;
 const mockPick = ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
@@ -80,6 +86,9 @@ describe("PostFood", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockCreate.mockResolvedValue(makeListing());
+		// clearAllMocks resets calls, not implementations, so a test that makes
+		// the host back out would otherwise leak into every test after it.
+		mockConfirm.mockResolvedValue(true);
 	});
 
 	describe("validation", () => {
@@ -368,32 +377,41 @@ describe("PostFood", () => {
 			expect(screen.queryByLabelText("Clear this post")).toBeNull();
 		});
 
-		it("discards everything once confirmed", () => {
-			const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+		it("asks before discarding anything", () => {
 			render(<PostFood />);
 			fillRequired();
 
 			fireEvent.press(screen.getByLabelText("Clear this post"));
-			// [cancel, destructive] — press the destructive one.
-			const buttons = alert.mock.calls[0][2];
-			act(() => buttons?.[1].onPress?.());
 
-			expect(screen.getByLabelText("Title").props.value).toBe("");
+			expect(mockConfirm).toHaveBeenCalledWith(
+				expect.objectContaining({ title: "Clear this post?" }),
+			);
+		});
+
+		it("discards everything once confirmed", async () => {
+			mockConfirm.mockResolvedValue(true);
+			render(<PostFood />);
+			fillRequired();
+
+			fireEvent.press(screen.getByLabelText("Clear this post"));
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Title").props.value).toBe(""),
+			);
 			expect(screen.getByLabelText("Building").props.value).toBe("");
 			// Nothing left to lose, so the control retires itself.
 			expect(screen.queryByLabelText("Clear this post")).toBeNull();
 		});
 
-		it("keeps the form when the host backs out", () => {
+		it("keeps the form when the host backs out", async () => {
 			// A long form behind a stray tap: the confirm has to actually mean it.
-			const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+			mockConfirm.mockResolvedValue(false);
 			render(<PostFood />);
 			fillRequired();
 
 			fireEvent.press(screen.getByLabelText("Clear this post"));
-			const buttons = alert.mock.calls[0][2];
-			act(() => buttons?.[0].onPress?.());
 
+			await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
 			expect(screen.getByLabelText("Title").props.value).toBe("Pizza");
 		});
 	});

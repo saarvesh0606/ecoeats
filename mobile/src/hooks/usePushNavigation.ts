@@ -2,6 +2,8 @@ import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Platform } from "react-native";
+import { useAuth } from "@/context/AuthContext";
+import { listingRouteFor } from "@/lib/notifications";
 
 /**
  * What happens when a push arrives, and when one is tapped.
@@ -20,6 +22,10 @@ import { Platform } from "react-native";
  */
 export function usePushNavigation() {
 	const router = useRouter();
+	// A host tapping "someone claimed your food" belongs on the screen that
+	// manages that post, not on the recipient's claim screen.
+	const { profile } = useAuth();
+	const role = profile?.role;
 
 	useEffect(() => {
 		if (Platform.OS === "web") return;
@@ -37,7 +43,7 @@ export function usePushNavigation() {
 			const data = response?.notification.request.content.data as
 				| { listingId?: string }
 				| undefined;
-			if (data?.listingId) router.push(`/listing/${data.listingId}`);
+			if (data?.listingId) router.push(listingRouteFor(role, data.listingId));
 		};
 
 		// A tap that launched the app from cold, before this listener existed.
@@ -46,5 +52,8 @@ export function usePushNavigation() {
 		const subscription =
 			Notifications.addNotificationResponseReceivedListener(open);
 		return () => subscription.remove();
-	}, [router]);
+		// `role` is a dependency because the listener closes over it: someone who
+		// switches from recipient to host must not keep being sent to the
+		// recipient's screen by a stale handler.
+	}, [router, role]);
 }

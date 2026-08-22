@@ -7,10 +7,12 @@ import { Spinner } from "@/components/ui/Spinner";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { useToast } from "@/components/ui/Toast";
 import { haptics } from "@/lib/haptics";
+import { useAuth } from "@/context/AuthContext";
 import {
 	type AppNotification,
 	deleteNotification,
 	fetchNotifications,
+	listingRouteFor,
 	markNotificationsRead,
 	type NotificationKind,
 } from "@/lib/notifications";
@@ -96,6 +98,8 @@ function groupByDay(items: AppNotification[]) {
 export function NotificationsList() {
 	const router = useRouter();
 	const toast = useToast();
+	// A host and a recipient get sent to different screens for the same post.
+	const { profile } = useAuth();
 	const [items, setItems] = useState<AppNotification[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -200,11 +204,16 @@ export function NotificationsList() {
 						</View>
 					</View>
 				);
+				// Held in a const so the null check still applies inside the
+				// callback, where narrowing on the item itself doesn't reach.
+				const listingId = item.listing_id;
 				return (
 					<SwipeableRow onDelete={() => void onDelete(item)}>
-						{item.listing_id ? (
+						{listingId ? (
 							<Pressable
-								onPress={() => router.push(`/listing/${item.listing_id}`)}
+								onPress={() =>
+									router.push(listingRouteFor(profile?.role, listingId))
+								}
 								accessibilityRole="button"
 								accessibilityLabel={item.message}
 							>

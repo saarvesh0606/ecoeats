@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
-	Alert,
 	Image,
 	KeyboardAvoidingView,
 	Platform,
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { VoicePanel } from "@/components/VoicePanel";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
 import { Accuracy as LocationAccuracy } from "expo-location";
 import { type Coords, useDeviceLocation } from "@/hooks/useDeviceLocation";
@@ -52,6 +52,7 @@ function scheduledFor(mode: ScheduleMode): string | null {
 
 export function PostFood() {
 	const router = useRouter();
+	const confirm = useConfirm();
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
@@ -182,28 +183,14 @@ export function PostFood() {
 	 * stray tap would be worse than the extra step — and there is no draft of
 	 * it anywhere until the host actually saves one.
 	 */
-	function confirmClear() {
-		// react-native-web's Alert.alert is literally `static alert() {}`, so on
-		// web this button would do nothing at all — including in the browser this
-		// project verifies in. window.confirm is the honest equivalent there.
-		if (Platform.OS === "web") {
-			const ok = (
-				globalThis as { confirm?: (message: string) => boolean }
-			).confirm?.(
-				"Clear this post? Everything you have entered will be discarded.",
-			);
-			if (ok) clearForm();
-			return;
-		}
-
-		Alert.alert(
-			"Clear this post?",
-			"Everything you have entered will be discarded.",
-			[
-				{ text: "Keep editing", style: "cancel" },
-				{ text: "Clear", style: "destructive", onPress: clearForm },
-			],
-		);
+	async function confirmClear() {
+		const ok = await confirm({
+			title: "Clear this post?",
+			message: "Everything you have entered will be discarded.",
+			confirmLabel: "Clear",
+			cancelLabel: "Keep editing",
+		});
+		if (ok) clearForm();
 	}
 
 	function validate(): string | null {
@@ -279,7 +266,7 @@ export function PostFood() {
 					    would be a control that does nothing. */}
 					{dirty && (
 						<Pressable
-							onPress={confirmClear}
+							onPress={() => void confirmClear()}
 							accessibilityRole="button"
 							accessibilityLabel="Clear this post"
 							hitSlop={8}
