@@ -129,3 +129,80 @@ async def test_delete_unknown_notification_is_404(
     missing = "00000000-0000-0000-0000-000000000000"
     r = await client.delete(f"/notifications/{missing}", headers=organizer.headers)
     assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# What the row is about — kind, and the listing it points at
+# ---------------------------------------------------------------------------
+
+
+async def test_each_event_records_what_kind_it_was(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """The client picks an icon from this, so it must not be guessed from prose."""
+    listing = await post_listing(client, organizer)
+    claim = (
+        await client.post(
+            "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+        )
+    ).json()
+    await client.post(f"/claims/{claim['id']}/pickup", headers=organizer.headers)
+    await client.post(
+        f"/claims/{claim['id']}/rate", headers=recipient.headers, json={"stars": 5}
+    )
+
+    host = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert {n["kind"] for n in host["items"]} == {"claim", "rating"}
+
+    theirs = (await client.get("/notifications", headers=recipient.headers)).json()
+    assert [n["kind"] for n in theirs["items"]] == ["pickup"]
+
+
+async def test_notification_carries_the_food_it_is_about(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    photo = "https://images.example.com/pizza.jpg"
+    listing = await post_listing(client, organizer, photo_urls=[photo])
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    note = (await client.get("/notifications", headers=organizer.headers)).json()[
+        "items"
+    ][0]
+    assert note["listing_title"] == "Leftover pizza"
+    assert note["listing_photo_url"] == photo
+
+
+async def test_a_listing_without_photos_still_renders(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    # The title comes back, the thumbnail is simply null — the row still has to
+    # be renderable, since most posts have no photo.
+    listing = await post_listing(client, organizer, photo_urls=[])
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    note = (await client.get("/notifications", headers=organizer.headers)).json()[
+        "items"
+    ][0]
+    assert note["listing_title"] == "Leftover pizza"
+    assert note["listing_photo_url"] is None
+
+
+async def test_the_first_photo_is_the_thumbnail(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    first = "https://images.example.com/one.jpg"
+    listing = await post_listing(
+        client, organizer, photo_urls=[first, "https://images.example.com/two.jpg"]
+    )
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    note = (await client.get("/notifications", headers=organizer.headers)).json()[
+        "items"
+    ][0]
+    assert note["listing_photo_url"] == first

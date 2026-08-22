@@ -103,6 +103,7 @@ async def claim_food(
             background_tasks,
             user_id=full.listing.organizer_id,
             message=f"{user.name} claimed {full.listing.title}",
+            kind="claim",
             listing_id=full.listing.id,
         )
         _publish_listing(request, background_tasks, full.listing)
@@ -231,6 +232,7 @@ async def rate_host(
         background_tasks,
         user_id=claim.listing.organizer_id,
         message=f"{user.name} rated you {body.stars}★",
+        kind="rating",
         listing_id=claim.listing_id,
     )
     await db.flush()
@@ -270,6 +272,7 @@ async def _resolve(
             background_tasks,
             user_id=claim.recipient_id,
             message=f"Pickup confirmed for {listing.title}",
+            kind="pickup",
             listing_id=listing.id,
         )
 

@@ -24,11 +24,19 @@ function note(overrides: Partial<AppNotification> = {}): AppNotification {
 	return {
 		id: "n1",
 		message: "Sam claimed Leftover pizza",
+		kind: "claim",
 		listing_id: null,
+		listing_title: null,
+		listing_photo_url: null,
 		read: false,
 		created_at: new Date().toISOString(),
 		...overrides,
 	};
+}
+
+/** Yesterday and a week ago, for the day sections. */
+function hoursAgo(h: number): string {
+	return new Date(Date.now() - h * 3_600_000).toISOString();
 }
 
 function renderList() {
@@ -135,5 +143,83 @@ describe("NotificationsList", () => {
 			.getAllByText(/one$/)
 			.map((n) => n.props.children as string);
 		expect(messages).toEqual(["Newer one", "Older one"]);
+	});
+
+	describe("what a row shows", () => {
+		it("shows the food the notification is about", async () => {
+			mockFetch.mockResolvedValue({
+				items: [
+					note({
+						listing_id: "l1",
+						listing_title: "Leftover pizza",
+						listing_photo_url: "https://cdn.test/pizza.jpg",
+					}),
+				],
+				unread_count: 0,
+			});
+			renderList();
+
+			// The message alone never said which post it was about.
+			expect(await screen.findByText("Leftover pizza")).toBeTruthy();
+		});
+
+		it("renders a listing that has no photo", async () => {
+			// Most posts have none, and the row still has to draw.
+			mockFetch.mockResolvedValue({
+				items: [note({ listing_title: "Leftover pizza" })],
+				unread_count: 0,
+			});
+			renderList();
+
+			expect(await screen.findByText("Leftover pizza")).toBeTruthy();
+		});
+
+		it("survives a kind it has never heard of", async () => {
+			// A server that grows a new event type must not blank the screen.
+			mockFetch.mockResolvedValue({
+				items: [
+					note({
+						kind: "something-new" as AppNotification["kind"],
+						message: "Something new happened",
+					}),
+				],
+				unread_count: 0,
+			});
+			renderList();
+
+			expect(await screen.findByText("Something new happened")).toBeTruthy();
+		});
+	});
+
+	describe("day sections", () => {
+		it("separates today from yesterday and earlier", async () => {
+			mockFetch.mockResolvedValue({
+				items: [
+					note({ id: "a", message: "From today", created_at: hoursAgo(1) }),
+					note({ id: "b", message: "From yesterday", created_at: hoursAgo(30) }),
+					note({ id: "c", message: "From last week", created_at: hoursAgo(24 * 8) }),
+				],
+				unread_count: 0,
+			});
+			renderList();
+
+			await screen.findByText("From today");
+			expect(screen.getByText("Today")).toBeTruthy();
+			expect(screen.getByText("Yesterday")).toBeTruthy();
+			expect(screen.getByText("Earlier")).toBeTruthy();
+		});
+
+		it("shows only the sections it has anything for", async () => {
+			mockFetch.mockResolvedValue({
+				items: [note({ message: "From today", created_at: hoursAgo(2) })],
+				unread_count: 0,
+			});
+			renderList();
+
+			await screen.findByText("From today");
+			expect(screen.getByText("Today")).toBeTruthy();
+			expect(screen.queryByText("Yesterday")).toBeNull();
+			expect(screen.queryByText("Earlier")).toBeNull();
+		});
 	});
 });

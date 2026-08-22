@@ -7,7 +7,7 @@ from sqlalchemy import delete, func, select, update
 
 from api.deps import CurrentUser, DbSession
 from api.errors import NotFoundError
-from api.models import Notification
+from api.models import Listing, ListingPhoto, Notification
 from api.schemas.notification import NotificationList, NotificationOut
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -18,9 +18,24 @@ MAX_NOTIFICATIONS = 50
 @router.get("", response_model=NotificationList)
 async def list_notifications(db: DbSession, user: CurrentUser) -> NotificationList:
     """The user's recent notifications, newest first, with the unread count."""
+    # The listing's first photo, which is the thumbnail everywhere else too.
+    # A correlated subquery rather than a join: joining the photos table would
+    # multiply the notification rows and then need de-duplicating.
+    thumbnail = (
+        select(ListingPhoto.url)
+        .where(ListingPhoto.listing_id == Listing.id)
+        .order_by(ListingPhoto.position)
+        .limit(1)
+        .correlate(Listing)
+        .scalar_subquery()
+    )
+
+    # Outer join: listing_id is nullable, and the FK is SET NULL, so a
+    # notification about a since-deleted post must still come back.
     rows = (
-        await db.scalars(
-            select(Notification)
+        await db.execute(
+            select(Notification, Listing.title, thumbnail.label("photo_url"))
+            .outerjoin(Listing, Notification.listing_id == Listing.id)
             .where(Notification.user_id == user.id)
             .order_by(Notification.created_at.desc())
             .limit(MAX_NOTIFICATIONS)
@@ -37,11 +52,14 @@ async def list_notifications(db: DbSession, user: CurrentUser) -> NotificationLi
         NotificationOut(
             id=str(n.id),
             message=n.message,
+            kind=n.kind,
             listing_id=str(n.listing_id) if n.listing_id else None,
+            listing_title=title,
+            listing_photo_url=photo_url,
             read=n.read,
             created_at=n.created_at,
         )
-        for n in rows
+        for n, title, photo_url in rows
     ]
     return NotificationList(items=items, unread_count=int(unread or 0))
 

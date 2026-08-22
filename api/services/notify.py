@@ -53,6 +53,7 @@ def notify(
     *,
     user_id: str,
     message: str,
+    kind: str = "activity",
     listing_id: uuid.UUID | None = None,
 ) -> None:
     """Record activity for a user, and push it to their devices.
@@ -61,9 +62,19 @@ def notify(
     push is queued for after the response: it is a courtesy, it talks to a
     third party over the network, and nothing about it should be able to slow
     down or fail the claim that caused it.
+
+    ``kind`` says what happened, so the client can choose an icon without
+    reading the prose. It defaults to the generic bucket rather than being
+    required: a caller that forgets it should produce a plain-looking
+    notification, not a 500.
     """
     db.add(
-        Notification(user_id=user_id, message=message, listing_id=listing_id)
+        Notification(
+            user_id=user_id,
+            message=message,
+            kind=kind,
+            listing_id=listing_id,
+        )
     )
 
     settings = request.app.state.settings

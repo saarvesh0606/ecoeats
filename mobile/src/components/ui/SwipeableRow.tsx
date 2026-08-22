@@ -11,10 +11,14 @@ const OPEN_THRESHOLD = 0.4;
 const CLAIM_SLOP = 12;
 
 /**
- * A row that slides right to reveal a delete action.
+ * A row that slides left to reveal a delete action on the right.
+ *
+ * That direction is not arbitrary: Mail, Messages and every other iOS list
+ * put a row's actions on the trailing edge, so a thumb arrives already
+ * expecting it. This slid the other way at first and read as backwards.
  *
  * The gesture is only claimed once the drag is clearly horizontal and to the
- * right, so vertical scrolling through the list still wins — grabbing every
+ * left, so vertical scrolling through the list still wins — grabbing every
  * touch would make the feed feel stuck.
  *
  * Deleting is a two-step act on purpose: the swipe exposes the control, and a
@@ -39,7 +43,7 @@ export function SwipeableRow({
 		openRef.current = toOpen;
 		armedRef.current = toOpen;
 		Animated.spring(translateX, {
-			toValue: toOpen ? REVEAL : 0,
+			toValue: toOpen ? -REVEAL : 0,
 			useNativeDriver: true,
 			speed: 20,
 			bounciness: 6,
@@ -51,11 +55,11 @@ export function SwipeableRow({
 			onMoveShouldSetPanResponder: (_e, g) =>
 				Math.abs(g.dx) > CLAIM_SLOP &&
 				Math.abs(g.dx) > Math.abs(g.dy) * 1.5 &&
-				// Rightwards when closed; leftwards (to re-close) when open.
-				(openRef.current ? g.dx < 0 : g.dx > 0),
+				// Leftwards when closed; rightwards (to re-close) when open.
+				(openRef.current ? g.dx > 0 : g.dx < 0),
 			onPanResponderMove: (_e, g) => {
-				const base = openRef.current ? REVEAL : 0;
-				const next = Math.min(REVEAL, Math.max(0, base + g.dx));
+				const base = openRef.current ? -REVEAL : 0;
+				const next = Math.max(-REVEAL, Math.min(0, base + g.dx));
 				translateX.setValue(next);
 
 				// Pulse the moment the drag passes the point where letting go would
@@ -64,16 +68,16 @@ export function SwipeableRow({
 				// pulling exactly when it has caught rather than guessing and
 				// checking. Only on the way in — ticking on every wobble across the
 				// line would be noise.
-				const armed = next > REVEAL * OPEN_THRESHOLD;
+				const armed = next < -REVEAL * OPEN_THRESHOLD;
 				if (armed !== armedRef.current) {
 					armedRef.current = armed;
 					if (armed) haptics.tap();
 				}
 			},
 			onPanResponderRelease: (_e, g) => {
-				const base = openRef.current ? REVEAL : 0;
+				const base = openRef.current ? -REVEAL : 0;
 				const end = base + g.dx;
-				settle(end > REVEAL * OPEN_THRESHOLD);
+				settle(end < -REVEAL * OPEN_THRESHOLD);
 			},
 			onPanResponderTerminate: () => settle(openRef.current),
 		}),
@@ -81,14 +85,14 @@ export function SwipeableRow({
 
 	return (
 		<View className="relative">
-			{/* Sits underneath, exposed as the row moves off it. */}
+			{/* Sits underneath on the trailing edge, exposed as the row moves off it. */}
 			<View
-				className="absolute left-0 top-0 bottom-0 justify-center"
+				className="absolute right-0 top-0 bottom-0 justify-center"
 				style={{ width: REVEAL }}
 			>
 				<Pressable
 					onPress={onDelete}
-					className="bg-red-600 rounded-card items-center justify-center py-4 mr-2"
+					className="bg-red-600 rounded-card items-center justify-center py-4 ml-2"
 					accessibilityRole="button"
 					accessibilityLabel={deleteLabel}
 				>

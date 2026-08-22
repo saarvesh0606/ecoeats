@@ -93,7 +93,10 @@ export function makeNotification(
 	return {
 		id: "n1",
 		message: "Sam claimed Leftover pizza",
+		kind: "claim",
 		listing_id: null,
+		listing_title: null,
+		listing_photo_url: null,
 		read: false,
 		created_at: new Date(NOW).toISOString(),
 		...overrides,

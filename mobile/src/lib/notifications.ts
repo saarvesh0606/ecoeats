@@ -2,10 +2,18 @@
 
 import { api } from "@/lib/api";
 
+/** What happened. Anything unrecognised is rendered as "activity". */
+export type NotificationKind = "claim" | "pickup" | "rating" | "activity";
+
 export interface AppNotification {
 	id: string;
 	message: string;
+	/** Server-recorded, never inferred from the message text. */
+	kind: NotificationKind;
 	listing_id: string | null;
+	/** Null once the listing is deleted, or when the post had no photo. */
+	listing_title: string | null;
+	listing_photo_url: string | null;
 	read: boolean;
 	created_at: string;
 }
