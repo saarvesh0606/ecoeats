@@ -1,3 +1,4 @@
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -219,15 +220,7 @@ export function RecipientFeed() {
 						Good food. Good impact.
 					</Text>
 				</View>
-				<Pressable
-					hitSlop={8}
-					className="mt-1"
-					onPress={() => router.push("/notifications")}
-					accessibilityRole="button"
-					accessibilityLabel="Notifications"
-				>
-					<Ionicons name="notifications-outline" size={24} color="#0C3226" />
-				</Pressable>
+				<NotificationBell />
 			</View>
 
 			{/* Search */}

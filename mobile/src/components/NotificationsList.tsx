@@ -8,6 +8,7 @@ import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { useToast } from "@/components/ui/Toast";
 import { haptics } from "@/lib/haptics";
 import { useAuth } from "@/context/AuthContext";
+import { useUnread } from "@/context/UnreadContext";
 import {
 	type AppNotification,
 	deleteNotification,
@@ -100,10 +101,14 @@ export function NotificationsList() {
 	const toast = useToast();
 	// A host and a recipient get sent to different screens for the same post.
 	const { profile } = useAuth();
+	const { clear: clearUnread, drop: dropUnread } = useUnread();
 	const [items, setItems] = useState<AppNotification[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	async function onDelete(target: AppNotification) {
+		// Deleting an unread row is another way of dealing with it — the dot
+		// must not outlive the thing it was pointing at.
+		if (!target.read) dropUnread();
 		// Drop it straight away — waiting on the round trip makes the tap feel
 		// broken. Put it back if the server disagrees.
 		setItems((prev) => prev.filter((n) => n.id !== target.id));
@@ -125,13 +130,18 @@ export function NotificationsList() {
 		try {
 			const list = await fetchNotifications();
 			setItems(list.items);
-			if (list.unread_count > 0) await markNotificationsRead();
+			if (list.unread_count > 0) {
+				await markNotificationsRead();
+				// Opening this screen is what "seen" means, so the dot goes now
+				// rather than waiting for the next count refresh.
+				clearUnread();
+			}
 		} catch {
 			// A transient failure just leaves the list as-is.
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [clearUnread]);
 
 	useEffect(() => {
 		void load();

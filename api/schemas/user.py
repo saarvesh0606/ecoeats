@@ -27,17 +27,26 @@ class UserProfile(BaseModel):
 
     terms_accepted_at: datetime | None = None
     terms_version: str | None = None
+    terms_accepted_roles: list[str] = Field(default_factory=list)
 
     @computed_field
     @property
     def terms_current(self) -> bool:
-        """Whether this user has accepted the terms *now in force*.
+        """Whether this user has accepted the terms now in force, as this role.
+
+        Two conditions, not one. The version catches updated terms; the role
+        catches somebody who agreed as a recipient and has since become a host,
+        which is a different set of obligations — they are giving food away
+        rather than collecting it.
 
         Computed rather than left to the client so there is one definition of
-        "up to date". A client comparing version strings itself would keep
-        letting people in for as long as it took to ship an update.
+        "up to date". A client comparing these itself would keep letting people
+        in for as long as it took to ship an update.
         """
-        return self.terms_version == CURRENT_TERMS_VERSION
+        return (
+            self.terms_version == CURRENT_TERMS_VERSION
+            and self.role.value in self.terms_accepted_roles
+        )
 
 
 class RegisterProfile(BaseModel):

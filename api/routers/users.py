@@ -209,7 +209,23 @@ async def accept_terms(user: CurrentUser, db: DbSession) -> User:
     to them, which is exactly the thing this record exists to rule out.
 
     Idempotent — accepting twice just refreshes the timestamp.
+
+    The role is recorded alongside the version. A host and a recipient are
+    agreeing to different obligations, so switching account type for the first
+    time asks again; switching back afterwards does not, because that role is
+    already in the list.
+
+    ⚠️ A *new* version resets the list rather than adding to it. Accepting
+    v2 as a recipient must not leave a stale "organizer" entry from v1 standing
+    in for agreement to a document that has since changed.
     """
+    if user.terms_version != CURRENT_TERMS_VERSION:
+        user.terms_accepted_roles = [user.role.value]
+    elif user.role.value not in user.terms_accepted_roles:
+        # Reassigned rather than appended: SQLAlchemy tracks mutation on a
+        # replaced list, not on one mutated in place.
+        user.terms_accepted_roles = [*user.terms_accepted_roles, user.role.value]
+
     user.terms_accepted_at = datetime.now(UTC)
     user.terms_version = CURRENT_TERMS_VERSION
     await db.flush()

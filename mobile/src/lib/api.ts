@@ -106,6 +106,9 @@ export interface UserProfile {
 
 	terms_accepted_at: string | null;
 	terms_version: string | null;
+	/** Which roles this user has accepted the terms as. A host and a recipient
+	 *  agree to different obligations, so the first switch asks again. */
+	terms_accepted_roles: string[];
 	/** Whether the accepted version is the one currently in force. The server
 	 *  decides this, so bumping the terms takes effect without a client
 	 *  release. */

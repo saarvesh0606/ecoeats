@@ -26,6 +26,8 @@ export interface LegalDocument {
 	sections: { heading: string; body: string }[];
 }
 
+export type LegalDocumentKey = "terms" | "safety" | "privacy";
+
 export const FOOD_SAFETY_DISCLAIMER: LegalDocument = {
 	title: "Food safety",
 	summary:
@@ -128,4 +130,14 @@ export const PRIVACY: LegalDocument = {
 			body: "Settings has a Delete account option. It removes your profile, your posts, your claims, your ratings and your notifications, and deletes your sign-in identity so the account cannot be used again. Deleting a host account also removes that host's posts, including any claims other people have made on them.",
 		},
 	],
+};
+
+/**
+ * The documents by route key, so `/settings/terms` and friends can resolve one
+ * without a switch statement in the screen.
+ */
+export const LEGAL_DOCUMENTS: Record<LegalDocumentKey, LegalDocument> = {
+	terms: TERMS,
+	safety: FOOD_SAFETY_DISCLAIMER,
+	privacy: PRIVACY,
 };

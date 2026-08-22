@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LegalDocumentView } from "@/components/LegalDocumentView";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
 	SettingsGroup,
@@ -14,14 +13,12 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, deleteAccount } from "@/lib/api";
-import { haptics } from "@/lib/haptics";
+import { applyHapticPreference, haptics } from "@/lib/haptics";
 import {
-	FOOD_SAFETY_DISCLAIMER,
-	type LegalDocument,
-	PRIVACY,
-	TERMS,
-} from "@/lib/legal";
-import { arePushNotificationsMuted } from "@/lib/pushPreference";
+	areHapticsMuted,
+	arePushNotificationsMuted,
+	setHapticsMuted,
+} from "@/lib/preferences";
 
 /**
  * Settings: the legal documents, what the app knows about itself, and the two
@@ -37,12 +34,13 @@ export function Settings() {
 	const toast = useToast();
 	const { signOut, profile, setPushMuted } = useAuth();
 
-	const [reading, setReading] = useState<LegalDocument | null>(null);
 	const [muted, setMuted] = useState(false);
+	const [hapticsOff, setHapticsOff] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		void arePushNotificationsMuted().then(setMuted);
+		void areHapticsMuted().then(setHapticsOff);
 	}, []);
 
 	const version = Constants.expoConfig?.version ?? "unknown";
@@ -59,6 +57,15 @@ export function Settings() {
 		// handing the token back takes a round trip.
 		setMuted(next);
 		await setPushMuted(next);
+	}
+
+	async function toggleHaptics(off: boolean) {
+		// Fires before applying, so turning it *off* still gives the tick that
+		// confirms the tap landed — the last thing it will do.
+		haptics.select();
+		setHapticsOff(off);
+		applyHapticPreference(off);
+		await setHapticsMuted(off);
 	}
 
 	async function confirmDelete() {
@@ -91,28 +98,6 @@ export function Settings() {
 		}
 	}
 
-	if (reading) {
-		return (
-			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
-				<View className="px-5 pt-2 pb-1">
-					<Pressable
-						onPress={() => setReading(null)}
-						accessibilityRole="button"
-						accessibilityLabel="Back to settings"
-						hitSlop={10}
-						className="flex-row items-center py-2"
-					>
-						<Ionicons name="chevron-back" size={18} color="#0C3226" />
-						<Text className="font-body-medium text-forest-800 ml-1">
-							Settings
-						</Text>
-					</Pressable>
-				</View>
-				<LegalDocumentView document={reading} />
-			</SafeAreaView>
-		);
-	}
-
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3 flex-row items-center">
@@ -135,7 +120,7 @@ export function Settings() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 				showsVerticalScrollIndicator={false}
 			>
-				<SettingsGroup title="Notifications">
+				<SettingsGroup title="Feedback">
 					<SettingsRow
 						icon="notifications-outline"
 						label="Mute notifications"
@@ -148,23 +133,50 @@ export function Settings() {
 							/>
 						}
 					/>
+					<SettingsRow
+						icon="pulse-outline"
+						label="Haptic feedback"
+						subtitle="The small taps you feel when something happens."
+						accessory={
+							<Switch
+								value={!hapticsOff}
+								onValueChange={(on) => void toggleHaptics(!on)}
+								accessibilityLabel="Haptic feedback"
+							/>
+						}
+					/>
 				</SettingsGroup>
 
 				<SettingsGroup title="Legal">
 					<SettingsRow
 						icon="document-text-outline"
 						label="Terms of use"
-						onPress={() => setReading(TERMS)}
+						onPress={() =>
+							router.push({
+								pathname: "/settings/[doc]",
+								params: { doc: "terms" },
+							})
+						}
 					/>
 					<SettingsRow
 						icon="warning-outline"
 						label="Food safety"
-						onPress={() => setReading(FOOD_SAFETY_DISCLAIMER)}
+						onPress={() =>
+							router.push({
+								pathname: "/settings/[doc]",
+								params: { doc: "safety" },
+							})
+						}
 					/>
 					<SettingsRow
 						icon="lock-closed-outline"
 						label="Privacy"
-						onPress={() => setReading(PRIVACY)}
+						onPress={() =>
+							router.push({
+								pathname: "/settings/[doc]",
+								params: { doc: "privacy" },
+							})
+						}
 					/>
 				</SettingsGroup>
 

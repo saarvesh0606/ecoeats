@@ -25,10 +25,12 @@ import {
 } from "@/lib/firebase";
 import { fetchProfile, type UserProfile } from "@/lib/api";
 import { registerForPush, unregisterForPush } from "@/lib/push";
+import { applyHapticPreference } from "@/lib/haptics";
 import {
+	areHapticsMuted,
 	arePushNotificationsMuted,
 	setPushNotificationsMuted,
-} from "@/lib/pushPreference";
+} from "@/lib/preferences";
 import { getDevToken, setDevToken } from "@/lib/session";
 
 export type AuthStatus =
@@ -118,6 +120,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	);
 
 	useEffect(() => {
+		// Before any press can happen: haptics fires synchronously and cannot
+		// await device storage at the moment of a tap.
+		void areHapticsMuted().then(applyHapticPreference);
+	}, []);
+
+	useEffect(() => {
 		// A persisted dev token means a reload landed mid-session: restore it
 		// straight away rather than waiting for (and being overridden by) the
 		// Firebase listener, which would otherwise resolve to signed-out.
@@ -164,6 +172,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const applyProfile = useCallback((updated: UserProfile) => {
 		setProfile(updated);
+		// Switching account type comes through here, and a host has not yet
+		// agreed to what a host agrees to — the server says so via terms_current.
+		// Guarded to the two states this can legitimately move between, so an
+		// edit saved mid-sign-in can't knock the user somewhere strange.
+		setStatus((current) =>
+			current === "ready" || current === "needs-terms"
+				? updated.terms_current
+					? "ready"
+					: "needs-terms"
+				: current,
+		);
 	}, []);
 
 	/** Record acceptance and let the user through. */

@@ -40,6 +40,16 @@ class User(Base):
     )
     terms_version: Mapped[str | None] = mapped_column(String(20))
 
+    #: Which roles this user has accepted the terms *as*.
+    #:
+    #: A host and a recipient are agreeing to different things — one is giving
+    #: food away, the other is collecting and eating it, and the obligations in
+    #: the terms differ accordingly. So someone who switches account type for
+    #: the first time is asked again, and switching back later is not.
+    terms_accepted_roles: Mapped[list[str]] = mapped_column(
+        ARRAY(String(20)), nullable=False, server_default="{}"
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -82,7 +82,25 @@ const THROTTLED: readonly Feel[] = ["tap", "press", "select", "bump"];
 
 let lastAt = 0;
 
+/**
+ * Whether the user has turned physical feedback off in Settings.
+ *
+ * Module state, and set from outside, because every call site here is
+ * synchronous — `haptics.tap()` fires during a press handler — while the
+ * preference lives in async device storage. Reading storage per pulse would
+ * make the feedback late, which for haptics is the same as wrong. The app
+ * loads it once at launch and pushes it in.
+ */
+let muted = false;
+
+/** Apply the stored preference. Called at launch and whenever it changes. */
+export function applyHapticPreference(next: boolean): void {
+	muted = next;
+}
+
 function fire(feel: Feel): void {
+	if (muted) return;
+
 	if (THROTTLED.includes(feel)) {
 		const now = Date.now();
 		if (now - lastAt < MIN_GAP_MS) return;
@@ -116,4 +134,5 @@ export const haptics: Record<Feel, () => void> = {
 /** Test seam: the gap guard is module state, and suites share a module registry. */
 export function resetHapticThrottle(): void {
 	lastAt = 0;
+	muted = false;
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import {
 	fetchImpact,
@@ -188,15 +189,7 @@ export function OrganizerHome() {
 						Good to share, {firstName}.
 					</Text>
 				</View>
-				<Pressable
-					hitSlop={8}
-					className="mt-1"
-					onPress={() => router.push("/notifications")}
-					accessibilityRole="button"
-					accessibilityLabel="Notifications"
-				>
-					<Ionicons name="notifications-outline" size={24} color="#0C3226" />
-				</Pressable>
+				<NotificationBell />
 			</View>
 
 			{/* Impact card */}

@@ -14,7 +14,10 @@ jest.mock("expo-constants", () => ({
 }));
 
 const mockBack = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ back: mockBack }) }));
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+	useRouter: () => ({ back: mockBack, push: mockPush }),
+}));
 
 const mockSignOut = jest.fn();
 const mockSetPushMuted = jest.fn(async () => {});
@@ -28,8 +31,12 @@ jest.mock("@/context/AuthContext", () => ({
 }));
 
 const mockMuted = jest.fn(async () => false);
-jest.mock("@/lib/pushPreference", () => ({
+const mockHapticsMuted = jest.fn(async () => false);
+const mockSetHapticsMuted = jest.fn(async (_muted: boolean) => {});
+jest.mock("@/lib/preferences", () => ({
 	arePushNotificationsMuted: () => mockMuted(),
+	areHapticsMuted: () => mockHapticsMuted(),
+	setHapticsMuted: (v: boolean) => mockSetHapticsMuted(v),
 }));
 
 const mockDelete = deleteAccount as jest.MockedFunction<typeof deleteAccount>;
@@ -44,6 +51,7 @@ describe("Settings", () => {
 		jest.clearAllMocks();
 		mockRole = "recipient";
 		mockMuted.mockResolvedValue(false);
+		mockHapticsMuted.mockResolvedValue(false);
 		mockDelete.mockResolvedValue(undefined);
 	});
 
@@ -55,36 +63,24 @@ describe("Settings", () => {
 	});
 
 	describe("legal documents", () => {
-		it("opens the terms", async () => {
+		// Each is its own route, not content swapped in place. That is what makes
+		// the phone's back gesture return here instead of throwing the reader out
+		// to Profile — the gesture pops routes, and there used to be only one.
+		it.each([
+			["Terms of use", "terms"],
+			["Food safety", "safety"],
+			["Privacy", "privacy"],
+		])("opens %s as its own screen", (label, doc) => {
 			renderWithProviders(<Settings />);
-			fireEvent.press(screen.getByLabelText("Terms of use"));
-			expect(await screen.findByText("Who can use EcoEats")).toBeTruthy();
-		});
-
-		it("opens the food safety disclaimer", async () => {
-			renderWithProviders(<Settings />);
-			fireEvent.press(screen.getByLabelText("Food safety"));
-			expect(await screen.findByText("Allergies and dietary needs")).toBeTruthy();
-		});
-
-		it("opens the privacy notice", async () => {
-			renderWithProviders(<Settings />);
-			fireEvent.press(screen.getByLabelText("Privacy"));
-			expect(await screen.findByText("What we collect")).toBeTruthy();
-		});
-
-		it("comes back to the list", async () => {
-			renderWithProviders(<Settings />);
-			fireEvent.press(screen.getByLabelText("Privacy"));
-			await screen.findByText("What we collect");
-
-			fireEvent.press(screen.getByLabelText("Back to settings"));
-
-			expect(await screen.findByLabelText("Terms of use")).toBeTruthy();
+			fireEvent.press(screen.getByLabelText(label));
+			expect(mockPush).toHaveBeenCalledWith({
+				pathname: "/settings/[doc]",
+				params: { doc },
+			});
 		});
 	});
 
-	describe("notifications", () => {
+	describe("feedback switches", () => {
 		it("hands the push token back when muted", async () => {
 			// Muting has to actually stop delivery, not just hide banners.
 			renderWithProviders(<Settings />);
@@ -101,6 +97,23 @@ describe("Settings", () => {
 				expect(screen.getByLabelText("Mute notifications").props.value).toBe(
 					true,
 				),
+			);
+		});
+
+		it("turns haptics off and remembers it", async () => {
+			renderWithProviders(<Settings />);
+			// The switch reads "Haptic feedback ON", so turning it off is false.
+			fireEvent(screen.getByLabelText("Haptic feedback"), "valueChange", false);
+
+			await waitFor(() => expect(mockSetHapticsMuted).toHaveBeenCalledWith(true));
+		});
+
+		it("shows haptics already off when the device says so", async () => {
+			mockHapticsMuted.mockResolvedValue(true);
+			renderWithProviders(<Settings />);
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Haptic feedback").props.value).toBe(false),
 			);
 		});
 	});

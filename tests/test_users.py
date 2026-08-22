@@ -210,6 +210,68 @@ async def test_accepting_twice_is_not_an_error(
     assert second["terms_accepted_at"] >= first["terms_accepted_at"]
 
 
+async def test_switching_role_asks_again_the_first_time(
+    client: AsyncClient, recipient: Account
+) -> None:
+    """A host and a recipient agree to different obligations.
+
+    One is giving food away, the other is collecting and eating it, so somebody
+    who agreed as a recipient has not yet agreed as a host.
+    """
+    await client.post("/users/me/terms", headers=recipient.headers)
+    assert (
+        await client.get("/users/me", headers=recipient.headers)
+    ).json()["terms_current"] is True
+
+    await client.post(
+        "/users/me/role", headers=recipient.headers, json={"role": "organizer"}
+    )
+
+    after = (await client.get("/users/me", headers=recipient.headers)).json()
+    assert after["role"] == "organizer"
+    assert after["terms_current"] is False
+
+
+async def test_switching_back_does_not_ask_twice(
+    client: AsyncClient, recipient: Account
+) -> None:
+    # Agreeing as each role once is enough; flipping between them afterwards is
+    # not a new agreement.
+    await client.post("/users/me/terms", headers=recipient.headers)
+    await client.post(
+        "/users/me/role", headers=recipient.headers, json={"role": "organizer"}
+    )
+    await client.post("/users/me/terms", headers=recipient.headers)
+
+    await client.post(
+        "/users/me/role", headers=recipient.headers, json={"role": "recipient"}
+    )
+
+    back = (await client.get("/users/me", headers=recipient.headers)).json()
+    assert back["terms_current"] is True
+    assert sorted(back["terms_accepted_roles"]) == ["organizer", "recipient"]
+
+
+async def test_new_terms_clear_every_role(
+    client: AsyncClient, recipient: Account, monkeypatch
+) -> None:
+    # Accepting a new version as one role must not let a stale entry from the
+    # old version stand in for agreement to the new document.
+    await client.post("/users/me/terms", headers=recipient.headers)
+    await client.post(
+        "/users/me/role", headers=recipient.headers, json={"role": "organizer"}
+    )
+    await client.post("/users/me/terms", headers=recipient.headers)
+
+    monkeypatch.setattr("api.routers.users.CURRENT_TERMS_VERSION", "2099-01-01")
+    monkeypatch.setattr("api.schemas.user.CURRENT_TERMS_VERSION", "2099-01-01")
+
+    after = (await client.post("/users/me/terms", headers=recipient.headers)).json()
+
+    assert after["terms_accepted_roles"] == ["organizer"]
+    assert after["terms_current"] is True
+
+
 async def test_terms_acceptance_needs_an_account(
     client: AsyncClient, auth: FakeTokenVerifier
 ) -> None:
