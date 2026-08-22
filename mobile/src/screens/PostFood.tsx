@@ -183,6 +183,19 @@ export function PostFood() {
 	 * it anywhere until the host actually saves one.
 	 */
 	function confirmClear() {
+		// react-native-web's Alert.alert is literally `static alert() {}`, so on
+		// web this button would do nothing at all — including in the browser this
+		// project verifies in. window.confirm is the honest equivalent there.
+		if (Platform.OS === "web") {
+			const ok = (
+				globalThis as { confirm?: (message: string) => boolean }
+			).confirm?.(
+				"Clear this post? Everything you have entered will be discarded.",
+			);
+			if (ok) clearForm();
+			return;
+		}
+
 		Alert.alert(
 			"Clear this post?",
 			"Everything you have entered will be discarded.",
