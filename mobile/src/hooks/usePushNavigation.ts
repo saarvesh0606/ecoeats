@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useUnread } from "@/context/UnreadContext";
 import { listingRouteFor } from "@/lib/notifications";
 
 /**
@@ -26,6 +27,7 @@ export function usePushNavigation() {
 	// manages that post, not on the recipient's claim screen.
 	const { profile } = useAuth();
 	const role = profile?.role;
+	const { refresh: refreshUnread } = useUnread();
 
 	useEffect(() => {
 		if (Platform.OS === "web") return;
@@ -46,14 +48,25 @@ export function usePushNavigation() {
 			if (data?.listingId) router.push(listingRouteFor(role, data.listingId));
 		};
 
+		// A push arriving while the app is open is the only live signal that the
+		// unread count moved — nothing else tells us. Without this the dot only
+		// appeared after backgrounding and returning, which is when the count
+		// last refreshed.
+		const received = Notifications.addNotificationReceivedListener(() => {
+			void refreshUnread();
+		});
+
 		// A tap that launched the app from cold, before this listener existed.
 		void Notifications.getLastNotificationResponseAsync().then(open);
 
 		const subscription =
 			Notifications.addNotificationResponseReceivedListener(open);
-		return () => subscription.remove();
+		return () => {
+			subscription.remove();
+			received.remove();
+		};
 		// `role` is a dependency because the listener closes over it: someone who
 		// switches from recipient to host must not keep being sent to the
 		// recipient's screen by a stale handler.
-	}, [router, role]);
+	}, [router, role, refreshUnread]);
 }

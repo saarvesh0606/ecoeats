@@ -46,9 +46,26 @@ function note(overrides: Partial<AppNotification> = {}): AppNotification {
 	};
 }
 
-/** Yesterday and a week ago, for the day sections. */
-function hoursAgo(h: number): string {
-	return new Date(Date.now() - h * 3_600_000).toISOString();
+/**
+ * Timestamps anchored to the start of today, not to "N hours ago".
+ *
+ * The buckets are calendar days, so a relative offset lands in a different one
+ * depending on the time of day the suite runs: at 00:30, "one hour ago" is
+ * yesterday. These tests failed exactly once, at midnight, for that reason.
+ */
+function startOfToday(): number {
+	const d = new Date();
+	d.setHours(0, 0, 0, 0);
+	return d.getTime();
+}
+
+function minutesIntoToday(m: number): string {
+	return new Date(startOfToday() + m * 60_000).toISOString();
+}
+
+function daysBeforeToday(days: number): string {
+	// Mid-morning on that day, so nothing sits on a boundary.
+	return new Date(startOfToday() - days * 86_400_000 + 10 * 3_600_000).toISOString();
 }
 
 function renderList() {
@@ -208,9 +225,9 @@ describe("NotificationsList", () => {
 		it("separates today from yesterday and earlier", async () => {
 			mockFetch.mockResolvedValue({
 				items: [
-					note({ id: "a", message: "From today", created_at: hoursAgo(1) }),
-					note({ id: "b", message: "From yesterday", created_at: hoursAgo(30) }),
-					note({ id: "c", message: "From last week", created_at: hoursAgo(24 * 8) }),
+					note({ id: "a", message: "From today", created_at: minutesIntoToday(1) }),
+					note({ id: "b", message: "From yesterday", created_at: daysBeforeToday(1) }),
+					note({ id: "c", message: "From last week", created_at: daysBeforeToday(8) }),
 				],
 				unread_count: 0,
 			});
@@ -224,7 +241,7 @@ describe("NotificationsList", () => {
 
 		it("shows only the sections it has anything for", async () => {
 			mockFetch.mockResolvedValue({
-				items: [note({ message: "From today", created_at: hoursAgo(2) })],
+				items: [note({ message: "From today", created_at: minutesIntoToday(2) })],
 				unread_count: 0,
 			});
 			renderList();

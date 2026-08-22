@@ -3,6 +3,44 @@ import { UnreadProvider } from "@/context/UnreadContext";
 import { usePushNavigation } from "@/hooks/usePushNavigation";
 
 /**
+ * The stack itself, as a child so `usePushNavigation` runs *inside*
+ * UnreadProvider.
+ *
+ * ⚠️ Calling the hook in the component that renders the provider would put it
+ * outside that provider — it would silently read the default context and the
+ * unread count would never move. React gives no warning for this; the code
+ * simply reads a context that isn't the one being provided a line below.
+ */
+function AppStack() {
+	usePushNavigation();
+
+	return (
+		<Stack
+			screenOptions={{
+				headerShown: false,
+				animation: "slide_from_right",
+				gestureEnabled: true,
+				contentStyle: { backgroundColor: "#FBF9F4" },
+			}}
+		>
+			<Stack.Screen name="(tabs)" options={{ animation: "none" }} />
+			<Stack.Screen name="listing/[id]" />
+			<Stack.Screen name="manage/[id]" />
+			<Stack.Screen
+				name="notifications"
+				options={{ animation: "slide_from_bottom" }}
+			/>
+			{/* Settings and its documents are separate routes so the phone's back
+			    gesture returns to the list rather than leaving Settings entirely —
+			    the gesture pops routes, and reading a document used to be state
+			    inside one. */}
+			<Stack.Screen name="settings/index" />
+			<Stack.Screen name="settings/[doc]" />
+		</Stack>
+	);
+}
+
+/**
  * The authenticated area: a stack whose base is the role-aware tab bar, with
  * full-screen detail routes pushed on top of it.
  *
@@ -19,32 +57,9 @@ import { usePushNavigation } from "@/hooks/usePushNavigation";
  * one of them.
  */
 export default function AppLayout() {
-	usePushNavigation();
-
 	return (
 		<UnreadProvider>
-			<Stack
-				screenOptions={{
-					headerShown: false,
-					animation: "slide_from_right",
-					gestureEnabled: true,
-					contentStyle: { backgroundColor: "#FBF9F4" },
-				}}
-			>
-				<Stack.Screen name="(tabs)" options={{ animation: "none" }} />
-				<Stack.Screen name="listing/[id]" />
-				<Stack.Screen name="manage/[id]" />
-				<Stack.Screen
-					name="notifications"
-					options={{ animation: "slide_from_bottom" }}
-				/>
-				{/* Settings and its documents are separate routes so the phone's
-				    back gesture returns to the list rather than leaving Settings
-				    entirely — the gesture pops routes, and reading a document used
-				    to be state inside one. */}
-				<Stack.Screen name="settings/index" />
-				<Stack.Screen name="settings/[doc]" />
-			</Stack>
+			<AppStack />
 		</UnreadProvider>
 	);
 }
