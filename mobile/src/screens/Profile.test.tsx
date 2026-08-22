@@ -33,6 +33,9 @@ function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 		avatar_url: null,
 		role: "recipient",
 		dietary_prefs: [],
+		terms_accepted_at: "2026-08-21T12:00:00Z",
+		terms_version: "2026-08-21",
+		terms_current: true,
 		created_at: new Date("2026-08-04T12:00:00Z").toISOString(),
 		...overrides,
 	};

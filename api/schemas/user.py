@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
+from api.legal import CURRENT_TERMS_VERSION
 from api.models.enums import UserRole
 
 
@@ -23,6 +24,20 @@ class UserProfile(BaseModel):
     role: UserRole
     dietary_prefs: list[str]
     created_at: datetime
+
+    terms_accepted_at: datetime | None = None
+    terms_version: str | None = None
+
+    @computed_field
+    @property
+    def terms_current(self) -> bool:
+        """Whether this user has accepted the terms *now in force*.
+
+        Computed rather than left to the client so there is one definition of
+        "up to date". A client comparing version strings itself would keep
+        letting people in for as long as it took to ship an update.
+        """
+        return self.terms_version == CURRENT_TERMS_VERSION
 
 
 class RegisterProfile(BaseModel):

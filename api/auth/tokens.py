@@ -34,3 +34,15 @@ class TokenVerifier(Protocol):
     def verify(self, token: str) -> VerifiedIdentity:
         """Return the identity, or raise InvalidTokenError."""
         ...
+
+    def delete(self, uid: str) -> None:
+        """Remove the identity entirely, so the account cannot sign in again.
+
+        Part of this protocol rather than a direct firebase_admin call in the
+        route, for the same reason verification is: deleting an account has to
+        be testable without network access or real credentials.
+
+        Deleting an identity that is already gone is not an error — the caller
+        wants it absent, and it is.
+        """
+        ...

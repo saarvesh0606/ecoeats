@@ -31,6 +31,15 @@ class User(Base):
         ARRAY(String(50)), nullable=False, server_default="{}"
     )
 
+    #: When this user accepted the terms, and which version they saw. Both null
+    #: until they do. Stored server-side rather than on the device because the
+    #: whole point is being able to show who agreed to what, and a flag in local
+    #: storage is wiped by a reinstall and absent on a second phone.
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    terms_version: Mapped[str | None] = mapped_column(String(20))
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

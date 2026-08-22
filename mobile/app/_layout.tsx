@@ -44,6 +44,11 @@ function Gate() {
 			router.replace("/verify-email");
 		} else if (status === "needs-profile" && current !== "role") {
 			router.replace("/role");
+		} else if (status === "needs-terms" && current !== "terms") {
+			// After the profile exists, so acceptance is recorded against a real
+			// account, and before the app proper — there is no route into the
+			// tabs that skips this.
+			router.replace("/terms");
 		} else if (status === "ready" && !inApp) {
 			// Land each role on its own home tab.
 			router.replace(profile?.role === "organizer" ? "/posts" : "/feed");

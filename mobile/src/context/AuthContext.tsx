@@ -25,6 +25,10 @@ import {
 } from "@/lib/firebase";
 import { fetchProfile, type UserProfile } from "@/lib/api";
 import { registerForPush, unregisterForPush } from "@/lib/push";
+import {
+	arePushNotificationsMuted,
+	setPushNotificationsMuted,
+} from "@/lib/pushPreference";
 import { getDevToken, setDevToken } from "@/lib/session";
 
 export type AuthStatus =
@@ -32,7 +36,8 @@ export type AuthStatus =
 	| "signed-out" // no Firebase user
 	| "unverified" // signed in, email not confirmed
 	| "needs-profile" // verified, but hasn't chosen a role
-	| "ready"; // verified, has a profile
+	| "needs-terms" // has a profile, hasn't accepted the terms in force
+	| "ready"; // verified, has a profile, terms accepted
 
 interface AuthValue {
 	status: AuthStatus;
@@ -44,6 +49,10 @@ interface AuthValue {
 	completeProfile: (profile: UserProfile) => void;
 	/** Replace the cached profile after an edit (status unchanged). */
 	applyProfile: (profile: UserProfile) => void;
+	/** Record that the terms in force have been accepted. */
+	completeTerms: (profile: UserProfile) => void;
+	/** Mute or unmute push on this device, token and all. */
+	setPushMuted: (muted: boolean) => Promise<void>;
 	/** Dev-only: authenticate with a `dev:<slug>` stand-in token. */
 	devSignIn: (slug: string) => Promise<void>;
 	signOut: () => Promise<void>;
@@ -77,7 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		try {
 			const loaded = await fetchProfile();
 			setProfile(loaded);
-			setStatus("ready");
+			// Terms come after the profile exists, so acceptance can be recorded
+			// against a real account. `terms_current` is the server's judgement,
+			// which is what lets updated terms re-prompt without a new release.
+			setStatus(loaded.terms_current ? "ready" : "needs-terms");
 		} catch {
 			// 404 means no profile yet; any other error shouldn't strand a
 			// verified user on a blank screen. Both send them to role selection,
@@ -144,11 +156,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	 * the user on the role screen. */
 	const completeProfile = useCallback((created: UserProfile) => {
 		setProfile(created);
-		setStatus("ready");
+		// A brand-new account has accepted nothing, so this lands on the terms
+		// rather than straight in the app. Reading it off the profile means
+		// registration doesn't have to know the rule.
+		setStatus(created.terms_current ? "ready" : "needs-terms");
 	}, []);
 
 	const applyProfile = useCallback((updated: UserProfile) => {
 		setProfile(updated);
+	}, []);
+
+	/** Record acceptance and let the user through. */
+	const completeTerms = useCallback((accepted: UserProfile) => {
+		setProfile(accepted);
+		setStatus("ready");
 	}, []);
 
 	// Registered once the account is fully usable, not at launch: the token
@@ -157,13 +178,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		if (status !== "ready") return;
 		let cancelled = false;
-		void registerForPush().then((token) => {
+		void arePushNotificationsMuted().then(async (muted) => {
+			// Someone who muted this device must not be re-registered by the next
+			// launch, or the switch would appear to forget itself.
+			if (muted || cancelled) return;
+			const token = await registerForPush();
 			if (!cancelled) pushToken.current = token;
 		});
 		return () => {
 			cancelled = true;
 		};
 	}, [status]);
+
+	/**
+	 * Mute or unmute push on this device.
+	 *
+	 * Muting actually hands the token back rather than merely hiding banners —
+	 * a phone that has been silenced should stop receiving, not receive quietly.
+	 * Lives here because the token is held here, and two places tracking it
+	 * would eventually disagree.
+	 */
+	const setPushMuted = useCallback(async (muted: boolean) => {
+		await setPushNotificationsMuted(muted);
+		if (muted) {
+			await unregisterForPush(pushToken.current);
+			pushToken.current = null;
+		} else {
+			pushToken.current = await registerForPush();
+		}
+	}, []);
 
 	const signOut = useCallback(async () => {
 		devActive.current = false;
@@ -187,6 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				refresh,
 				completeProfile,
 				applyProfile,
+				completeTerms,
+				setPushMuted,
 				devSignIn,
 				signOut,
 			}}

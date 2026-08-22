@@ -18,6 +18,9 @@ from api.auth.tokens import InvalidTokenError, VerifiedIdentity
 class FakeTokenVerifier:
     def __init__(self) -> None:
         self._identities: dict[str, VerifiedIdentity] = {}
+        #: uids passed to delete(), so a test can assert the identity was
+        #: removed and not merely the database row.
+        self.deleted: list[str] = []
 
     def issue(
         self,
@@ -46,6 +49,15 @@ class FakeTokenVerifier:
             return self._identities[token]
         except KeyError:
             raise InvalidTokenError("Invalid or expired token") from None
+
+    def delete(self, uid: str) -> None:
+        """Forget every token for this uid, the way deleting the real identity
+        would — so a test can prove the account really cannot sign in again,
+        rather than only that the endpoint returned 204."""
+        self.deleted.append(uid)
+        for token, identity in list(self._identities.items()):
+            if identity.uid == uid:
+                del self._identities[token]
 
 
 def bearer(token: str) -> dict[str, str]:

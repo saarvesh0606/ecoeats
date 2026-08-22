@@ -91,3 +91,25 @@ class FirebaseTokenVerifier:
             name=claims.get("name"),
             picture=claims.get("picture"),
         )
+
+    def delete(self, uid: str) -> None:
+        """Remove the Firebase account behind a deleted profile.
+
+        Without this, deleting an account leaves the identity able to sign in
+        again — landing on role selection as if brand new, with the same email
+        that is meant to be gone.
+
+        An identity that is already absent is the outcome the caller wanted, so
+        that is not raised. Anything else is logged and swallowed: the database
+        row is already deleted by the time this runs, and failing the request
+        afterwards would tell the user their deletion did not happen when most
+        of it did.
+        """
+        try:
+            firebase_auth.delete_user(uid, app=self._app)
+        except firebase_auth.UserNotFoundError:
+            logger.info("Identity %s was already gone", uid)
+        except Exception as exc:
+            logger.warning(
+                "Could not delete identity %s: %s", uid, type(exc).__name__
+            )

@@ -103,10 +103,38 @@ export interface UserProfile {
 	role: UserRole;
 	dietary_prefs: string[];
 	created_at: string;
+
+	terms_accepted_at: string | null;
+	terms_version: string | null;
+	/** Whether the accepted version is the one currently in force. The server
+	 *  decides this, so bumping the terms takes effect without a client
+	 *  release. */
+	terms_current: boolean;
 }
 
 export async function fetchProfile(): Promise<UserProfile> {
 	return api.get<UserProfile>("/users/me");
+}
+
+/**
+ * Record that this user accepted the terms now in force.
+ *
+ * No version is sent: the server stamps what it is actually serving. A client
+ * that named the version could claim to have accepted a document it never
+ * displayed, which is the one thing this record exists to rule out.
+ */
+export async function acceptTerms(): Promise<UserProfile> {
+	return api.post<UserProfile>("/users/me/terms", {});
+}
+
+/**
+ * Delete this account and everything belonging to it, permanently.
+ *
+ * The sign-in identity goes too, so the same email can start over as a new
+ * account rather than returning to a half-deleted one.
+ */
+export async function deleteAccount(): Promise<void> {
+	await api.del<void>("/users/me");
 }
 
 export async function registerProfile(

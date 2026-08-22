@@ -3,9 +3,12 @@
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.legal import CURRENT_TERMS_VERSION
 from api.models import User
 from api.models.enums import UserRole
+from tests.conftest import Account
 from tests.fake_auth import FakeTokenVerifier, bearer
+from tests.test_listings import post_listing
 
 
 async def test_registering_creates_a_profile(
@@ -146,3 +149,134 @@ async def test_an_unknown_role_is_rejected(
     )
 
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Terms acceptance
+# ---------------------------------------------------------------------------
+
+
+async def test_a_new_account_has_accepted_nothing(
+    client: AsyncClient, organizer: Account
+) -> None:
+    # The client gates on terms_current, so a fresh account must report false —
+    # otherwise nobody is ever shown the terms at all.
+    body = (await client.get("/users/me", headers=organizer.headers)).json()
+
+    assert body["terms_current"] is False
+    assert body["terms_accepted_at"] is None
+    assert body["terms_version"] is None
+
+
+async def test_accepting_records_the_version_in_force(
+    client: AsyncClient, organizer: Account
+) -> None:
+    response = await client.post("/users/me/terms", headers=organizer.headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["terms_current"] is True
+    assert body["terms_version"] == CURRENT_TERMS_VERSION
+    assert body["terms_accepted_at"] is not None
+
+    # And it survives a reload, rather than living only in that response.
+    again = (await client.get("/users/me", headers=organizer.headers)).json()
+    assert again["terms_current"] is True
+
+
+async def test_the_client_cannot_choose_which_version_it_accepted(
+    client: AsyncClient, organizer: Account
+) -> None:
+    # The whole point of the record is that it names a document the user was
+    # actually shown. A body-supplied version would let a caller claim to have
+    # accepted something that never appeared on screen.
+    response = await client.post(
+        "/users/me/terms",
+        headers=organizer.headers,
+        json={"terms_version": "1999-01-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["terms_version"] == CURRENT_TERMS_VERSION
+
+
+async def test_accepting_twice_is_not_an_error(
+    client: AsyncClient, organizer: Account
+) -> None:
+    first = (await client.post("/users/me/terms", headers=organizer.headers)).json()
+    second = (await client.post("/users/me/terms", headers=organizer.headers)).json()
+
+    assert second["terms_current"] is True
+    assert second["terms_accepted_at"] >= first["terms_accepted_at"]
+
+
+async def test_terms_acceptance_needs_an_account(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    # Signed in but unregistered: there is no row to record acceptance against.
+    token = auth.issue()
+
+    response = await client.post("/users/me/terms", headers=bearer(token))
+
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Deleting an account
+# ---------------------------------------------------------------------------
+
+
+async def test_deleting_an_account_removes_the_profile(
+    client: AsyncClient, db: AsyncSession, recipient: Account
+) -> None:
+    response = await client.delete("/users/me", headers=recipient.headers)
+
+    assert response.status_code == 204
+    assert await db.get(User, recipient.id) is None
+
+
+async def test_deleting_an_account_removes_the_identity_too(
+    client: AsyncClient, auth: FakeTokenVerifier, recipient: Account
+) -> None:
+    # Without this the account can sign straight back in and land on role
+    # selection as if brand new — with the same address that was meant to be
+    # gone. The fake forgets its tokens, so this proves the door is shut.
+    await client.delete("/users/me", headers=recipient.headers)
+
+    assert recipient.id in auth.deleted
+    after = await client.get("/users/me", headers=recipient.headers)
+    assert after.status_code == 401
+
+
+async def test_deleting_a_host_takes_their_listings(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """A host's posts go with them — including claims made on that food.
+
+    That is the correct reading of "delete my account": leaving posts up that
+    nobody can confirm a pickup for would be worse. Worth knowing before
+    somebody deletes an account mid-service.
+    """
+    listing = await post_listing(client, organizer)
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    await client.delete("/users/me", headers=organizer.headers)
+
+    gone = await client.get(f"/listings/{listing['id']}", headers=recipient.headers)
+    assert gone.status_code == 404
+
+    # The recipient still exists; only the food went.
+    still_here = await client.get("/users/me", headers=recipient.headers)
+    assert still_here.status_code == 200
+
+
+async def test_deleting_needs_an_account(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    token = auth.issue()
+
+    response = await client.delete("/users/me", headers=bearer(token))
+
+    assert response.status_code == 404

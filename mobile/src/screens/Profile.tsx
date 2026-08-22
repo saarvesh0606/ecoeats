@@ -199,6 +199,13 @@ export function Profile() {
 				</View>
 
 				<View className="mt-8 pt-6 border-t border-gray-200">
+					<Button
+						variant="outline"
+						onPress={() => router.push("/settings")}
+					>
+						Settings
+					</Button>
+					<View className="h-3" />
 					<Button variant="outline" onPress={signOut}>
 						Sign out
 					</Button>

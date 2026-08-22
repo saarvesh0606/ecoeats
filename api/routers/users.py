@@ -1,6 +1,8 @@
 """User profile routes."""
 
-from fastapi import APIRouter, Depends, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +13,7 @@ from api.deps import (
     rate_limited_by_identity,
 )
 from api.errors import ConflictError
+from api.legal import CURRENT_TERMS_VERSION
 from api.models import Claim, Listing, User
 from api.models.enums import ClaimStatus, ListingStatus, UserRole
 from api.schemas.user import ChangeRole, RegisterProfile, UpdateProfile, UserProfile
@@ -195,3 +198,51 @@ async def change_role(
     user.role = body.role
     await db.flush()
     return user
+
+
+@router.post("/me/terms", response_model=UserProfile)
+async def accept_terms(user: CurrentUser, db: DbSession) -> User:
+    """Record that this user accepted the terms currently in force.
+
+    The version comes from the server, never from the client: a body field
+    would let a caller claim to have accepted a document that was never shown
+    to them, which is exactly the thing this record exists to rule out.
+
+    Idempotent — accepting twice just refreshes the timestamp.
+    """
+    user.terms_accepted_at = datetime.now(UTC)
+    user.terms_version = CURRENT_TERMS_VERSION
+    await db.flush()
+    return user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    request: Request,
+    identity: CurrentIdentity,
+    user: CurrentUser,
+    db: DbSession,
+) -> None:
+    """Delete this account and everything belonging to it.
+
+    Required by the App Store for any app with sign-up, and the honest answer
+    to "delete my data" regardless.
+
+    Every foreign key pointing at users is ON DELETE CASCADE, so one delete
+    takes the listings, claims, ratings, saved posts, notifications and device
+    tokens with it.
+
+    ⚠️ A host's live posts go too, and with them other people's claims on that
+    food. That is the correct reading of "delete my account" — the alternative
+    is leaving posts up that nobody can confirm a pickup for — but it is worth
+    knowing before someone deletes an account mid-service.
+
+    The Firebase identity is removed last. If that call fails the row is still
+    gone, which is the safer way round: the user can sign in again and will be
+    treated as brand new, rather than the data surviving a deletion they were
+    told had happened.
+    """
+    await db.delete(user)
+    await db.flush()
+
+    request.app.state.token_verifier.delete(identity.uid)
