@@ -6,6 +6,10 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
+import {
+	SettingsGroup,
+	SettingsRow,
+} from "@/components/ui/SettingsList";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, changeRole, updateProfile } from "@/lib/api";
@@ -179,36 +183,42 @@ export function Profile() {
 					Save changes
 				</Button>
 
-				<View className="mt-10 pt-6 border-t border-gray-200">
-					<Text className="font-body-semibold text-gray-900 mb-1">
-						Account type
-					</Text>
-					<Text className="font-body text-gray-500 text-sm mb-3">
-						{isRecipient
-							? "You're set up to find and claim food."
-							: "You're set up to post surplus food."}
-					</Text>
+				<View className="mt-10">
+					<SettingsGroup title="Account">
+						<SettingsRow
+							icon="swap-horizontal-outline"
+							label={`Switch to ${nextLabel} account`}
+							subtitle={
+								isRecipient
+									? "You're set up to find and claim food."
+									: "You're set up to post surplus food."
+							}
+							onPress={onSwitchRole}
+							loading={switching}
+						/>
+						<SettingsRow
+							icon="settings-outline"
+							label="Settings"
+							subtitle="Notifications, legal, and your account."
+							onPress={() => router.push("/settings")}
+						/>
+					</SettingsGroup>
+
 					{roleError && (
-						<Text className="font-body text-red-500 text-sm mb-3">
+						<Text className="font-body text-red-500 text-sm -mt-3 mb-4 px-1">
 							{roleError}
 						</Text>
 					)}
-					<Button variant="outline" onPress={onSwitchRole} loading={switching}>
-						{`Switch to a ${nextLabel} account`}
-					</Button>
-				</View>
 
-				<View className="mt-8 pt-6 border-t border-gray-200">
-					<Button
-						variant="outline"
-						onPress={() => router.push("/settings")}
-					>
-						Settings
-					</Button>
-					<View className="h-3" />
-					<Button variant="outline" onPress={signOut}>
-						Sign out
-					</Button>
+					{/* Its own group, away from the two rows that change what the app
+					    does — leaving is a different kind of act from configuring. */}
+					<SettingsGroup>
+						<SettingsRow
+							icon="log-out-outline"
+							label="Sign out"
+							onPress={signOut}
+						/>
+					</SettingsGroup>
 				</View>
 			</ScrollView>
 		</SafeAreaView>

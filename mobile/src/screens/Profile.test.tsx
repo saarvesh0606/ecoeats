@@ -190,25 +190,25 @@ describe("Profile", () => {
 		 *  guard is part of the feature, so stubbing it past would test less than
 		 *  the screen actually does. */
 		async function confirmSwitch(label: string) {
-			fireEvent.press(screen.getByText(`Switch to a ${label} account`));
+			fireEvent.press(screen.getByLabelText(`Switch to ${label} account`));
 			fireEvent.press(await screen.findByText(`Become a ${label}`));
 		}
 
 		it("offers a recipient the way to become a host", () => {
 			renderProfile();
-			expect(screen.getByText("Switch to a host account")).toBeTruthy();
+			expect(screen.getByLabelText("Switch to host account")).toBeTruthy();
 			expect(screen.getByText("You're set up to find and claim food.")).toBeTruthy();
 		});
 
 		it("offers a host the way to become a recipient", () => {
 			renderProfile(profile({ role: "organizer" }));
-			expect(screen.getByText("Switch to a recipient account")).toBeTruthy();
+			expect(screen.getByLabelText("Switch to recipient account")).toBeTruthy();
 			expect(screen.getByText("You're set up to post surplus food.")).toBeTruthy();
 		});
 
 		it("does nothing if the confirmation is dismissed", async () => {
 			renderProfile();
-			fireEvent.press(screen.getByText("Switch to a host account"));
+			fireEvent.press(screen.getByLabelText("Switch to host account"));
 			fireEvent.press(await screen.findByText("Cancel"));
 
 			await waitFor(() => expect(mockChangeRole).not.toHaveBeenCalled());

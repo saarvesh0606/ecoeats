@@ -6,6 +6,10 @@ import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegalDocumentView } from "@/components/LegalDocumentView";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+	SettingsGroup,
+	SettingsRow,
+} from "@/components/ui/SettingsList";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
@@ -18,63 +22,6 @@ import {
 	TERMS,
 } from "@/lib/legal";
 import { arePushNotificationsMuted } from "@/lib/pushPreference";
-
-function Row({
-	icon,
-	label,
-	detail,
-	onPress,
-	danger = false,
-}: {
-	icon: keyof typeof Ionicons.glyphMap;
-	label: string;
-	detail?: string;
-	onPress?: () => void;
-	danger?: boolean;
-}) {
-	const content = (
-		<View className="flex-row items-center px-4 py-3.5">
-			<Ionicons
-				name={icon}
-				size={18}
-				color={danger ? "#DC2626" : "#0C3226"}
-			/>
-			<Text
-				className={`font-body flex-1 ml-3 ${
-					danger ? "text-red-600" : "text-ink"
-				}`}
-			>
-				{label}
-			</Text>
-			{detail && (
-				<Text className="font-body text-gray-400 text-sm mr-1">{detail}</Text>
-			)}
-			{onPress && (
-				<Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-			)}
-		</View>
-	);
-
-	if (!onPress) return content;
-	return (
-		<Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
-			{content}
-		</Pressable>
-	);
-}
-
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-	return (
-		<View className="mb-6">
-			<Text className="font-body-semibold text-xs text-gray-400 uppercase tracking-wide mb-2 px-1">
-				{title}
-			</Text>
-			<View className="rounded-card bg-white border border-gray-100 overflow-hidden">
-				{children}
-			</View>
-		</View>
-	);
-}
 
 /**
  * Settings: the legal documents, what the app knows about itself, and the two
@@ -188,73 +135,64 @@ export function Settings() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 				showsVerticalScrollIndicator={false}
 			>
-				<Group title="Notifications">
-					<View className="flex-row items-center px-4 py-3.5">
-						<Ionicons name="notifications-outline" size={18} color="#0C3226" />
-						<View className="flex-1 ml-3">
-							<Text className="font-body text-ink">Mute notifications</Text>
-							<Text className="font-body text-gray-400 text-xs mt-0.5">
-								Stops pushes without touching your iOS permission.
-							</Text>
-						</View>
-						<Switch
-							value={muted}
-							onValueChange={(v) => void toggleMute(v)}
-							accessibilityLabel="Mute notifications"
-						/>
-					</View>
-				</Group>
+				<SettingsGroup title="Notifications">
+					<SettingsRow
+						icon="notifications-outline"
+						label="Mute notifications"
+						subtitle="Stops pushes without touching your iOS permission."
+						accessory={
+							<Switch
+								value={muted}
+								onValueChange={(v) => void toggleMute(v)}
+								accessibilityLabel="Mute notifications"
+							/>
+						}
+					/>
+				</SettingsGroup>
 
-				<Group title="Legal">
-					<Row
+				<SettingsGroup title="Legal">
+					<SettingsRow
 						icon="document-text-outline"
 						label="Terms of use"
 						onPress={() => setReading(TERMS)}
 					/>
-					<View className="h-px bg-gray-100 ml-11" />
-					<Row
+					<SettingsRow
 						icon="warning-outline"
 						label="Food safety"
 						onPress={() => setReading(FOOD_SAFETY_DISCLAIMER)}
 					/>
-					<View className="h-px bg-gray-100 ml-11" />
-					<Row
+					<SettingsRow
 						icon="lock-closed-outline"
 						label="Privacy"
 						onPress={() => setReading(PRIVACY)}
 					/>
-				</Group>
+				</SettingsGroup>
 
-				<Group title="About">
-					<Row icon="phone-portrait-outline" label="Version" detail={version} />
-					<View className="h-px bg-gray-100 ml-11" />
-					<Row icon="hammer-outline" label="Build" detail={build} />
+				<SettingsGroup title="About">
+					<SettingsRow icon="phone-portrait-outline" label="Version" detail={version} />
+					<SettingsRow icon="hammer-outline" label="Build" detail={build} />
 					{profile?.terms_accepted_at && (
-						<>
-							<View className="h-px bg-gray-100 ml-11" />
-							<Row
-								icon="checkmark-circle-outline"
-								label="Terms accepted"
-								detail={new Date(profile.terms_accepted_at).toLocaleDateString()}
-							/>
-						</>
+						<SettingsRow
+							icon="checkmark-circle-outline"
+							label="Terms accepted"
+							detail={new Date(profile.terms_accepted_at).toLocaleDateString()}
+						/>
 					)}
-				</Group>
+				</SettingsGroup>
 
-				<Group title="Account">
-					<Row
+				<SettingsGroup title="Account">
+					<SettingsRow
 						icon="log-out-outline"
 						label="Sign out"
 						onPress={() => void signOut()}
 					/>
-					<View className="h-px bg-gray-100 ml-11" />
-					<Row
+					<SettingsRow
 						icon="trash-outline"
 						label="Delete account"
 						danger
 						onPress={() => void confirmDelete()}
 					/>
-				</Group>
+				</SettingsGroup>
 
 				{deleting && (
 					<View className="flex-row items-center justify-center py-2">
