@@ -72,6 +72,22 @@ describe("ListingCard", () => {
 			expect(queryByLabelText(/matches your preferences/)).toBeNull();
 		});
 
+		it("fills in the tag that matched, and only that one", () => {
+			const { getByText } = render(
+				<ListingCard
+					listing={makeListing({ dietary_tags: ["vegetarian", "halal"] })}
+					now={Date.now()}
+					onPress={() => {}}
+					prefs={["vegetarian"]}
+				/>,
+			);
+
+			// The glow says the card is for you; the chip says which preference
+			// made it so, which a card carrying three tags otherwise leaves unsaid.
+			expect(getByText("vegetarian").props.className).toContain("forest");
+			expect(getByText("halal").props.className).not.toContain("forest");
+		});
+
 		it("still shows food that matches nothing", () => {
 			const { getByText } = render(
 				<ListingCard

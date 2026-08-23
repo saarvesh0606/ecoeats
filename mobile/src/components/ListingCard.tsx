@@ -211,16 +211,37 @@ export function ListingCard({
 				    failure than showing them something they scroll past. */}
 				{listing.dietary_tags.length > 0 && (
 					<View className="flex-row flex-wrap gap-1.5 mt-3">
-						{listing.dietary_tags.map((tag) => (
-							<View
-								key={tag}
-								className="border border-gray-200 rounded-full px-2.5 py-0.5"
-							>
-								<Text className="font-body text-xs text-gray-600 capitalize">
-									{tag}
-								</Text>
-							</View>
-						))}
+						{/* The glowing border says this card is for you; the filled chip
+						    says which preference made it so. A card tagged vegetarian,
+						    vegan and gluten-free glowing at someone who only asked for
+						    one of the three otherwise leaves them guessing.
+						    No separate accessibility label: the card is a single
+						    accessible element on native, so its own label — which
+						    already ends "matches your preferences" — is what gets read,
+						    and repeating it per chip would only make it longer. */}
+						{listing.dietary_tags.map((tag) => {
+							const preferred = prefs?.includes(tag) ?? false;
+							return (
+								<View
+									key={tag}
+									className={
+										preferred
+											? "border border-forest-600 bg-forest-50 rounded-full px-2.5 py-0.5"
+											: "border border-gray-200 rounded-full px-2.5 py-0.5"
+									}
+								>
+									<Text
+										className={
+											preferred
+												? "font-body-semibold text-xs text-forest-800 capitalize"
+												: "font-body text-xs text-gray-600 capitalize"
+										}
+									>
+										{tag}
+									</Text>
+								</View>
+							);
+						})}
 					</View>
 				)}
 
