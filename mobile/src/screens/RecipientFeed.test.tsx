@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { RefreshControl } from "react-native";
 import { fetchFeed } from "@/lib/listings";
 import type { ListingStreamEvent } from "@/lib/listingStream";
 import { subscribeToListings } from "@/lib/listingStream";
@@ -456,6 +457,50 @@ describe("RecipientFeed", () => {
 
 			fireEvent.press(screen.getByText("Try again"));
 			await waitFor(() => expect(mockFeed.mock.calls.length).toBe(attempts + 1));
+		});
+	});
+
+	// There is no connectivity library — both are native modules — so offline is
+	// inferred from the shape of the failure. An ApiError means the server
+	// answered and objected; anything else means the request never arrived.
+	describe("offline", () => {
+		it("says so, rather than blaming the food, when nothing reached the server", async () => {
+			mockFeed.mockRejectedValue(new TypeError("Network request failed"));
+
+			render(<RecipientFeed />);
+
+			expect(await screen.findByText("You're offline")).toBeTruthy();
+			// Not the generic load failure, which would send someone looking for a
+			// problem with the app.
+			expect(screen.queryByText("Couldn't load food nearby.")).toBeNull();
+		});
+
+		it("keeps a server's own complaint separate from being offline", async () => {
+			const { ApiError } = jest.requireMock("@/lib/api");
+			mockFeed.mockRejectedValue(new ApiError(500, "Something broke."));
+
+			render(<RecipientFeed />);
+
+			expect(await screen.findByText("Something broke.")).toBeTruthy();
+			expect(screen.queryByText("You're offline")).toBeNull();
+		});
+
+		it("keeps showing the food it already had, under a strip", async () => {
+			await renderFeed();
+			mockFeed.mockRejectedValue(new TypeError("Network request failed"));
+
+			await act(async () => {
+				screen.UNSAFE_getByType(RefreshControl).props.onRefresh();
+			});
+
+			await waitFor(() =>
+				expect(
+					screen.getByText("You're offline — showing the last food we saw."),
+				).toBeTruthy(),
+			);
+			// Stale food still beats an empty page; blanking it would throw away
+			// the only useful thing left on screen.
+			expect(screen.getByLabelText(/Leftover pizza/)).toBeTruthy();
 		});
 	});
 

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedFilterSheet } from "@/components/FeedFilterSheet";
 import { ListingCard } from "@/components/ListingCard";
+import { OfflineNotice } from "@/components/ui/OfflineNotice";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { ReflowRow } from "@/components/ui/ReflowRow";
@@ -38,6 +39,9 @@ const SOON_MINUTES = 20;
  */
 const EXPIRY_GRACE_MS = 6000;
 
+/** How often to check whether the connection came back. */
+const OFFLINE_RETRY_MS = 5000;
+
 export function RecipientFeed() {
 	const router = useRouter();
 	const now = useNow();
@@ -51,6 +55,7 @@ export function RecipientFeed() {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [offline, setOffline] = useState(false);
 
 	const [dietary, setDietary] = useState<string[]>([]);
 	// Undefined means no limit. The chip flips it to SOON_MINUTES and back; the
@@ -96,10 +101,14 @@ export function RecipientFeed() {
 			const page = await fetchFeed(filters());
 			setListings(page.items);
 			setNextCursor(page.nextCursor);
+			setOffline(false);
 		} catch (err) {
-			setError(
-				err instanceof ApiError ? err.message : "Couldn't load food nearby.",
-			);
+			// An ApiError means the server answered and objected — a real message
+			// worth showing. Anything else means the request never arrived, which
+			// is a connection problem and wants a different screen entirely.
+			const reachedServer = err instanceof ApiError;
+			setOffline(!reachedServer);
+			setError(reachedServer ? err.message : null);
 		} finally {
 			setLoading(false);
 			setRefreshing(false);
@@ -175,6 +184,16 @@ export function RecipientFeed() {
 			close();
 		};
 	}, []);
+
+	// Retry on a timer while offline. Without a connectivity library there is
+	// nothing to be told that the network returned, so the only way to find out
+	// is to ask — and a screen that recovers on its own is the difference
+	// between waiting and being stuck.
+	useEffect(() => {
+		if (!offline) return;
+		const id = setInterval(() => void loadRef.current(), OFFLINE_RETRY_MS);
+		return () => clearInterval(id);
+	}, [offline]);
 
 	// Expired listings used to sit there until something else refetched: the
 	// countdown hit zero and the card stayed, still offering food that was gone.
@@ -368,11 +387,7 @@ export function RecipientFeed() {
 							: isSoon
 								? maxMinutes !== undefined
 								: dietary.includes(item);
-						const label = isAll
-							? "All"
-							: isSoon
-								? "Expiring soon"
-								: item;
+						const label = isAll ? "All" : isSoon ? "Expiring soon" : item;
 						return (
 							<Pressable
 								onPress={() => {
@@ -402,7 +417,13 @@ export function RecipientFeed() {
 				/>
 			</View>
 
-			{error ? (
+			{/* Offline with nothing cached is the only case that takes the whole
+			    screen. With food already on it, a strip is enough — stale food is
+			    still worth reading, and blanking the page would throw away the only
+			    useful thing left. */}
+			{offline && listings.length === 0 ? (
+				<OfflineNotice onRetry={() => void load()} />
+			) : error ? (
 				<View className="flex-1 items-center justify-center px-8">
 					<Text className="font-body text-gray-600 text-center mb-4">
 						{error}
@@ -412,62 +433,67 @@ export function RecipientFeed() {
 					</Button>
 				</View>
 			) : (
-				<FlatList
-					data={ordered}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
-					showsVerticalScrollIndicator={false}
-					refreshControl={
-						<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-					}
-					onEndReached={() => void loadMore()}
-					onEndReachedThreshold={0.4}
-					ListFooterComponent={
-						loadingMore ? (
-							<View className="py-6">
-								<ActivityIndicator color="#166534" />
-							</View>
-						) : null
-					}
-					renderItem={({ item, index }) => (
-						<ReflowRow>
-							<FadeInItem index={index}>
-								<ListingCard
-									listing={item}
-									now={now}
-									featured={index === 0 && !searching}
-									prefs={prefs}
-									onPress={() => router.push(`/listing/${item.id}`)}
-								/>
-							</FadeInItem>
-						</ReflowRow>
-					)}
-					ListEmptyComponent={
-						<View className="items-center justify-center px-8 pt-24">
-							<Text className="font-display-bold text-xl text-gray-900 text-center">
-								{searching
-									? `No matches for "${debouncedQuery}"`
-									: filtersActive
-										? "Nothing matches those filters"
-										: "Nothing available right now"}
-							</Text>
-							<Text className="font-body text-gray-500 text-center mt-2">
-								{searching
-									? "Try a different search."
-									: filtersActive
-										? "Try clearing a filter to see more."
-										: "Food gets posted throughout the day — check back soon."}
-							</Text>
-							{filtersActive && !searching && (
-								<View className="mt-6">
-									<Button variant="outline" onPress={clearFilters}>
-										Clear filters
-									</Button>
+				<>
+					{/* Above the list rather than inside it, so it stays put — an
+					    offline warning that scrolls away is one people miss. */}
+					{offline && <OfflineNotice compact onRetry={() => void load()} />}
+					<FlatList
+						data={ordered}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
+						showsVerticalScrollIndicator={false}
+						refreshControl={
+							<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+						}
+						onEndReached={() => void loadMore()}
+						onEndReachedThreshold={0.4}
+						ListFooterComponent={
+							loadingMore ? (
+								<View className="py-6">
+									<ActivityIndicator color="#166534" />
 								</View>
-							)}
-						</View>
-					}
-				/>
+							) : null
+						}
+						renderItem={({ item, index }) => (
+							<ReflowRow>
+								<FadeInItem index={index}>
+									<ListingCard
+										listing={item}
+										now={now}
+										featured={index === 0 && !searching}
+										prefs={prefs}
+										onPress={() => router.push(`/listing/${item.id}`)}
+									/>
+								</FadeInItem>
+							</ReflowRow>
+						)}
+						ListEmptyComponent={
+							<View className="items-center justify-center px-8 pt-24">
+								<Text className="font-display-bold text-xl text-gray-900 text-center">
+									{searching
+										? `No matches for "${debouncedQuery}"`
+										: filtersActive
+											? "Nothing matches those filters"
+											: "Nothing available right now"}
+								</Text>
+								<Text className="font-body text-gray-500 text-center mt-2">
+									{searching
+										? "Try a different search."
+										: filtersActive
+											? "Try clearing a filter to see more."
+											: "Food gets posted throughout the day — check back soon."}
+								</Text>
+								{filtersActive && !searching && (
+									<View className="mt-6">
+										<Button variant="outline" onPress={clearFilters}>
+											Clear filters
+										</Button>
+									</View>
+								)}
+							</View>
+						}
+					/>
+				</>
 			)}
 
 			<FeedFilterSheet
