@@ -3,10 +3,13 @@
     "name": "EcoEats",
     "slug": "ecoeats",
     "version": "0.1.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "ecoeats",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -67,7 +70,8 @@
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -78,6 +82,9 @@
         "projectId": "dfd4f7ff-351b-4265-b29a-678573d5197d"
       }
     },
-    "owner": "saarvesh"
+    "owner": "saarvesh",
+    "updates": {
+      "url": "https://u.expo.dev/dfd4f7ff-351b-4265-b29a-678573d5197d"
+    }
   }
 }
