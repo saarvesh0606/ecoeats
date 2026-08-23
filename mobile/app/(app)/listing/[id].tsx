@@ -21,6 +21,8 @@ import { openDirections } from "@/lib/maps";
 const HERO_HEIGHT = 288;
 /** How far the claim bar travels up on entry. */
 const BAR_TRAVEL = 28;
+/** How much of the home-indicator inset the non-tappable caption may sit in. */
+const INDICATOR_OVERLAP = 20;
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -409,14 +411,16 @@ export default function ListingDetail() {
 			    box is the inner View — NativeWind doesn't process className on
 			    animated components, and fails silently when you try. */}
 			<Animated.View style={{ transform: [{ translateY: barLift }] }}>
-			{/* Its own bottom inset, not the container's and not both. Padding the
-			    bar inside a container that had already reserved the home-indicator
-			    inset left roughly fifty points of dead space under the caption, so
-			    the whole block floated clear of the bottom edge. The indicator still
-			    needs its clearance; it just needs it once. The floor keeps the
-			    spacing sane on older phones, where the inset is zero. */}
+			{/* Sits close to the bottom edge on purpose.
+			    The home-indicator inset exists to keep *tappable* things out of the
+			    swipe-up area, and the full inset was pushing the whole block into
+			    the middle of nowhere. The caption under the button is not tappable,
+			    so it can occupy that strip quite happily — which leaves the button
+			    itself still clear of the gesture area while the group as a whole
+			    reaches the bottom of the screen where it belongs.
+			    The floor covers older phones, where the inset is zero. */}
 			<View
-				style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+				style={{ paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12) }}
 				className="px-5 pt-4 border-t border-gray-100 bg-cream"
 			>
 				{claimError && (
