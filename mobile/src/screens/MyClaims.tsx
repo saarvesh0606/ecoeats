@@ -1,13 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, Pressable, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+	FlatList,
+	Image,
+	Pressable,
+	RefreshControl,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
+import { useRefreshOnPush } from "@/hooks/useRefreshOnPush";
 import { ApiError } from "@/lib/api";
 import { cancelClaim, type Claim, fetchMyClaims, rateHost } from "@/lib/claims";
 import { formatLocation } from "@/lib/format";
@@ -46,21 +54,49 @@ function mmss(target: string, now: number): string {
 	return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function StarRow({ onPick }: { onPick: (stars: number) => void }) {
+/**
+ * Five stars that fill the instant one is pressed.
+ *
+ * They used to render as outlines unconditionally, so a tap changed nothing on
+ * screen until rateHost and a full reload had both come back — a second or two
+ * on a good connection, considerably worse on a cold API. With no feedback the
+ * natural reading is that the tap missed, so people tap again, and the only
+ * visible result is the row eventually vanishing. Which star was pressed is
+ * known locally and immediately; there is no reason to make the network prove
+ * it first.
+ */
+function StarRow({
+	onPick,
+	busy = false,
+}: {
+	onPick: (stars: number) => void;
+	busy?: boolean;
+}) {
+	const [picked, setPicked] = useState(0);
+
 	return (
 		<View className="flex-row gap-1 mt-1">
 			{[1, 2, 3, 4, 5].map((n) => (
 				<Pressable
 					key={n}
+					// Further taps while it saves would only race the request.
+					disabled={busy}
 					onPress={() => {
+						setPicked(n);
 						haptics.select();
 						onPick(n);
 					}}
 					hitSlop={6}
 					accessibilityRole="button"
+					accessibilityState={{ selected: n <= picked, disabled: busy }}
 					accessibilityLabel={`Rate ${n} star${n > 1 ? "s" : ""}`}
 				>
-					<Ionicons name="star-outline" size={28} color="#FFC627" />
+					<Ionicons
+						name={n <= picked ? "star" : "star-outline"}
+						size={28}
+						color="#FFC627"
+						style={{ opacity: busy && n > picked ? 0.5 : 1 }}
+					/>
 				</Pressable>
 			))}
 		</View>
@@ -93,6 +129,7 @@ export function MyClaims() {
 	const [loading, setLoading] = useState(true);
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>("active");
+	const [refreshing, setRefreshing] = useState(false);
 
 	const load = useCallback(async () => {
 		try {
@@ -104,8 +141,34 @@ export function MyClaims() {
 		}
 	}, []);
 
-	useEffect(() => {
-		void load();
+	// Three ways this screen gets current, because it used to have none.
+	//
+	// It loaded once on mount and then froze: a claim the host confirmed while
+	// you watched went on counting down as though nothing had happened. Worse
+	// than stale, because useNow ticks the MM:SS every second regardless — the
+	// screen looked live while showing collected food. A frozen screen invites
+	// distrust; a ticking one gets believed.
+	//
+	//  - **A push arrives.** The only signal that the server changed something
+	//    while the user is holding still, and the case that actually matters:
+	//    waiting on this screen to collect is the whole reason to be on it.
+	//    The listing SSE stream can't serve here — it carries listings, not
+	//    claims.
+	//  - **The screen regains focus.** Covers coming back from the feed or a
+	//    listing, and anything that happened while the app was away.
+	//  - **A pull.** The one the user reaches for when they don't trust the
+	//    other two, and what RecipientFeed already offers.
+	useFocusEffect(
+		useCallback(() => {
+			void load();
+		}, [load]),
+	);
+
+	useRefreshOnPush(load);
+
+	const onRefresh = useCallback(() => {
+		setRefreshing(true);
+		void load().finally(() => setRefreshing(false));
 	}, [load]);
 
 	async function onCancel(claim: Claim) {
@@ -128,6 +191,8 @@ export function MyClaims() {
 	}
 
 	async function onRate(claim: Claim, stars: number) {
+		// Marks the row busy so the stars stop taking presses while it saves.
+		setBusyId(claim.id);
 		try {
 			await rateHost(claim.id, stars);
 			await load();
@@ -136,6 +201,8 @@ export function MyClaims() {
 		} catch (err) {
 			haptics.error();
 			if (!(err instanceof ApiError)) throw err;
+		} finally {
+			setBusyId(null);
 		}
 	}
 
@@ -200,6 +267,9 @@ export function MyClaims() {
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 				showsVerticalScrollIndicator={false}
+				refreshControl={
+					<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+				}
 				renderItem={({ item, index }) => {
 					const l = item.listing;
 					const active = item.status === "pending";
@@ -292,7 +362,10 @@ export function MyClaims() {
 										<Text className="font-body text-gray-500 text-sm">
 											How was it? Rate the host:
 										</Text>
-										<StarRow onPick={(n) => onRate(item, n)} />
+										<StarRow
+											onPick={(n) => onRate(item, n)}
+											busy={busyId === item.id}
+										/>
 									</View>
 								))}
 

@@ -1,4 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
+import { addNotificationReceivedListener } from "expo-notifications";
+import { RefreshControl } from "react-native";
 import { ToastProvider } from "@/components/ui/Toast";
 import type { Claim, ClaimedListing } from "@/lib/claims";
 import { cancelClaim, fetchMyClaims, rateHost } from "@/lib/claims";
@@ -29,6 +37,17 @@ jest.mock("@/lib/claims", () => ({
 
 jest.mock("expo-router", () => ({
 	useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+	// The screen loads through useFocusEffect now. No navigator exists here to
+	// hand it focus, so the honest stand-in is the effect it replaced: run on
+	// mount, and again if the callback identity changes.
+	useFocusEffect: (cb: () => void) => require("react").useEffect(cb, [cb]),
+}));
+
+// useRefreshOnPush subscribes for the life of the screen. Keeping the listener
+// reachable is the point — firing it is how the "a push refreshes this" test
+// reaches the behaviour without a real notification.
+jest.mock("expo-notifications", () => ({
+	addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
 }));
 
 // Freeze the clock behind the MM:SS countdown. Against a live clock a fixture
@@ -220,6 +239,44 @@ describe("MyClaims", () => {
 			mockFetch.mockRejectedValue(new Error("offline"));
 			renderClaims();
 			expect(await screen.findByText("No active claims")).toBeTruthy();
+		});
+	});
+
+	// This screen used to load once and then freeze, while useNow kept the
+	// countdown ticking — so a claim the host had already confirmed went on
+	// counting down as though it were still waiting to be collected.
+	describe("staying current", () => {
+		it("reloads when a push arrives, so a confirmed pickup stops counting down", async () => {
+			mockFetch.mockResolvedValue([claim({ id: "c-1", status: "pending" })]);
+			renderClaims();
+			expect(await screen.findByText("Reserved")).toBeTruthy();
+
+			// The host confirms the handover: the server now calls it collected.
+			mockFetch.mockResolvedValue([
+				claim({ id: "c-1", status: "picked_up" }),
+			]);
+
+			const onPush = (addNotificationReceivedListener as jest.Mock).mock
+				.calls[0][0];
+			await act(async () => {
+				onPush();
+			});
+
+			await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+			// Gone from Active, and the countdown left with it.
+			expect(screen.getByText("No active claims")).toBeTruthy();
+		});
+
+		it("reloads when the list is pulled down", async () => {
+			mockFetch.mockResolvedValue([claim()]);
+			renderClaims();
+			await screen.findByText("Reserved");
+
+			await act(async () => {
+				screen.UNSAFE_getByType(RefreshControl).props.onRefresh();
+			});
+
+			await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
 		});
 	});
 });
