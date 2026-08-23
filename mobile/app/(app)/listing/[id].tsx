@@ -33,6 +33,10 @@ const FADE_HEIGHT = 28;
 const FADE_ALPHAS = Array.from({ length: 10 }, (_, i) => (i + 1) / 10);
 /** Past this much scrolling the hint has done its job and gets out of the way. */
 const HINT_FADE_PX = 90;
+/** How long the hint stays if nobody scrolls. Long enough to read, then gone. */
+const HINT_LIFE_MS = 3800;
+/** How long it takes to leave once its time is up. */
+const HINT_EXIT_MS = 450;
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -76,6 +80,20 @@ export default function ListingDetail() {
 	// Gentle bob on the scroll hint. Timer-driven, like every other ambient
 	// motion here, so it survives a pane that has stopped painting.
 	const hintBob = usePulse(1600);
+	// The hint leaves two ways, whichever comes first: scrolled away, or simply
+	// timed out. A prompt to scroll that is still sitting there a minute later
+	// has stopped being a prompt and become furniture.
+	const hintLife = useRef(new Animated.Value(1)).current;
+	useEffect(() => {
+		const id = setTimeout(() => {
+			Animated.timing(hintLife, {
+				toValue: 0,
+				duration: HINT_EXIT_MS,
+				useNativeDriver: false,
+			}).start();
+		}, HINT_LIFE_MS);
+		return () => clearTimeout(id);
+	}, [hintLife]);
 	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
@@ -444,11 +462,15 @@ export default function ListingDetail() {
 					right: 0,
 					bottom: barHeight + FADE_HEIGHT + 4,
 					alignItems: "center",
-					opacity: scrollY.interpolate({
-						inputRange: [0, HINT_FADE_PX],
-						outputRange: [1, 0],
-						extrapolate: "clamp",
-					}),
+					// Multiplied, so either route alone is enough to hide it.
+					opacity: Animated.multiply(
+						hintLife,
+						scrollY.interpolate({
+							inputRange: [0, HINT_FADE_PX],
+							outputRange: [1, 0],
+							extrapolate: "clamp",
+						}),
+					),
 					transform: [{ translateY: hintBob * 4 }],
 				}}
 			>

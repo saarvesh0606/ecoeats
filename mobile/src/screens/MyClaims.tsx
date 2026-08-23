@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	FlatList,
 	Image,
@@ -36,6 +36,15 @@ const STATUS_LABEL: Record<Claim["status"], string> = {
 	no_show: "Expired",
 	cancelled: "Cancelled",
 };
+
+/**
+ * How long a claim stays under Active after its hold runs out.
+ *
+ * Watching a countdown reach 0:00 and then having the row vanish in the same
+ * instant reads as the app losing it. A few seconds at zero shows what
+ * happened, and then it moves to where it now belongs.
+ */
+const EXPIRY_GRACE_MS = 6000;
 
 const PICKUP_STEPS = [
 	"Go to the pickup location listed above.",
@@ -170,6 +179,24 @@ export function MyClaims() {
 		setRefreshing(true);
 		void load().finally(() => setRefreshing(false));
 	}, [load]);
+
+	// A hold that runs out is decided by the server — the claim becomes a
+	// no-show there — so the honest way to move the row is to ask again rather
+	// than to relabel it here and hope the two agree. Once per claim: the set
+	// stops a server that still says "pending" (clock skew, a slow job) from
+	// being asked over and over.
+	const expiryHandled = useRef(new Set<string>());
+	useEffect(() => {
+		const lapsed = claims.filter(
+			(c) =>
+				c.status === "pending" &&
+				new Date(c.reservation_expires_at).getTime() + EXPIRY_GRACE_MS <= now &&
+				!expiryHandled.current.has(c.id),
+		);
+		if (lapsed.length === 0) return;
+		for (const c of lapsed) expiryHandled.current.add(c.id);
+		void load();
+	}, [claims, now, load]);
 
 	async function onCancel(claim: Claim) {
 		setBusyId(claim.id);

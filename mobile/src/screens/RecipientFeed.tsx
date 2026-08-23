@@ -28,6 +28,15 @@ import { subscribeToListings } from "@/lib/listingStream";
 
 // "Expiring soon" — surfaces food about to be wasted, the whole point.
 const SOON_MINUTES = 20;
+/**
+ * How long an expired listing stays on screen before it goes.
+ *
+ * Not zero: food vanishing under the thumb mid-scroll is disorienting, and
+ * someone watching a countdown reach zero should see it reach zero. Not long
+ * either — it cannot be claimed any more, so every extra second is an offer
+ * the app can't honour.
+ */
+const EXPIRY_GRACE_MS = 6000;
 
 export function RecipientFeed() {
 	const router = useRouter();
@@ -167,6 +176,34 @@ export function RecipientFeed() {
 		};
 	}, []);
 
+	// Expired listings used to sit there until something else refetched: the
+	// countdown hit zero and the card stayed, still offering food that was gone.
+	// One timer for the soonest deadline, which reschedules itself as the list
+	// changes, rather than a timer per row or a faster clock for every card.
+	useEffect(() => {
+		if (listings.length === 0) return;
+		const soonest = Math.min(
+			...listings.map(
+				(l) => new Date(l.expires_at).getTime() + EXPIRY_GRACE_MS,
+			),
+		);
+		const id = setTimeout(
+			() => {
+				const cutoff = Date.now();
+				setListings((prev) => {
+					const kept = prev.filter(
+						(l) => new Date(l.expires_at).getTime() + EXPIRY_GRACE_MS > cutoff,
+					);
+					// Same array when nothing went, so this effect doesn't re-run on its
+					// own output and reschedule itself forever.
+					return kept.length === prev.length ? prev : kept;
+				});
+			},
+			Math.max(soonest - Date.now(), 250),
+		);
+		return () => clearTimeout(id);
+	}, [listings]);
+
 	function toggleDietary(tag: string) {
 		setDietary((prev) =>
 			prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
@@ -251,7 +288,13 @@ export function RecipientFeed() {
 				<View className="flex-row items-center bg-white border border-gray-200 rounded-full px-4 py-2.5">
 					<Ionicons name="search" size={18} color="#9CA3AF" />
 					<TextInput
-						className="flex-1 font-body text-base text-gray-900 ml-2"
+						// Size without a line height, for the reason Input documents: on
+						// iOS a lineHeight on a TextInput positions the text in a line
+						// box rather than in the field, and it drops after the first
+						// character. This field is hand-rolled rather than an Input, so
+						// it never got that fix and kept the bug on its own.
+						style={{ fontSize: 16, paddingVertical: 0 }}
+						className="flex-1 font-body text-gray-900 ml-2"
 						placeholder="Search food, meals, or locations"
 						placeholderTextColor="#9CA3AF"
 						value={query}
