@@ -37,6 +37,13 @@ const SINGLE_LINE: TextStyle = {
 	// Android reserves extra room above and below from the font metrics, which
 	// reintroduces exactly the offset this is removing.
 	includeFontPadding: false,
+	// Font size without a line height. Tailwind's text-base carries both, and on
+	// iOS an explicit lineHeight on a TextInput positions the text inside a line
+	// box rather than inside the field — so the first character sat centred and
+	// everything after it dropped a few points, which is a strange enough thing
+	// to watch that it reads as the field breaking. The class is dropped for
+	// single-line fields below and the size restated here.
+	fontSize: 16,
 };
 
 export function Input({
@@ -69,7 +76,7 @@ export function Input({
 			)}
 			<View className="relative justify-center">
 				<TextInput
-					className={`bg-white border rounded-btn px-4 ${multiline ? "py-3" : ""} font-body text-base ${isPassword ? "pr-12" : ""} ${error ? "border-red-500" : "border-gray-300"} ${props.editable === false ? "bg-gray-100 text-gray-500" : "text-gray-900"}`}
+					className={`bg-white border rounded-btn px-4 ${multiline ? "py-3 text-base" : ""} font-body ${isPassword ? "pr-12" : ""} ${error ? "border-red-500" : "border-gray-300"} ${props.editable === false ? "bg-gray-100 text-gray-500" : "text-gray-900"}`}
 					multiline={multiline}
 					style={[multiline ? null : SINGLE_LINE, style]}
 					placeholderTextColor={PLACEHOLDER_COLOR}

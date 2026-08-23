@@ -212,7 +212,9 @@ export default function ListingDetail() {
 	});
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["bottom"]}>
+		// The bottom inset belongs to the claim bar alone (see below), so the
+		// container must not reserve it as well.
+		<SafeAreaView className="flex-1 bg-cream" edges={[]}>
 			<Animated.ScrollView
 				showsVerticalScrollIndicator={false}
 				scrollEventThrottle={16}
@@ -407,7 +409,16 @@ export default function ListingDetail() {
 			    box is the inner View — NativeWind doesn't process className on
 			    animated components, and fails silently when you try. */}
 			<Animated.View style={{ transform: [{ translateY: barLift }] }}>
-			<View className="px-5 py-4 border-t border-gray-100 bg-cream">
+			{/* Its own bottom inset, not the container's and not both. Padding the
+			    bar inside a container that had already reserved the home-indicator
+			    inset left roughly fifty points of dead space under the caption, so
+			    the whole block floated clear of the bottom edge. The indicator still
+			    needs its clearance; it just needs it once. The floor keeps the
+			    spacing sane on older phones, where the inset is zero. */}
+			<View
+				style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+				className="px-5 pt-4 border-t border-gray-100 bg-cream"
+			>
 				{claimError && (
 					<Text className="font-body text-red-500 text-sm mb-2 text-center">
 						{claimError}
