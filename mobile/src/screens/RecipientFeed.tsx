@@ -280,7 +280,21 @@ export function RecipientFeed() {
 						Good food. Good impact.
 					</Text>
 				</View>
-				<NotificationBell />
+				{/* The bookmark on every card had nowhere to lead until now. It sits
+				    beside the bell because both are "things waiting for me", and
+				    because saving happens on this screen — the way back to what you
+				    saved belongs where you saved it. */}
+				<View className="flex-row items-center gap-4">
+					<Pressable
+						onPress={() => router.push("/saved")}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel="Saved food"
+					>
+						<Ionicons name="bookmark-outline" size={24} color="#0C3226" />
+					</Pressable>
+					<NotificationBell />
+				</View>
 			</View>
 
 			{/* Search */}
