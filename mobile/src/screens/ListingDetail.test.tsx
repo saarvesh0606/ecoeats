@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { Linking } from "react-native";
+import { StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { createClaim } from "@/lib/claims";
 import { haptics } from "@/lib/haptics";
@@ -85,11 +87,22 @@ function listing(overrides: Partial<Listing> = {}): Listing {
 	};
 }
 
+// The screen reads useSafeAreaInsets to keep its floating back/share controls
+// clear of the status bar, and that hook throws outright without a provider.
+// Real iPhone-with-a-notch metrics, so the inset under test is a real number
+// rather than zero.
+const METRICS = {
+	frame: { x: 0, y: 0, width: 390, height: 844 },
+	insets: { top: 47, left: 0, right: 0, bottom: 34 },
+};
+
 function renderDetail() {
 	return render(
-		<ToastProvider>
-			<ListingDetailScreen />
-		</ToastProvider>,
+		<SafeAreaProvider initialMetrics={METRICS}>
+			<ToastProvider>
+				<ListingDetailScreen />
+			</ToastProvider>
+		</SafeAreaProvider>,
 	);
 }
 
@@ -97,6 +110,24 @@ describe("listing detail", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockClaim.mockResolvedValue({} as never);
+	});
+
+	describe("floating controls", () => {
+		// The hero photo deliberately runs under the status bar, so this screen
+		// drops the top safe-area edge. The controls sitting on top of it used a
+		// flat offset and landed inside the clock and signal bars on any notched
+		// phone. They must take the inset the container gave up.
+		it.each([
+			["Go back", "back"],
+			["Share this listing", "share"],
+		])("keeps %s clear of the status bar", async (label) => {
+			mockFetch.mockResolvedValue(listing());
+			renderDetail();
+
+			const control = await screen.findByLabelText(label);
+			// 47pt of notch, plus the 16pt gap the design already used.
+			expect(StyleSheet.flatten(control.props.style).top).toBe(63);
+		});
 	});
 
 	describe("expiry wording", () => {

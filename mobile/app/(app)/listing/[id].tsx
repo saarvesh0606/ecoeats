@@ -2,7 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Image, Pressable, Share, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -49,6 +52,11 @@ export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const now = useNow();
+	// The hero photo is meant to run under the status bar, so this screen opts
+	// out of the top safe-area edge. The controls floating on top of it must
+	// not: a flat offset puts them inside the clock and the signal bars on any
+	// notched phone. They get the inset the container gave up.
+	const insets = useSafeAreaInsets();
 	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
@@ -260,7 +268,8 @@ export default function ListingDetail() {
 					<Pressable
 						onPress={() => router.back()}
 						hitSlop={8}
-						className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+						style={{ top: insets.top + 16 }}
+						className="absolute left-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
 						accessibilityRole="button"
 						accessibilityLabel="Go back"
 					>
@@ -269,7 +278,8 @@ export default function ListingDetail() {
 					<Pressable
 						onPress={onShare}
 						hitSlop={8}
-						className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+						style={{ top: insets.top + 16 }}
+						className="absolute right-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
 						accessibilityRole="button"
 						accessibilityLabel="Share this listing"
 					>
