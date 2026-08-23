@@ -23,8 +23,13 @@ const HERO_HEIGHT = 288;
 const BAR_TRAVEL = 28;
 /** How much of the home-indicator inset the non-tappable caption may sit in. */
 const INDICATOR_OVERLAP = 20;
-/** Cream at nine-tenths: page content stays faintly readable behind the bar. */
-const BAR_TINT = "rgba(251, 249, 244, 0.92)";
+/** The page colour, as rgb parts, so the fade below can vary its alpha. */
+const CREAM_RGB = "251, 249, 244";
+/** Height of the fade that dissolves the page into the claim bar. */
+const FADE_HEIGHT = 28;
+/** Bands in that fade. Enough to read as a gradient, few enough to be cheap.
+    Held as their opacities, which double as stable keys. */
+const FADE_ALPHAS = Array.from({ length: 10 }, (_, i) => (i + 1) / 10);
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -418,6 +423,34 @@ export default function ListingDetail() {
 			    arrives rather than appearing to have always been there. The styled
 			    box is the inner View — NativeWind doesn't process className on
 			    animated components, and fails silently when you try. */}
+			{/* Dissolves the page into the bar instead of cutting it flat.
+			    A solid bar butted against scrolling content ends the page at a
+			    hard line, which reads as a rendering fault rather than as
+			    something to scroll — and a see-through bar solves that but looks
+			    muddy without a blur behind it, and expo-blur is native, so it
+			    cannot arrive in an update. Stacked bands of increasing opacity
+			    give the gradient a real one would, in plain views. */}
+			<View
+				pointerEvents="none"
+				style={{
+					position: "absolute",
+					left: 0,
+					right: 0,
+					bottom: barHeight,
+					height: FADE_HEIGHT,
+				}}
+			>
+				{FADE_ALPHAS.map((alpha) => (
+					<View
+						key={alpha}
+						style={{
+							flex: 1,
+							backgroundColor: `rgba(${CREAM_RGB}, ${alpha})`,
+						}}
+					/>
+				))}
+			</View>
+
 			<Animated.View
 				onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
 				style={{
@@ -437,11 +470,8 @@ export default function ListingDetail() {
 			    reaches the bottom of the screen where it belongs.
 			    The floor covers older phones, where the inset is zero. */}
 			<View
-				style={{
-					paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12),
-					backgroundColor: BAR_TINT,
-				}}
-				className="px-5 pt-4 border-t border-gray-100"
+				style={{ paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12) }}
+				className="px-5 pt-4 border-t border-gray-100 bg-cream"
 			>
 				{claimError && (
 					<Text className="font-body text-red-500 text-sm mb-2 text-center">
