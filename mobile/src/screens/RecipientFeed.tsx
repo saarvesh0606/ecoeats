@@ -213,6 +213,24 @@ export function RecipientFeed() {
 	const searching = debouncedQuery.length > 0;
 	const chips = ["all", "soon", ...DIETARY_TAGS];
 
+	// Food matching the viewer's preferences floats to the top.
+	//
+	// Array.sort is stable, so everything keeps its soonest-first expiry order
+	// within each of the two groups — preference decides the group, urgency
+	// still decides the order inside it.
+	//
+	// ⚠ This reorders the loaded page only. The server pages by expiry, so a
+	// match sitting on page three stays on page three; it rises above its
+	// neighbours once fetched, not above the whole feed.
+	const ordered =
+		prefs && prefs.length > 0
+			? [...listings].sort(
+					(a, b) =>
+						Number(b.dietary_tags.some((t) => prefs.includes(t))) -
+						Number(a.dietary_tags.some((t) => prefs.includes(t))),
+				)
+			: listings;
+
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			{/* Header */}
@@ -338,7 +356,7 @@ export function RecipientFeed() {
 				</View>
 			) : (
 				<FlatList
-					data={listings}
+					data={ordered}
 					keyExtractor={(item) => item.id}
 					contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
 					showsVerticalScrollIndicator={false}

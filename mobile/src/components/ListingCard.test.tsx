@@ -43,7 +43,7 @@ describe("ListingCard", () => {
 	// Profile has always said dietary preferences "highlight food that fits".
 	// Nothing read the setting until now, so the toggles genuinely did nothing.
 	describe("dietary preferences", () => {
-		it("marks a tag the viewer has asked for", () => {
+		it("says so on the card when the food matches", () => {
 			const { getByLabelText } = render(
 				<ListingCard
 					listing={makeListing({ dietary_tags: ["vegetarian", "halal"] })}
@@ -53,14 +53,15 @@ describe("ListingCard", () => {
 				/>,
 			);
 
-			// Announced, not merely recoloured — colour alone reaches neither a
-			// screen reader nor anyone who can't separate the two greens.
-			expect(getByLabelText("vegetarian, matches your preferences")).toBeTruthy();
-			expect(getByLabelText("halal")).toBeTruthy();
+			// The glow is a breathing border, which reaches neither a screen reader
+			// nor anyone who can't separate the two greens — so the card says it.
+			expect(
+				getByLabelText(/Leftover pizza.*matches your preferences/),
+			).toBeTruthy();
 		});
 
-		it("marks nothing when no preferences are set", () => {
-			const { getByLabelText, queryByLabelText } = render(
+		it("says nothing when no preferences are set", () => {
+			const { queryByLabelText } = render(
 				<ListingCard
 					listing={makeListing({ dietary_tags: ["vegetarian"] })}
 					now={Date.now()}
@@ -68,7 +69,6 @@ describe("ListingCard", () => {
 				/>,
 			);
 
-			expect(getByLabelText("vegetarian")).toBeTruthy();
 			expect(queryByLabelText(/matches your preferences/)).toBeNull();
 		});
 

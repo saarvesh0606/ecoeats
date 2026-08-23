@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
+import { usePulse } from "@/hooks/usePulse";
 import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
 import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
@@ -30,6 +31,8 @@ const FADE_HEIGHT = 28;
 /** Bands in that fade. Enough to read as a gradient, few enough to be cheap.
     Held as their opacities, which double as stable keys. */
 const FADE_ALPHAS = Array.from({ length: 10 }, (_, i) => (i + 1) / 10);
+/** Past this much scrolling the hint has done its job and gets out of the way. */
+const HINT_FADE_PX = 90;
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -70,6 +73,9 @@ export default function ListingDetail() {
 	// of itself is covered. Its height varies with the portions stepper and the
 	// error line, so it is measured rather than guessed.
 	const [barHeight, setBarHeight] = useState(0);
+	// Gentle bob on the scroll hint. Timer-driven, like every other ambient
+	// motion here, so it survives a pane that has stopped painting.
+	const hintBob = usePulse(1600);
 	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
@@ -423,6 +429,39 @@ export default function ListingDetail() {
 			    arrives rather than appearing to have always been there. The styled
 			    box is the inner View — NativeWind doesn't process className on
 			    animated components, and fails silently when you try. */}
+			{/* "There is more down here."
+			    The fold lands mid-card on most phones, and the pickup location and
+			    the directions button both sit below it — the two things someone
+			    opening a listing actually came for. The fade says the page
+			    continues; this says what continues, and then leaves.
+			    It rides the scroll position rather than a timer, so it is gone by
+			    the time it would be in the way, and it never intercepts a touch. */}
+			<Animated.View
+				pointerEvents="none"
+				style={{
+					position: "absolute",
+					left: 0,
+					right: 0,
+					bottom: barHeight + FADE_HEIGHT + 4,
+					alignItems: "center",
+					opacity: scrollY.interpolate({
+						inputRange: [0, HINT_FADE_PX],
+						outputRange: [1, 0],
+						extrapolate: "clamp",
+					}),
+					transform: [{ translateY: hintBob * 4 }],
+				}}
+			>
+				{/* NativeWind doesn't process className on animated components and
+				    fails silently, so the styled box is this inner view. */}
+				<View className="flex-row items-center gap-1.5 bg-forest-800 rounded-full px-3 py-1.5">
+					<Ionicons name="chevron-down" size={13} color="#FBF9F4" />
+					<Text className="font-body-semibold text-xs text-cream">
+						Scroll for pickup details
+					</Text>
+				</View>
+			</Animated.View>
+
 			{/* Dissolves the page into the bar instead of cutting it flat.
 			    A solid bar butted against scrolling content ends the page at a
 			    hard line, which reads as a rendering fault rather than as
@@ -478,14 +517,11 @@ export default function ListingDetail() {
 						{claimError}
 					</Text>
 				)}
-				{/* The label sits out of the flow so the stepper centres on the
-				    screen. Counting it as a flex child pushed the number and its two
-				    buttons noticeably right of centre. */}
+				{/* No label. A minus, a number and a plus directly above a button
+				    reading "Claim 3 Portions" is already unambiguous, and the word
+				    was the only thing keeping the control off-centre. */}
 				{canClaim && listing.quantity_remaining > 1 && (
-					<View className="relative flex-row items-center justify-center gap-5 mb-3">
-						<Text className="absolute left-0 font-body text-gray-500 text-sm">
-							Portions
-						</Text>
+					<View className="flex-row items-center justify-center gap-5 mb-3">
 						<Pressable
 							onPress={() => stepQty(-1)}
 							hitSlop={8}

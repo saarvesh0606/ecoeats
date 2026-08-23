@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Image, Platform, Pressable, Text, View } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
+import { usePulse } from "@/hooks/usePulse";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { type Listing, saveListing, unsaveListing } from "@/lib/listings";
@@ -15,6 +16,45 @@ interface ListingCardProps {
 	featured?: boolean;
 	/** The viewer's dietary preferences, for marking the tags that match. */
 	prefs?: readonly string[];
+}
+
+/** forest-600, as rgb parts, so the glow can breathe its alpha. */
+const MATCH_RGB = "45, 106, 79";
+/** One full breath of the match glow. Slow enough to notice without nagging. */
+const GLOW_CYCLE_MS = 2400;
+/** Matches tailwind's rounded-card, which this has to sit exactly on top of. */
+const CARD_RADIUS = 16;
+
+/**
+ * A softly breathing border on food that matches the viewer's preferences.
+ *
+ * Its own component for a reason: usePulse advances on a timer and re-renders
+ * whatever calls it, roughly twenty times a second. Called from the card that
+ * would re-render the whole card — photo, tags, countdown — on every tick, for
+ * every matching row in the list. Here it re-renders one empty view.
+ *
+ * Rendered only when there is a match, which is also how the hook can live in a
+ * child at all: hooks cannot be called conditionally, components can be mounted
+ * conditionally.
+ */
+function MatchGlow() {
+	const pulse = usePulse(GLOW_CYCLE_MS);
+	return (
+		<View
+			pointerEvents="none"
+			style={{
+				position: "absolute",
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				borderRadius: CARD_RADIUS,
+				borderWidth: 2,
+				// Never fully out: the border should breathe, not blink.
+				borderColor: `rgba(${MATCH_RGB}, ${0.45 + pulse * 0.55})`,
+			}}
+		/>
+	);
 }
 
 /** Under this, the countdown turns red and pulses — the food is about to go. */
@@ -54,6 +94,7 @@ export function ListingCard({
 	const timeLeft = formatTimeLeft(listing.expires_at, now);
 	const distance = formatDistance(listing.distance_miles);
 	const cover = listing.photo_urls[0];
+	const matches = listing.dietary_tags.some((t) => prefs?.includes(t));
 	const [saved, setSaved] = useState(listing.is_saved);
 
 	async function toggleSave() {
@@ -85,7 +126,7 @@ export function ListingCard({
 			onPress={onPress}
 			className="bg-white rounded-card overflow-hidden border border-gray-100"
 			accessibilityRole={CARD_ROLE}
-			accessibilityLabel={`${listing.title}, ${timeLeft}, ${portions}`}
+			accessibilityLabel={`${listing.title}, ${timeLeft}, ${portions}${matches ? ", matches your preferences" : ""}`}
 			accessibilityHint="Opens the listing"
 		>
 			<View className="relative">
@@ -170,34 +211,16 @@ export function ListingCard({
 				    failure than showing them something they scroll past. */}
 				{listing.dietary_tags.length > 0 && (
 					<View className="flex-row flex-wrap gap-1.5 mt-3">
-						{listing.dietary_tags.map((tag) => {
-							const matches = prefs?.includes(tag) ?? false;
-							return (
-								<View
-									key={tag}
-									className={
-										matches
-											? "border border-forest-600 bg-forest-50 rounded-full px-2.5 py-0.5"
-											: "border border-gray-200 rounded-full px-2.5 py-0.5"
-									}
-								>
-									<Text
-										// Colour alone would leave this invisible to a screen
-										// reader, and to anyone who can't separate the two greens.
-										accessibilityLabel={
-											matches ? `${tag}, matches your preferences` : tag
-										}
-										className={
-											matches
-												? "font-body-semibold text-xs text-forest-800 capitalize"
-												: "font-body text-xs text-gray-600 capitalize"
-										}
-									>
-										{tag}
-									</Text>
-								</View>
-							);
-						})}
+						{listing.dietary_tags.map((tag) => (
+							<View
+								key={tag}
+								className="border border-gray-200 rounded-full px-2.5 py-0.5"
+							>
+								<Text className="font-body text-xs text-gray-600 capitalize">
+									{tag}
+								</Text>
+							</View>
+						))}
 					</View>
 				)}
 
@@ -210,6 +233,9 @@ export function ListingCard({
 					</Text>
 				)}
 			</View>
+
+			{/* Last child, so it draws over the photo as well as the text. */}
+			{matches && <MatchGlow />}
 		</PressableScale>
 	);
 }
