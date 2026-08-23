@@ -9,6 +9,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { DEV_AUTH } from "@/config";
@@ -18,7 +19,6 @@ import {
 	googleSignInSupported,
 	registerWithEmail,
 	signInWithEmail,
-	signInWithGoogle,
 } from "@/lib/firebase";
 import { validateAsuEmail, validatePassword } from "@/lib/validation";
 
@@ -46,7 +46,6 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
-	const [googleLoading, setGoogleLoading] = useState(false);
 
 	const registering = mode === "register";
 
@@ -93,53 +92,6 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 			setError(authErrorMessage(err));
 		} finally {
 			setLoading(false);
-		}
-	}
-
-	async function onGoogle() {
-		setError(null);
-		setGoogleLoading(true);
-
-		// signInWithPopup does not reliably reject when the user dismisses the
-		// window: closing it mid-redirect (ASU's SSO lives on its own domain)
-		// can leave the promise pending forever, and the button spins with no way
-		// back. Focus returning to the app means the popup is gone, so treat that
-		// as the cancel signal — after a beat, in case the popup closed *because*
-		// sign-in succeeded and the SDK is still resolving.
-		let settled = false;
-		const canWatchFocus =
-			Platform.OS === "web" && typeof window !== "undefined";
-		const onWindowFocus = () => {
-			setTimeout(() => {
-				if (!settled) setGoogleLoading(false);
-			}, 1200);
-		};
-		if (canWatchFocus) window.addEventListener("focus", onWindowFocus);
-
-		try {
-			await signInWithGoogle();
-		} catch (err) {
-			// A dismissed popup isn't an error worth shouting about.
-			const code =
-				typeof err === "object" && err !== null && "code" in err
-					? String((err as { code: unknown }).code)
-					: "";
-			if (
-				code !== "auth/popup-closed-by-user" &&
-				code !== "auth/cancelled-popup-request"
-			) {
-				// signInWithGoogle throws a plain Error for the wrong-domain case,
-				// which already reads well; Firebase codes go through the translator.
-				setError(
-					err instanceof Error && !("code" in err)
-						? err.message
-						: authErrorMessage(err),
-				);
-			}
-		} finally {
-			settled = true;
-			if (canWatchFocus) window.removeEventListener("focus", onWindowFocus);
-			setGoogleLoading(false);
 		}
 	}
 
@@ -265,21 +217,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 								<Text className="font-body text-gray-400 text-xs mx-3">or</Text>
 								<View className="flex-1 h-px bg-gray-200" />
 							</View>
-							<Button
-								variant="outline"
-								size="lg"
-								loading={googleLoading}
-								onPress={onGoogle}
-								icon={
-									<Image
-										source={require("../../assets/google-g.png")}
-										style={{ width: 18, height: 18 }}
-										resizeMode="contain"
-									/>
-								}
-							>
-								Continue with Google
-							</Button>
+							<GoogleSignInButton onError={setError} />
 						</>
 					)}
 

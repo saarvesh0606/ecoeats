@@ -197,40 +197,12 @@ describe("AuthScreen", () => {
 		});
 	});
 
+	// The flow itself lives in GoogleSignInButton and is tested there. What this
+	// screen decides is only whether to show the button at all.
 	describe("Google", () => {
 		it("offers Google when the platform supports it", () => {
 			render(<AuthScreen />);
 			expect(screen.getByText("Continue with Google")).toBeTruthy();
-		});
-
-		it("starts the Google flow", async () => {
-			render(<AuthScreen />);
-			fireEvent.press(screen.getByText("Continue with Google"));
-			await waitFor(() => expect(mockGoogle).toHaveBeenCalled());
-		});
-
-		it("stays quiet when the popup is simply dismissed", async () => {
-			// A closed popup is a decision, not an error worth shouting about.
-			mockGoogle.mockRejectedValue({ code: "auth/popup-closed-by-user" });
-			render(<AuthScreen />);
-
-			fireEvent.press(screen.getByText("Continue with Google"));
-
-			await waitFor(() => expect(mockGoogle).toHaveBeenCalled());
-			expect(screen.queryByText("That didn't work.")).toBeNull();
-		});
-
-		it("shows the domain rejection in full", async () => {
-			// signInWithGoogle throws a plain Error for a non-ASU account, and that
-			// message already reads well — it must not be flattened by the translator.
-			mockGoogle.mockRejectedValue(new Error("EcoEats is for ASU accounts."));
-			render(<AuthScreen />);
-
-			fireEvent.press(screen.getByText("Continue with Google"));
-
-			expect(
-				await screen.findByText("EcoEats is for ASU accounts."),
-			).toBeTruthy();
 		});
 	});
 });

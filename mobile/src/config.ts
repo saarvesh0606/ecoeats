@@ -48,6 +48,15 @@ export const config = {
 			process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 		),
 	},
+	google: {
+		/**
+		 * Absent means the Google button simply doesn't appear, rather than
+		 * appearing and failing. Unset ids are a configuration state, not an
+		 * error — the app is perfectly usable with email sign-in alone.
+		 */
+		iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+		webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+	},
 } as const;
 
 /** The only email domain allowed to hold an account. Mirrors the backend. */

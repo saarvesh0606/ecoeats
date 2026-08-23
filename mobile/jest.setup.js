@@ -47,3 +47,16 @@ jest.mock("react-native-reanimated", () => {
 		LinearTransition: builder(),
 	};
 });
+
+// Google sign-in opens a real browser and demands real OAuth client ids —
+// useIdTokenAuthRequest throws outright without them. Nothing under test wants
+// either, so the provider is stubbed as "no response yet", which is the state
+// the button spends all its time in anyway.
+jest.mock("expo-auth-session/providers/google", () => ({
+	useIdTokenAuthRequest: () => [null, null, jest.fn()],
+}));
+
+jest.mock("expo-web-browser", () => ({
+	maybeCompleteAuthSession: jest.fn(),
+	openAuthSessionAsync: jest.fn(),
+}));

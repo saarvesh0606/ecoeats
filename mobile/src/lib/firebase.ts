@@ -21,6 +21,7 @@ import {
 	type Persistence,
 	sendEmailVerification,
 	signInWithEmailAndPassword,
+	signInWithCredential,
 	signInWithPopup,
 	updateProfile,
 } from "firebase/auth";
@@ -105,8 +106,17 @@ export function authErrorMessage(error: unknown): string {
 	}
 }
 
-/** Google sign-in is only wired for web; native needs expo-auth-session. */
-export const googleSignInSupported = Platform.OS === "web";
+/**
+ * Whether to offer the Google button at all.
+ *
+ * Web has always had it, through the popup below. Native goes via
+ * expo-auth-session, which needs OAuth client ids — so on a phone the button
+ * appears only once those are configured. Offering a button that cannot work
+ * is worse than not offering one.
+ */
+export const googleSignInSupported =
+	Platform.OS === "web" ||
+	Boolean(config.google.iosClientId && config.google.webClientId);
 
 /**
  * Sign in with Google, then hold the result to the same rule as email sign-up.
@@ -122,15 +132,35 @@ export async function signInWithGoogle(): Promise<void> {
 	provider.setCustomParameters({ hd: ALLOWED_EMAIL_DOMAIN });
 
 	const credential = await signInWithPopup(auth, provider);
-	const email = credential.user.email ?? "";
+	await enforceAllowedDomain(credential.user.email ?? "");
+}
 
-	if (!email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
-		await fbSignOut(auth);
-		throw new Error(
-			`That Google account isn't an @${ALLOWED_EMAIL_DOMAIN} address. ` +
-				"Use your ASU account.",
-		);
-	}
+/**
+ * Finish a native Google sign-in from the id token expo-auth-session returned.
+ *
+ * Split from signInWithGoogle rather than folded into it because the two halves
+ * differ: the web popup both authenticates and returns a credential, while on
+ * native the browser hands back an id token that still has to be exchanged with
+ * Firebase. What must not differ is the domain rule, so both funnel through the
+ * same check — a personal Google account authenticates perfectly well and is
+ * then refused by every API call, which looks like the app being broken.
+ */
+export async function completeGoogleSignIn(idToken: string): Promise<void> {
+	const credential = await signInWithCredential(
+		auth,
+		GoogleAuthProvider.credential(idToken),
+	);
+	await enforceAllowedDomain(credential.user.email ?? "");
+}
+
+/** Signs the account back out and explains, rather than leaving it half in. */
+async function enforceAllowedDomain(email: string): Promise<void> {
+	if (email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return;
+	await fbSignOut(auth);
+	throw new Error(
+		`That Google account isn't an @${ALLOWED_EMAIL_DOMAIN} address. ` +
+			"Use your ASU account.",
+	);
 }
 
 export async function registerWithEmail(
