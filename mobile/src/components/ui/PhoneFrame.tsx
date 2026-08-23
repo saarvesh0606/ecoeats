@@ -27,7 +27,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
 	return (
 		<View className="flex-1 bg-forest-900/95 items-center">
 			<View
-				className="flex-1 w-full bg-cream border-x border-black/10"
+				className="flex-1 w-full bg-page border-x border-black/10"
 				style={{ maxWidth: PHONE_MAX_WIDTH }}
 			>
 				{children}

@@ -77,7 +77,7 @@ export function Input({
 			)}
 			<View className="relative justify-center">
 				<TextInput
-					className={`bg-white border rounded-btn px-4 ${multiline ? "py-3 text-base" : ""} font-body ${isPassword ? "pr-12" : ""} ${error ? "border-red-500" : "border-gray-300"} ${props.editable === false ? "bg-gray-100 text-gray-500" : "text-gray-900"}`}
+					className={`bg-card border rounded-btn px-4 ${multiline ? "py-3 text-base" : ""} font-body ${isPassword ? "pr-12" : ""} ${error ? "border-red-500" : "border-gray-300"} ${props.editable === false ? "bg-gray-100 text-gray-500" : "text-gray-900"}`}
 					multiline={multiline}
 					style={[multiline ? null : SINGLE_LINE, style]}
 					placeholderTextColor={PLACEHOLDER_COLOR}

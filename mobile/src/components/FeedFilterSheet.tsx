@@ -41,7 +41,7 @@ function Choice({ label, selected, onPress }: ChoiceProps) {
 			}}
 			accessibilityRole="button"
 			accessibilityState={{ selected }}
-			className={`rounded-full px-4 py-2 border ${selected ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+			className={`rounded-full px-4 py-2 border ${selected ? "bg-forest-800 border-forest-800" : "bg-card border-gray-200"}`}
 		>
 			<Text
 				className={`font-body-medium text-sm capitalize ${selected ? "text-white" : "text-gray-600"}`}
@@ -115,7 +115,7 @@ export function FeedFilterSheet({
 			<Pressable className="flex-1 bg-black/40 justify-end" onPress={onClose}>
 				{/* Swallow taps inside the sheet so they don't dismiss it. */}
 				<Pressable
-					className="bg-cream rounded-t-3xl"
+					className="bg-page rounded-t-3xl"
 					onPress={() => {}}
 					accessibilityViewIsModal
 				>

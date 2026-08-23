@@ -36,7 +36,7 @@ export default function VerifyEmailScreen() {
 	}
 
 	return (
-		<View className="flex-1 bg-cream justify-center px-6">
+		<View className="flex-1 bg-page justify-center px-6">
 			<Text className="font-display-bold text-3xl text-brand text-center">
 				Confirm your email
 			</Text>

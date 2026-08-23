@@ -27,7 +27,7 @@ export function SettingsGroup({
 					{title}
 				</Text>
 			)}
-			<View className="rounded-card bg-white border border-gray-100 overflow-hidden">
+			<View className="rounded-card bg-card border border-gray-100 overflow-hidden">
 				{/* Dividers are the group's job, not each row's — a caller placing
 				    them by hand always ends up with a stray one at the bottom. */}
 				{Children.map(Children.toArray(children), (child, i) => (

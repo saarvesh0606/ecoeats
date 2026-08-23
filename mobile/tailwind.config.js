@@ -10,8 +10,14 @@ module.exports = {
 				// one swap moves every screen; see the note there about why the
 				// names stay literal. <alpha-value> keeps bg-white/90 and friends
 				// working, which a plain var() would break.
-				cream: "rgb(var(--c-cream) / <alpha-value>)",
-				white: "rgb(var(--c-card) / <alpha-value>)",
+				// Surfaces. These flip.
+				page: "rgb(var(--c-page) / <alpha-value>)",
+				card: "rgb(var(--c-card) / <alpha-value>)",
+				// The literal colours, which do not flip, because they are used as
+				// ink on backgrounds that stay the colour they are — a white label
+				// on a green button is white in both themes.
+				cream: "#FBF9F4",
+				white: "#FFFFFF",
 				gray: {
 					50: "rgb(var(--c-gray-50) / <alpha-value>)",
 					100: "rgb(var(--c-gray-100) / <alpha-value>)",
@@ -54,23 +60,37 @@ module.exports = {
 				surface: {
 					DEFAULT: "#F0EEE9",
 					low: "#F5F3EE",
-					high: "#EAE8E3",
+					high: "rgb(var(--c-surface-high) / <alpha-value>)",
 					highest: "#E4E2DD",
 					dim: "#DBDAD5",
 				},
 				ink: {
-					DEFAULT: "#1B1C19", // onSurface
-					muted: "#414845", // onSurfaceVariant
+					DEFAULT: "rgb(var(--c-ink) / <alpha-value>)",
+					muted: "rgb(var(--c-ink-muted) / <alpha-value>)",
 				},
 				outline: {
-					DEFAULT: "#717974",
+					DEFAULT: "rgb(var(--c-outline) / <alpha-value>)",
 					variant: "#C1C8C3",
+				},
+				amber: {
+					50: "rgb(var(--c-amber-tint) / <alpha-value>)",
+					200: "rgb(var(--c-amber-edge) / <alpha-value>)",
+					700: "rgb(var(--c-amber-ink) / <alpha-value>)",
+					800: "rgb(var(--c-amber-ink-strong) / <alpha-value>)",
+				},
+				red: {
+					50: "rgb(var(--c-red-tint) / <alpha-value>)",
+					100: "rgb(var(--c-red-tint-strong) / <alpha-value>)",
+					300: "rgb(var(--c-red-edge) / <alpha-value>)",
+					500: "#EF4444",
+					600: "rgb(var(--c-red-ink) / <alpha-value>)",
+					700: "rgb(var(--c-red-ink-strong) / <alpha-value>)",
 				},
 				// ASU brand. Maroon is the primary mark colour; gold is the ASU
 				// accent, with a muted bronze for the editorial subtitle rule.
 				maroon: {
-					DEFAULT: "#8C1D40",
-					50: "#f7e9ee",
+					DEFAULT: "rgb(var(--c-maroon-ink) / <alpha-value>)",
+					50: "rgb(var(--c-maroon-tint) / <alpha-value>)",
 					600: "#7a1938",
 					700: "#6b1230",
 				},

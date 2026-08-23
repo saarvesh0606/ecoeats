@@ -8,7 +8,7 @@ import { theme } from "@/hooks/useThemeColors";
 export default function NotificationsScreen() {
 	const router = useRouter();
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3 flex-row items-center gap-2">
 				<Pressable
 					onPress={() => router.back()}

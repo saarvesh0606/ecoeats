@@ -137,7 +137,7 @@ export function Profile() {
 	}
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
 				<Text className="font-display-bold text-3xl text-brand mb-4">
 					Profile
@@ -188,7 +188,7 @@ export function Profile() {
 										key={tag}
 										onPress={() => togglePref(tag)}
 										accessibilityRole="button"
-										className={`font-body text-sm capitalize rounded-full px-3 py-1.5 border overflow-hidden ${on ? "bg-forest-800 border-forest-800 text-white" : "bg-white border-gray-300 text-gray-700"}`}
+										className={`font-body text-sm capitalize rounded-full px-3 py-1.5 border overflow-hidden ${on ? "bg-forest-800 border-forest-800 text-white" : "bg-card border-gray-300 text-gray-700"}`}
 									>
 										{tag}
 									</Text>

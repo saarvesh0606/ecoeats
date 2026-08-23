@@ -64,7 +64,7 @@ export default function RoleScreen() {
 	}
 
 	return (
-		<View className="flex-1 bg-cream justify-center px-6">
+		<View className="flex-1 bg-page justify-center px-6">
 			<Text className="font-display-bold text-3xl text-brand text-center">
 				How will you use EcoEats?
 			</Text>
@@ -85,7 +85,7 @@ export default function RoleScreen() {
 							className={`flex-1 rounded-card border p-5 ${
 								active
 									? "border-forest-800 bg-forest-800"
-									: "border-gray-200 bg-white"
+									: "border-gray-200 bg-card"
 							}`}
 						>
 							{choice.renderIcon(active ? "#ffffff" : theme.brand)}

@@ -24,8 +24,16 @@
  */
 @layer base {
 	:root {
-		/* Page and cards */
-		--c-cream: 251 249 244;
+		/*
+		 * Surfaces flip; the same colours used as ink do not.
+		 *
+		 * This is the distinction the first attempt missed. bg-white means "a
+		 * card" and has to darken; text-white means "a label on a green button"
+		 * and must stay light, or every button legend turns black on green. Same
+		 * for cream. So the surfaces get their own names — page and card — and
+		 * white and cream go back to being literally white and cream.
+		 */
+		--c-page: 251 249 244;
 		--c-card: 255 255 255;
 
 		/* Text, brightest to faintest */
@@ -56,10 +64,30 @@
 		 * unreadable, so the ink lifts to the pale end of the ramp instead.
 		 */
 		--c-brand: 12 50 38;
+
+		/* Body copy that predates the gray ramp, and the surface behind it. */
+		--c-ink: 27 28 25;
+		--c-ink-muted: 65 72 69;
+		--c-surface-high: 234 232 227;
+		--c-outline: 113 121 116;
+
+		/* Tinted panels: the allergen warning, danger rows, the ASU badge. Their
+		   text moves with them, or a dark panel keeps unreadable dark text. */
+		--c-amber-tint: 255 251 235;
+		--c-amber-edge: 253 230 138;
+		--c-amber-ink: 180 83 9;
+		--c-amber-ink-strong: 146 64 14;
+		--c-red-tint: 254 242 242;
+		--c-red-tint-strong: 254 226 226;
+		--c-red-edge: 252 165 165;
+		--c-red-ink: 220 38 38;
+		--c-red-ink-strong: 185 28 28;
+		--c-maroon-tint: 247 233 238;
+		--c-maroon-ink: 140 29 64;
 	}
 
 	.dark:root {
-		--c-cream: 18 19 17;
+		--c-page: 18 19 17;
 		/* Lifted off the page rather than level with it. Dark UIs separate a card
 		   from its background by making it lighter, and the first attempt sat at
 		   a contrast ratio of 1.10 against the page — flat enough that the cards
@@ -88,5 +116,24 @@
 		--c-forest-50: 22 36 29;
 
 		--c-brand: 168 207 189;
+
+		--c-ink: 242 241 234;
+		--c-ink-muted: 179 182 172;
+		--c-surface-high: 43 45 39;
+		--c-outline: 140 143 133;
+
+		/* Tints become deep washes of the same hue, and their text lifts to the
+		   pale end so the panel still reads as a warning rather than a smudge. */
+		--c-amber-tint: 42 35 18;
+		--c-amber-edge: 74 61 26;
+		--c-amber-ink: 232 178 92;
+		--c-amber-ink-strong: 240 192 112;
+		--c-red-tint: 42 22 22;
+		--c-red-tint-strong: 53 25 26;
+		--c-red-edge: 92 42 44;
+		--c-red-ink: 248 113 113;
+		--c-red-ink-strong: 252 165 165;
+		--c-maroon-tint: 46 22 32;
+		--c-maroon-ink: 233 162 184;
 	}
 }

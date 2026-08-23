@@ -139,7 +139,7 @@ export function OrganizerHome() {
 
 	if (loading) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+			<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
 					<Text className="font-display-bold text-3xl text-brand">
 						Host Dashboard
@@ -153,7 +153,7 @@ export function OrganizerHome() {
 	if (error) {
 		return (
 			<SafeAreaView
-				className="flex-1 bg-cream items-center justify-center px-8"
+				className="flex-1 bg-page items-center justify-center px-8"
 				edges={["top"]}
 			>
 				<Text className="font-display-bold text-lg text-gray-900 text-center">
@@ -179,7 +179,7 @@ export function OrganizerHome() {
 	const visible = listings.filter(inTab);
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			{/* Header */}
 			<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
 				<View>
@@ -230,7 +230,7 @@ export function OrganizerHome() {
 						<Pressable
 							key={key}
 							onPress={() => setTab(key)}
-							className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+							className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-200"}`}
 						>
 							<Text
 								className={`font-body-medium text-sm ${on ? "text-white" : "text-gray-600"}`}
@@ -256,7 +256,7 @@ export function OrganizerHome() {
 						<FadeInItem index={index}>
 							<PressableScale
 								onPress={() => router.push(`/manage/${item.id}`)}
-								className="bg-white rounded-card p-4 border border-gray-100"
+								className="bg-card rounded-card p-4 border border-gray-100"
 								accessibilityRole="button"
 								accessibilityLabel={`Manage ${item.title}`}
 							>

@@ -232,11 +232,11 @@ export default function ListingDetail() {
 		}
 	}
 
-	if (loading) return <Spinner className="flex-1 bg-cream" />;
+	if (loading) return <Spinner className="flex-1 bg-page" />;
 
 	if (loadError || !listing) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
+			<SafeAreaView className="flex-1 bg-page items-center justify-center px-8">
 				<Text className="font-body text-gray-600 text-center mb-4">
 					{loadError ?? "Listing not found."}
 				</Text>
@@ -259,7 +259,7 @@ export default function ListingDetail() {
 	return (
 		// The bottom inset belongs to the claim bar alone (see below), so the
 		// container must not reserve it as well.
-		<SafeAreaView className="flex-1 bg-cream" edges={[]}>
+		<SafeAreaView className="flex-1 bg-page" edges={[]}>
 			<Animated.ScrollView
 				showsVerticalScrollIndicator={false}
 				// Enough room to scroll everything out from under the bar.
@@ -318,7 +318,7 @@ export default function ListingDetail() {
 						onPress={() => router.back()}
 						hitSlop={8}
 						style={{ top: insets.top + 16 }}
-						className="absolute left-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+						className="absolute left-4 w-10 h-10 rounded-full bg-card/90 items-center justify-center"
 						accessibilityRole="button"
 						accessibilityLabel="Go back"
 					>
@@ -328,7 +328,7 @@ export default function ListingDetail() {
 						onPress={onShare}
 						hitSlop={8}
 						style={{ top: insets.top + 16 }}
-						className="absolute right-4 w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+						className="absolute right-4 w-10 h-10 rounded-full bg-card/90 items-center justify-center"
 						accessibilityRole="button"
 						accessibilityLabel="Share this listing"
 					>
@@ -383,7 +383,7 @@ export default function ListingDetail() {
 					<Text className="font-display-bold text-lg text-gray-900 mt-6 mb-1">
 						Pickup Details
 					</Text>
-					<View className="bg-white rounded-card p-4 border border-gray-100">
+					<View className="bg-card rounded-card p-4 border border-gray-100">
 						<DetailRow
 							icon="location-outline"
 							label="Where"
@@ -547,7 +547,7 @@ export default function ListingDetail() {
 					style={{
 						paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12),
 					}}
-					className="px-5 pt-4 border-t border-gray-100 bg-cream"
+					className="px-5 pt-4 border-t border-gray-100 bg-page"
 				>
 					{claimError && (
 						<Text className="font-body text-red-500 text-sm mb-2 text-center">

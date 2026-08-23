@@ -76,7 +76,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 				>
 					{/* Swallow taps inside the card so they don't dismiss it. */}
 					<Pressable
-						className="bg-cream rounded-card p-5 w-full max-w-sm"
+						className="bg-page rounded-card p-5 w-full max-w-sm"
 						onPress={() => {}}
 					>
 						<Text className="font-display-bold text-xl text-gray-900">

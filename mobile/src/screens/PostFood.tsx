@@ -250,7 +250,7 @@ export function PostFood() {
 	}
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<KeyboardAvoidingView
 				className="flex-1"
 				behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -311,7 +311,7 @@ export function PostFood() {
 							<Pressable
 								onPress={addPhoto}
 								disabled={uploading}
-								className="w-20 h-20 rounded-btn border-2 border-dashed border-forest-300 items-center justify-center bg-white"
+								className="w-20 h-20 rounded-btn border-2 border-dashed border-forest-300 items-center justify-center bg-card"
 							>
 								<Text className="font-body text-brand text-xs">
 									{uploading ? "…" : "+ Add"}
@@ -417,7 +417,7 @@ export function PostFood() {
 								<Pressable
 									key={tag}
 									onPress={() => toggleTag(tag)}
-									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
+									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm capitalize ${on ? "text-white" : "text-gray-700"}`}
@@ -451,7 +451,7 @@ export function PostFood() {
 										haptics.select();
 										setExpiry(mins);
 									}}
-									className={`flex-1 rounded-btn py-2.5 items-center border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
+									className={`flex-1 rounded-btn py-2.5 items-center border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm font-semibold ${on ? "text-white" : "text-gray-700"}`}
@@ -475,7 +475,7 @@ export function PostFood() {
 										haptics.select();
 										setCampus(name);
 									}}
-									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-300"}`}
+									className={`rounded-full px-3 py-1.5 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-300"}`}
 								>
 									<Text
 										className={`font-body text-sm ${on ? "text-white" : "text-gray-700"}`}
@@ -542,7 +542,7 @@ export function PostFood() {
 										haptics.select();
 										setScheduleMode(key);
 									}}
-									className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+									className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-200"}`}
 								>
 									<Text
 										className={`font-body-medium text-sm ${on ? "text-white" : "text-gray-600"}`}

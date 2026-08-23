@@ -179,7 +179,7 @@ export function NotificationsList() {
 		void load();
 	}, [load]);
 
-	if (loading) return <Spinner className="flex-1 bg-cream" />;
+	if (loading) return <Spinner className="flex-1 bg-page" />;
 
 	return (
 		<SectionList
@@ -219,7 +219,7 @@ export function NotificationsList() {
 					<View
 						className={`rounded-card p-4 border ${
 							item.read
-								? "bg-white border-gray-100"
+								? "bg-card border-gray-100"
 								: "bg-forest-50 border-forest-100 border-l-4 border-l-forest-600"
 						}`}
 					>

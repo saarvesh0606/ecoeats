@@ -246,7 +246,7 @@ export function RecipientFeed() {
 
 	if (loading) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+			<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
 					<Text className="font-display-bold text-3xl text-brand">
 						Discover
@@ -289,7 +289,7 @@ export function RecipientFeed() {
 			: listings;
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			{/* Header */}
 			<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
 				<View>
@@ -319,7 +319,7 @@ export function RecipientFeed() {
 
 			{/* Search */}
 			<View className="px-5 pb-3">
-				<View className="flex-row items-center bg-white border border-gray-200 rounded-full px-4 py-2.5">
+				<View className="flex-row items-center bg-card border border-gray-200 rounded-full px-4 py-2.5">
 					<Ionicons name="search" size={18} color={theme.muted} />
 					<TextInput
 						// Size without a line height, for the reason Input documents: on
@@ -405,7 +405,7 @@ export function RecipientFeed() {
 										toggleDietary(item);
 									}
 								}}
-								className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+								className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-200"}`}
 							>
 								<Text
 									className={`font-body-medium text-sm capitalize ${on ? "text-white" : "text-gray-600"}`}

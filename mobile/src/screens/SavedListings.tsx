@@ -75,7 +75,7 @@ export function SavedListings() {
 
 	if (loading) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+			<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 				{header}
 				<SkeletonList count={3} />
 			</SafeAreaView>
@@ -83,7 +83,7 @@ export function SavedListings() {
 	}
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			{header}
 			<FlatList
 				data={saved}

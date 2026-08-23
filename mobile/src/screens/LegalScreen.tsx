@@ -22,7 +22,7 @@ export function LegalScreen() {
 	const document = LEGAL_DOCUMENTS[doc as LegalDocumentKey];
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<View className="px-5 pt-2 pb-1">
 				<Pressable
 					onPress={() => router.back()}

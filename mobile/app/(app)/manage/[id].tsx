@@ -128,11 +128,11 @@ export default function ManageListing() {
 		}
 	}
 
-	if (loading) return <Spinner className="flex-1 bg-cream" />;
+	if (loading) return <Spinner className="flex-1 bg-page" />;
 
 	if (!listing) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream items-center justify-center px-8">
+			<SafeAreaView className="flex-1 bg-page items-center justify-center px-8">
 				<Text className="font-body text-gray-600 text-center mb-4">
 					{error ?? "Post not found."}
 				</Text>
@@ -155,7 +155,7 @@ export default function ManageListing() {
 	const header = (
 		<View>
 			{/* Post summary */}
-			<View className="bg-white rounded-card p-4 border border-gray-100 flex-row gap-3 items-center">
+			<View className="bg-card rounded-card p-4 border border-gray-100 flex-row gap-3 items-center">
 				{cover ? (
 					<Image
 						source={{ uri: cover }}
@@ -187,7 +187,7 @@ export default function ManageListing() {
 			</View>
 
 			{/* Quantity left */}
-			<View className="bg-white rounded-card p-4 border border-gray-100 mt-3">
+			<View className="bg-card rounded-card p-4 border border-gray-100 mt-3">
 				<Text className="font-body-semibold text-gray-900">Quantity Left</Text>
 				<View className="flex-row items-baseline gap-1 mt-1">
 					<Text className="font-display-bold text-3xl text-brand">
@@ -247,7 +247,7 @@ export default function ManageListing() {
 	);
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3 flex-row items-center gap-2">
 				<Pressable
 					onPress={() => router.replace("/posts")}
@@ -275,7 +275,7 @@ export default function ManageListing() {
 				showsVerticalScrollIndicator={false}
 				ListHeaderComponent={header}
 				renderItem={({ item }) => (
-					<View className="bg-white rounded-card p-4 border border-gray-100">
+					<View className="bg-card rounded-card p-4 border border-gray-100">
 						<View className="flex-row items-center gap-3">
 							<Avatar name={item.recipient_name} />
 							<View className="flex-1">

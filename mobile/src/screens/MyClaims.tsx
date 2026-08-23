@@ -115,7 +115,7 @@ function StarRow({
 
 function PickupChecklist() {
 	return (
-		<View className="bg-white rounded-card p-4 border border-gray-100 mt-2">
+		<View className="bg-card rounded-card p-4 border border-gray-100 mt-2">
 			<Text className="font-display-bold text-base text-gray-900 mb-2">
 				How to Pick Up
 			</Text>
@@ -236,7 +236,7 @@ export function MyClaims() {
 
 	if (loading) {
 		return (
-			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+			<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
 					<Text className="font-display-bold text-3xl text-brand">
 						My Claims
@@ -257,7 +257,7 @@ export function MyClaims() {
 	const visible = claims.filter(inTab);
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3">
 				<Text className="font-display-bold text-3xl text-brand">My Claims</Text>
 				<Text className="font-body text-gray-500 mt-0.5">
@@ -276,7 +276,7 @@ export function MyClaims() {
 								haptics.select();
 								setTab(key);
 							}}
-							className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-white border-gray-200"}`}
+							className={`rounded-full px-4 py-2 border ${on ? "bg-forest-800 border-forest-800" : "bg-card border-gray-200"}`}
 						>
 							<Text
 								className={`font-body-medium text-sm ${on ? "text-white" : "text-gray-600"}`}
@@ -303,7 +303,7 @@ export function MyClaims() {
 					return (
 						<FadeInItem
 							index={index}
-							className="bg-white rounded-card p-4 border border-gray-100"
+							className="bg-card rounded-card p-4 border border-gray-100"
 						>
 							<View className="flex-row gap-3">
 								{cover ? (

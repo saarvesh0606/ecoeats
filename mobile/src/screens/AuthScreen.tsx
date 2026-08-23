@@ -145,7 +145,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 
 	return (
 		<KeyboardAvoidingView
-			className="flex-1 bg-cream"
+			className="flex-1 bg-page"
 			behavior={Platform.OS === "ios" ? "padding" : undefined}
 		>
 			<ScrollView
@@ -175,7 +175,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 					</View>
 
 					{/* Mode toggle */}
-					<View className="flex-row bg-white border border-gray-200 rounded-btn p-1 mb-6">
+					<View className="flex-row bg-card border border-gray-200 rounded-btn p-1 mb-6">
 						{(
 							[
 								["signin", "Sign In"],

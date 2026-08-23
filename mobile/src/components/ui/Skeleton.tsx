@@ -40,7 +40,7 @@ function Shimmer({ className }: { className: string }) {
 /** One feed card's worth of placeholder: image block, title, meta line. */
 export function ListingCardSkeleton() {
 	return (
-		<View className="bg-white rounded-card overflow-hidden border border-gray-100">
+		<View className="bg-card rounded-card overflow-hidden border border-gray-100">
 			<Shimmer className="w-full h-48" />
 			<View className="p-4 gap-2">
 				<Shimmer className="h-5 w-2/3 rounded-md" />
@@ -57,7 +57,7 @@ export function ListingCardSkeleton() {
 /** A compact row placeholder, for list screens that aren't photo-led. */
 export function RowSkeleton() {
 	return (
-		<View className="bg-white rounded-card p-4 border border-gray-100 flex-row gap-3 items-center">
+		<View className="bg-card rounded-card p-4 border border-gray-100 flex-row gap-3 items-center">
 			<Shimmer className="w-16 h-16 rounded-xl" />
 			<View className="flex-1 gap-2">
 				<Shimmer className="h-4 w-3/4 rounded-md" />

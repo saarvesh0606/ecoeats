@@ -51,7 +51,7 @@ export function AcceptTerms() {
 	}
 
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
 			<View className="px-5 pt-2 pb-3">
 				<Text className="font-display-bold text-3xl text-brand">
 					Before you start
@@ -81,7 +81,7 @@ export function AcceptTerms() {
 							className={`rounded-full px-4 py-2 border ${
 								on
 									? "bg-forest-800 border-forest-800"
-									: "bg-white border-gray-200"
+									: "bg-card border-gray-200"
 							}`}
 						>
 							<Text
@@ -96,7 +96,7 @@ export function AcceptTerms() {
 				})}
 			</View>
 
-			<View className="flex-1 mx-5 rounded-card bg-white border border-gray-100 overflow-hidden">
+			<View className="flex-1 mx-5 rounded-card bg-card border border-gray-100 overflow-hidden">
 				<LegalDocumentView
 					document={document}
 					onScrolledToEnd={() => {

@@ -125,7 +125,7 @@ export function ListingCard({
 	return (
 		<PressableScale
 			onPress={onPress}
-			className="bg-white rounded-card overflow-hidden border border-gray-100"
+			className="bg-card rounded-card overflow-hidden border border-gray-100"
 			accessibilityRole={CARD_ROLE}
 			accessibilityLabel={`${listing.title}, ${timeLeft}, ${portions}${matches ? ", matches your preferences" : ""}`}
 			accessibilityHint="Opens the listing"

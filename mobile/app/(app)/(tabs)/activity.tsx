@@ -5,7 +5,7 @@ import { NotificationsList } from "@/components/NotificationsList";
 /** Host "Activity" tab — the same notifications feed as the bell, but as a tab. */
 export default function ActivityTab() {
 	return (
-		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
+		<SafeAreaView className="flex-1 bg-page" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3">
 				<Text className="font-display-bold text-3xl text-brand">Activity</Text>
 				<Text className="font-body text-gray-500 mt-0.5">

@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/Spinner";
  */
 export default function Index() {
 	return (
-		<View className="flex-1 bg-cream items-center justify-center">
+		<View className="flex-1 bg-page items-center justify-center">
 			<Spinner />
 		</View>
 	);

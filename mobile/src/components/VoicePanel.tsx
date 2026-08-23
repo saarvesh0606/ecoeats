@@ -46,7 +46,7 @@ export function VoicePanel({
 	}, [listening]);
 
 	return (
-		<View className="bg-white rounded-card border border-gray-100 p-5 items-center">
+		<View className="bg-card rounded-card border border-gray-100 p-5 items-center">
 			<Text className="font-body text-gray-500 text-sm mb-3">
 				{listening
 					? "Listening — say what the food is"
