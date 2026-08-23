@@ -40,6 +40,54 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 }
 
 describe("ListingCard", () => {
+	// Profile has always said dietary preferences "highlight food that fits".
+	// Nothing read the setting until now, so the toggles genuinely did nothing.
+	describe("dietary preferences", () => {
+		it("marks a tag the viewer has asked for", () => {
+			const { getByLabelText } = render(
+				<ListingCard
+					listing={makeListing({ dietary_tags: ["vegetarian", "halal"] })}
+					now={Date.now()}
+					onPress={() => {}}
+					prefs={["vegetarian"]}
+				/>,
+			);
+
+			// Announced, not merely recoloured — colour alone reaches neither a
+			// screen reader nor anyone who can't separate the two greens.
+			expect(getByLabelText("vegetarian, matches your preferences")).toBeTruthy();
+			expect(getByLabelText("halal")).toBeTruthy();
+		});
+
+		it("marks nothing when no preferences are set", () => {
+			const { getByLabelText, queryByLabelText } = render(
+				<ListingCard
+					listing={makeListing({ dietary_tags: ["vegetarian"] })}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
+			);
+
+			expect(getByLabelText("vegetarian")).toBeTruthy();
+			expect(queryByLabelText(/matches your preferences/)).toBeNull();
+		});
+
+		it("still shows food that matches nothing", () => {
+			const { getByText } = render(
+				<ListingCard
+					listing={makeListing({ title: "Beef tacos", dietary_tags: ["halal"] })}
+					now={Date.now()}
+					onPress={() => {}}
+					prefs={["vegan"]}
+				/>,
+			);
+
+			// Marking, not filtering: this food expires within the hour, and hiding
+			// it over a preference set once is the worse failure.
+			expect(getByText("Beef tacos")).toBeTruthy();
+		});
+	});
+
 	it("shows the title and location", () => {
 		const { getByText } = render(
 			<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,

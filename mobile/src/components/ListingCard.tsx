@@ -13,6 +13,8 @@ interface ListingCardProps {
 	/** Presentational ribbon for the top / most-urgent card. A real "featured"
 	 *  flag would be a Phase 2 backend feature. */
 	featured?: boolean;
+	/** The viewer's dietary preferences, for marking the tags that match. */
+	prefs?: readonly string[];
 }
 
 /** Under this, the countdown turns red and pulses — the food is about to go. */
@@ -47,6 +49,7 @@ export function ListingCard({
 	now,
 	onPress,
 	featured = false,
+	prefs,
 }: ListingCardProps) {
 	const timeLeft = formatTimeLeft(listing.expires_at, now);
 	const distance = formatDistance(listing.distance_miles);
@@ -157,18 +160,44 @@ export function ListingCard({
 					{formatLocation(listing.building, listing.room)}
 				</Text>
 
+				{/* Tags matching the viewer's dietary preferences are filled in
+				    rather than outlined. Profile has always promised this — "used to
+				    highlight food that fits, you'll still see everything" — and
+				    nothing had ever read the setting, so the toggles did nothing at
+				    all. Marking rather than filtering is the promise as written, and
+				    the safer reading: food here expires within the hour, and hiding
+				    it from someone over a preference they set once is a worse
+				    failure than showing them something they scroll past. */}
 				{listing.dietary_tags.length > 0 && (
 					<View className="flex-row flex-wrap gap-1.5 mt-3">
-						{listing.dietary_tags.map((tag) => (
-							<View
-								key={tag}
-								className="border border-gray-200 rounded-full px-2.5 py-0.5"
-							>
-								<Text className="font-body text-xs text-gray-600 capitalize">
-									{tag}
-								</Text>
-							</View>
-						))}
+						{listing.dietary_tags.map((tag) => {
+							const matches = prefs?.includes(tag) ?? false;
+							return (
+								<View
+									key={tag}
+									className={
+										matches
+											? "border border-forest-600 bg-forest-50 rounded-full px-2.5 py-0.5"
+											: "border border-gray-200 rounded-full px-2.5 py-0.5"
+									}
+								>
+									<Text
+										// Colour alone would leave this invisible to a screen
+										// reader, and to anyone who can't separate the two greens.
+										accessibilityLabel={
+											matches ? `${tag}, matches your preferences` : tag
+										}
+										className={
+											matches
+												? "font-body-semibold text-xs text-forest-800 capitalize"
+												: "font-body text-xs text-gray-600 capitalize"
+										}
+									>
+										{tag}
+									</Text>
+								</View>
+							);
+						})}
 					</View>
 				)}
 

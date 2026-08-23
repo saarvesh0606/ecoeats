@@ -17,6 +17,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { ReflowRow } from "@/components/ui/ReflowRow";
+import { useAuth } from "@/context/AuthContext";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useNow } from "@/hooks/useNow";
@@ -31,6 +32,9 @@ const SOON_MINUTES = 20;
 export function RecipientFeed() {
 	const router = useRouter();
 	const now = useNow();
+	// Dietary preferences mark matching food rather than filtering it away.
+	const { profile } = useAuth();
+	const prefs = profile?.dietary_prefs;
 
 	const [listings, setListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -357,6 +361,7 @@ export function RecipientFeed() {
 									listing={item}
 									now={now}
 									featured={index === 0 && !searching}
+									prefs={prefs}
 									onPress={() => router.push(`/listing/${item.id}`)}
 								/>
 							</FadeInItem>

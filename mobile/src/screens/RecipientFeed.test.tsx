@@ -15,6 +15,14 @@ jest.mock("@/lib/listings", () => ({
 }));
 jest.mock("@/lib/listingStream", () => ({ subscribeToListings: jest.fn() }));
 
+// The feed reads dietary preferences off the profile to mark matching tags.
+// Stubbed rather than provided, because the real context reaches for
+// AsyncStorage, which has no native module under Jest.
+const mockPrefs: string[] = [];
+jest.mock("@/context/AuthContext", () => ({
+	useAuth: () => ({ profile: { dietary_prefs: mockPrefs } }),
+}));
+
 // Denied by default. The feed has to be fully usable without a location, so
 // that is the state most of this suite should be exercising.
 const mockRequestLocation = jest.fn(async () => null as unknown);
