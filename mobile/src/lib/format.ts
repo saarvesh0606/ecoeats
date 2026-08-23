@@ -32,7 +32,10 @@ export function formatDuration(expiresAt: string, now: number): string {
 }
 
 /** How urgent the countdown is, for colour. */
-export function urgency(expiresAt: string, now: number): "high" | "medium" | "low" {
+export function urgency(
+	expiresAt: string,
+	now: number,
+): "high" | "medium" | "low" {
 	const minutes = (new Date(expiresAt).getTime() - now) / 60000;
 	if (minutes <= 5) return "high";
 	if (minutes <= 15) return "medium";

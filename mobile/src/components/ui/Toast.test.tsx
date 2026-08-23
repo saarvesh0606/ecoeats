@@ -80,13 +80,11 @@ describe("ToastProvider", () => {
 		// fade-out's completion callback, so an exit animation that never ran left
 		// the banner on screen for good. Simulate exactly that: an animation whose
 		// start() never calls back.
-		const timing = jest
-			.spyOn(Animated, "timing")
-			.mockReturnValue({
-				start: () => undefined,
-				stop: () => undefined,
-				reset: () => undefined,
-			} as unknown as Animated.CompositeAnimation);
+		const timing = jest.spyOn(Animated, "timing").mockReturnValue({
+			start: () => undefined,
+			stop: () => undefined,
+			reset: () => undefined,
+		} as unknown as Animated.CompositeAnimation);
 
 		try {
 			renderToast();

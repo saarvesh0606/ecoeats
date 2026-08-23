@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, Text, type ViewStyle } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
+import { theme } from "@/hooks/useThemeColors";
 import type { Feel } from "@/lib/haptics";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -26,7 +27,7 @@ interface ButtonProps {
 }
 
 const COLORS = {
-	forest: "#0C3226",
+	forest: theme.brand,
 	white: "#FFFFFF",
 };
 
@@ -96,8 +97,8 @@ export function Button({
 	const textVariantStyles: Record<ButtonVariant, string> = {
 		primary: "text-white",
 		secondary: "text-forest-900",
-		outline: "text-forest-700",
-		ghost: "text-forest-700",
+		outline: "text-brand",
+		ghost: "text-brand",
 		danger: "text-red-600",
 	};
 

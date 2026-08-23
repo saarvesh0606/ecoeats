@@ -42,9 +42,7 @@ export async function subscribeToListings(
 	const WebEventSource = (globalThis as { EventSource?: typeof EventSource })
 		.EventSource;
 	if (Platform.OS === "web" && WebEventSource) {
-		const url = token
-			? `${base}?token=${encodeURIComponent(token)}`
-			: base;
+		const url = token ? `${base}?token=${encodeURIComponent(token)}` : base;
 		const es = new WebEventSource(url);
 		es.onmessage = (event: MessageEvent) => {
 			const parsed = parse(event.data);

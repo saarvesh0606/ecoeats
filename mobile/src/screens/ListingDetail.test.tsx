@@ -1,6 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { Linking } from "react-native";
-import { StyleSheet } from "react-native";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
+import { Linking, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { createClaim } from "@/lib/claims";
@@ -231,7 +235,9 @@ describe("listing detail", () => {
 		it("shows the server's reason when the claim is refused", async () => {
 			const { ApiError } = jest.requireMock("@/lib/api");
 			mockFetch.mockResolvedValue(listing());
-			mockClaim.mockRejectedValue(new ApiError(409, "You already claimed this."));
+			mockClaim.mockRejectedValue(
+				new ApiError(409, "You already claimed this."),
+			);
 
 			renderDetail();
 			fireEvent.press(await screen.findByText("Claim This Food"));
@@ -300,7 +306,9 @@ describe("listing detail", () => {
 			// enough when the phone is halfway back into a pocket.
 			const { ApiError } = jest.requireMock("@/lib/api");
 			mockFetch.mockResolvedValue(listing());
-			mockClaim.mockRejectedValue(new ApiError(409, "You already claimed this."));
+			mockClaim.mockRejectedValue(
+				new ApiError(409, "You already claimed this."),
+			);
 
 			renderDetail();
 			fireEvent.press(await screen.findByText("Claim This Food"));

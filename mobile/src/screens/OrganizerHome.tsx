@@ -6,10 +6,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { SkeletonList } from "@/components/ui/Skeleton";
-import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
+import { theme } from "@/hooks/useThemeColors";
+import { formatLocation } from "@/lib/format";
+import { subscribeToListings } from "@/lib/listingStream";
 import {
 	fetchImpact,
 	fetchMyListings,
@@ -17,8 +20,6 @@ import {
 	type Listing,
 	publishListing,
 } from "@/lib/listings";
-import { formatLocation } from "@/lib/format";
-import { subscribeToListings } from "@/lib/listingStream";
 
 type Tab = "active" | "scheduled" | "past";
 
@@ -140,7 +141,7 @@ export function OrganizerHome() {
 		return (
 			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						Host Dashboard
 					</Text>
 				</View>
@@ -182,7 +183,7 @@ export function OrganizerHome() {
 			{/* Header */}
 			<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
 				<View>
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						Host Dashboard
 					</Text>
 					<Text className="font-body text-gray-500 mt-0.5">
@@ -213,7 +214,10 @@ export function OrganizerHome() {
 				{(impact?.pounds_saved ?? 0) > 0 && (
 					<Text className="font-body text-forest-100 text-xs mt-3 pt-3 border-t border-forest-700">
 						≈ {impact?.pounds_saved.toFixed(1)} lbs kept out of a landfill
-						<Text className="text-forest-300"> · est. from portions shared</Text>
+						<Text className="text-forest-300">
+							{" "}
+							· est. from portions shared
+						</Text>
 					</Text>
 				)}
 			</View>
@@ -288,7 +292,7 @@ export function OrganizerHome() {
 											{live && (
 												<View className="flex-row items-center gap-1">
 													<View className="w-2 h-2 rounded-full bg-lime" />
-													<Text className="font-body-medium text-forest-600 text-xs">
+													<Text className="font-body-medium text-brand text-xs">
 														Live
 													</Text>
 												</View>
@@ -299,7 +303,7 @@ export function OrganizerHome() {
 												</Text>
 											)}
 											{item.status === "scheduled" && item.scheduled_for && (
-												<Text className="font-body-medium text-forest-600 text-xs">
+												<Text className="font-body-medium text-brand text-xs">
 													Scheduled ·{" "}
 													{new Date(item.scheduled_for).toLocaleString([], {
 														month: "short",
@@ -323,7 +327,11 @@ export function OrganizerHome() {
 											</Text>
 										</View>
 									</View>
-									<Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+									<Ionicons
+										name="chevron-forward"
+										size={18}
+										color={theme.muted}
+									/>
 								</View>
 							</PressableScale>
 							{prelive && (
@@ -342,7 +350,11 @@ export function OrganizerHome() {
 				}}
 				ListFooterComponent={
 					<View className="mt-2">
-						<Button variant="outline" size="lg" onPress={() => router.push("/post")}>
+						<Button
+							variant="outline"
+							size="lg"
+							onPress={() => router.push("/post")}
+						>
 							+ Create New Post
 						</Button>
 					</View>

@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { TabIcon, type TabIconName } from "@/components/ui/TabIcon";
 import { useAuth } from "@/context/AuthContext";
+import { theme } from "@/hooks/useThemeColors";
 import { haptics } from "@/lib/haptics";
 
 /**
@@ -70,11 +71,13 @@ export default function TabsLayout() {
 		<Tabs
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: "#0C3226",
-				tabBarInactiveTintColor: "#9CA3AF",
+				tabBarActiveTintColor: theme.brand,
+				tabBarInactiveTintColor: theme.muted,
 				tabBarStyle: {
-					backgroundColor: "#FFFFFF",
-					borderTopColor: "#E5E7EB",
+					// The one surface that isn't a class: Tabs styles itself in JS, so
+					// a literal here would have left a white bar under a dark app.
+					backgroundColor: theme.card,
+					borderTopColor: theme.hairline,
 					height: 62,
 					paddingBottom: 8,
 					paddingTop: 6,

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
+import { theme } from "@/hooks/useThemeColors";
 import { haptics } from "@/lib/haptics";
 import { DIETARY_TAGS } from "@/lib/listings";
 
@@ -51,7 +52,13 @@ function Choice({ label, selected, onPress }: ChoiceProps) {
 	);
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+	title,
+	children,
+}: {
+	title: string;
+	children: React.ReactNode;
+}) {
 	return (
 		<View className="mb-5">
 			<Text className="font-body-semibold text-sm text-gray-900 mb-2.5">
@@ -115,7 +122,7 @@ export function FeedFilterSheet({
 					<SafeAreaView edges={["bottom"]}>
 						<View className="px-5 pt-4">
 							<View className="flex-row items-center justify-between mb-4">
-								<Text className="font-display-bold text-xl text-forest-800">
+								<Text className="font-display-bold text-xl text-brand">
 									Filters
 								</Text>
 								<Pressable
@@ -124,7 +131,7 @@ export function FeedFilterSheet({
 									accessibilityRole="button"
 									accessibilityLabel="Close filters"
 								>
-									<Ionicons name="close" size={22} color="#6B7280" />
+									<Ionicons name="close" size={22} color={theme.secondary} />
 								</Pressable>
 							</View>
 

@@ -52,7 +52,12 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 		status: "active",
 		created_at: new Date("2026-08-23T11:30:00Z").toISOString(),
 		scheduled_for: null,
-		organizer: { id: "org-1", name: "Front Desk", rating: null, rating_count: 0 },
+		organizer: {
+			id: "org-1",
+			name: "Front Desk",
+			rating: null,
+			rating_count: 0,
+		},
 		photo_urls: [],
 		distance_miles: null,
 		seconds_remaining: 1800,

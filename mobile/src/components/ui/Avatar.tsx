@@ -44,7 +44,7 @@ export function Avatar({
 		<View
 			className={`${box} rounded-full bg-forest-100 items-center justify-center`}
 		>
-			<Text className={`font-body-semibold text-forest-700 ${text}`}>
+			<Text className={`font-body-semibold text-brand ${text}`}>
 				{initialsOf(name)}
 			</Text>
 		</View>

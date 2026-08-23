@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Image, Platform, Pressable, Text, View } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { usePulse } from "@/hooks/usePulse";
+import { theme } from "@/hooks/useThemeColors";
 import { formatDistance, formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { type Listing, saveListing, unsaveListing } from "@/lib/listings";
@@ -138,7 +139,9 @@ export function ListingCard({
 					/>
 				) : (
 					<View className="w-full h-48 bg-forest-50 items-center justify-center">
-						<Text className="font-display text-forest-300 text-lg">EcoEats</Text>
+						<Text className="font-display text-forest-300 text-lg">
+							EcoEats
+						</Text>
 					</View>
 				)}
 
@@ -153,12 +156,16 @@ export function ListingCard({
 				<View
 					className={`absolute top-3 right-3 rounded-full px-2.5 py-1 ${urgent ? "bg-red-600" : "bg-forest-900"}`}
 				>
-					<Text className="font-body-semibold text-xs text-white">{timeLeft}</Text>
+					<Text className="font-body-semibold text-xs text-white">
+						{timeLeft}
+					</Text>
 				</View>
 
 				{distance && (
 					<View className="absolute bottom-3 left-3 bg-black/50 rounded-full px-2.5 py-1">
-						<Text className="font-body-medium text-xs text-white">{distance}</Text>
+						<Text className="font-body-medium text-xs text-white">
+							{distance}
+						</Text>
 					</View>
 				)}
 
@@ -170,7 +177,9 @@ export function ListingCard({
 					<View
 						className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 ${scarce ? "bg-red-600" : "bg-black/50"}`}
 					>
-						<Text className="font-body-medium text-xs text-white">{portions}</Text>
+						<Text className="font-body-medium text-xs text-white">
+							{portions}
+						</Text>
 					</View>
 				)}
 			</View>
@@ -192,12 +201,15 @@ export function ListingCard({
 						<Ionicons
 							name={saved ? "bookmark" : "bookmark-outline"}
 							size={20}
-							color={saved ? "#0C3226" : "#9CA3AF"}
+							color={saved ? theme.brand : theme.muted}
 						/>
 					</Pressable>
 				</View>
 
-				<Text className="font-body text-gray-500 text-sm mt-0.5" numberOfLines={1}>
+				<Text
+					className="font-body text-gray-500 text-sm mt-0.5"
+					numberOfLines={1}
+				>
 					{formatLocation(listing.building, listing.room)}
 				</Text>
 
@@ -233,7 +245,7 @@ export function ListingCard({
 									<Text
 										className={
 											preferred
-												? "font-body-semibold text-xs text-forest-800 capitalize"
+												? "font-body-semibold text-xs text-brand capitalize"
 												: "font-body text-xs text-gray-600 capitalize"
 										}
 									>

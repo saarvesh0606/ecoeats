@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { useAuth } from "@/context/AuthContext";
+import { theme } from "@/hooks/useThemeColors";
 import { ApiError, registerProfile, type UserRole } from "@/lib/api";
 
 // The backend role value stays "organizer"; the interface calls it "Host".
@@ -26,7 +27,11 @@ const CHOICES: {
 		title: "Host",
 		blurb: "I have extra food to share.",
 		renderIcon: (color) => (
-			<MaterialCommunityIcons name="storefront-outline" size={26} color={color} />
+			<MaterialCommunityIcons
+				name="storefront-outline"
+				size={26}
+				color={color}
+			/>
 		),
 	},
 ];
@@ -60,7 +65,7 @@ export default function RoleScreen() {
 
 	return (
 		<View className="flex-1 bg-cream justify-center px-6">
-			<Text className="font-display-bold text-3xl text-forest-800 text-center">
+			<Text className="font-display-bold text-3xl text-brand text-center">
 				How will you use EcoEats?
 			</Text>
 			<Text className="font-body text-gray-500 text-center mt-2 mb-8">
@@ -83,7 +88,7 @@ export default function RoleScreen() {
 									: "border-gray-200 bg-white"
 							}`}
 						>
-							{choice.renderIcon(active ? "#ffffff" : "#0C3226")}
+							{choice.renderIcon(active ? "#ffffff" : theme.brand)}
 							<Text
 								className={`font-display-bold text-lg mt-3 ${
 									active ? "text-white" : "text-gray-900"
@@ -113,7 +118,9 @@ export default function RoleScreen() {
 			</Text>
 
 			{error && (
-				<Text className="text-red-500 font-body text-sm mt-2 mb-2">{error}</Text>
+				<Text className="text-red-500 font-body text-sm mt-2 mb-2">
+					{error}
+				</Text>
 			)}
 
 			<View className="h-4" />
@@ -123,7 +130,7 @@ export default function RoleScreen() {
 				disabled={!selected}
 				size="lg"
 			>
-				Continue  →
+				Continue →
 			</Button>
 			<View className="h-3" />
 			<Button onPress={signOut} variant="ghost">

@@ -15,7 +15,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const KEYS = {
 	pushMuted: "ecoeats.pushMuted",
 	hapticsMuted: "ecoeats.hapticsMuted",
+	theme: "ecoeats.theme",
 } as const;
+
+/** Light, dark, or whatever the phone is set to. */
+export type ThemeChoice = "light" | "dark" | "system";
 
 async function read(key: string): Promise<boolean> {
 	try {
@@ -47,4 +51,28 @@ export async function areHapticsMuted(): Promise<boolean> {
 
 export async function setHapticsMuted(muted: boolean): Promise<void> {
 	return write(KEYS.hapticsMuted, muted);
+}
+
+/**
+ * The saved appearance choice, defaulting to following the phone.
+ *
+ * "system" is the default rather than "light" because someone who has set
+ * their phone to dark has already said what they want, and asking them to say
+ * it again in every app is how that setting stops meaning anything.
+ */
+export async function getThemeChoice(): Promise<ThemeChoice> {
+	try {
+		const raw = await AsyncStorage.getItem(KEYS.theme);
+		return raw === "light" || raw === "dark" ? raw : "system";
+	} catch {
+		return "system";
+	}
+}
+
+export async function setThemeChoice(choice: ThemeChoice): Promise<void> {
+	try {
+		await AsyncStorage.setItem(KEYS.theme, choice);
+	} catch {
+		// Best effort, as above: the choice still holds for this session.
+	}
 }

@@ -6,10 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
-import {
-	SettingsGroup,
-	SettingsRow,
-} from "@/components/ui/SettingsList";
+import { SettingsGroup, SettingsRow } from "@/components/ui/SettingsList";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, changeRole, updateProfile } from "@/lib/api";
@@ -131,7 +128,9 @@ export function Profile() {
 			toast.show("Profile saved.");
 		} catch (err) {
 			haptics.error();
-			setError(err instanceof ApiError ? err.message : "Couldn't save. Try again.");
+			setError(
+				err instanceof ApiError ? err.message : "Couldn't save. Try again.",
+			);
 		} finally {
 			setSaving(false);
 		}
@@ -140,7 +139,7 @@ export function Profile() {
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			<ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-				<Text className="font-display-bold text-3xl text-forest-800 mb-4">
+				<Text className="font-display-bold text-3xl text-brand mb-4">
 					Profile
 				</Text>
 				<View className="flex-row items-center gap-3 mb-6">
@@ -164,7 +163,14 @@ export function Profile() {
 					</View>
 				</View>
 
-				<Input label="Name" value={name} onChangeText={(t) => { setName(t); setSaved(false); }} />
+				<Input
+					label="Name"
+					value={name}
+					onChangeText={(t) => {
+						setName(t);
+						setSaved(false);
+					}}
+				/>
 
 				{isRecipient && (
 					<View className="mb-4">
@@ -196,7 +202,7 @@ export function Profile() {
 					<Text className="font-body text-red-500 text-sm mb-3">{error}</Text>
 				)}
 				{saved && !dirty && (
-					<Text className="font-body text-forest-600 text-sm mb-3">Saved.</Text>
+					<Text className="font-body text-brand text-sm mb-3">Saved.</Text>
 				)}
 
 				<Button onPress={onSave} loading={saving} disabled={!dirty} size="lg">

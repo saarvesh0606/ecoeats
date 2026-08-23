@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import { theme } from "@/hooks/useThemeColors";
 import {
 	Pressable,
 	Text,
@@ -15,7 +16,7 @@ interface InputProps extends Omit<TextInputProps, "className"> {
 	className?: string;
 }
 
-const PLACEHOLDER_COLOR = "#9CA3AF";
+const PLACEHOLDER_COLOR = theme.muted;
 
 /**
  * Single-line fields get an explicit height and no vertical padding.

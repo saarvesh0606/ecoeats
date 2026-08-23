@@ -10,6 +10,7 @@ import { ReflowRow } from "@/components/ui/ReflowRow";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useNow } from "@/hooks/useNow";
+import { theme } from "@/hooks/useThemeColors";
 import { fetchSaved, type Listing } from "@/lib/listings";
 
 /**
@@ -66,9 +67,9 @@ export function SavedListings() {
 				accessibilityRole="button"
 				accessibilityLabel="Back"
 			>
-				<Ionicons name="chevron-back" size={24} color="#0C3226" />
+				<Ionicons name="chevron-back" size={24} color={theme.brand} />
 			</Pressable>
-			<Text className="font-display-bold text-2xl text-forest-800">Saved</Text>
+			<Text className="font-display-bold text-2xl text-brand">Saved</Text>
 		</View>
 	);
 
@@ -106,7 +107,7 @@ export function SavedListings() {
 				)}
 				ListEmptyComponent={
 					<View className="items-center justify-center px-8 pt-24">
-						<Ionicons name="bookmark-outline" size={40} color="#9CA3AF" />
+						<Ionicons name="bookmark-outline" size={40} color={theme.muted} />
 						<Text className="font-display-bold text-xl text-gray-900 text-center mt-4">
 							Nothing saved yet
 						</Text>

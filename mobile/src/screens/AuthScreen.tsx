@@ -107,7 +107,8 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 		// as the cancel signal — after a beat, in case the popup closed *because*
 		// sign-in succeeded and the SDK is still resolving.
 		let settled = false;
-		const canWatchFocus = Platform.OS === "web" && typeof window !== "undefined";
+		const canWatchFocus =
+			Platform.OS === "web" && typeof window !== "undefined";
 		const onWindowFocus = () => {
 			setTimeout(() => {
 				if (!settled) setGoogleLoading(false);
@@ -123,7 +124,10 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 				typeof err === "object" && err !== null && "code" in err
 					? String((err as { code: unknown }).code)
 					: "";
-			if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+			if (
+				code !== "auth/popup-closed-by-user" &&
+				code !== "auth/cancelled-popup-request"
+			) {
 				// signInWithGoogle throws a plain Error for the wrong-domain case,
 				// which already reads well; Firebase codes go through the translator.
 				setError(
@@ -162,7 +166,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 							accessibilityLabel="Arizona State University"
 							className="mb-5"
 						/>
-						<Text className="font-display-bold text-3xl text-forest-800 text-center">
+						<Text className="font-display-bold text-3xl text-brand text-center">
 							Welcome to EcoEats
 						</Text>
 						<Text className="font-body text-gray-500 text-sm mt-2 text-center">

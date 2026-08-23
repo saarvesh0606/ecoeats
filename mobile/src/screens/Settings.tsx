@@ -1,24 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import {
-	SettingsGroup,
-	SettingsRow,
-} from "@/components/ui/SettingsList";
+import { SettingsGroup, SettingsRow } from "@/components/ui/SettingsList";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
+import { applyColorScheme, theme } from "@/hooks/useThemeColors";
 import { ApiError, deleteAccount } from "@/lib/api";
 import { applyHapticPreference, haptics } from "@/lib/haptics";
 import {
 	areHapticsMuted,
 	arePushNotificationsMuted,
+	getThemeChoice,
 	setHapticsMuted,
+	setThemeChoice as saveThemeChoice,
+	type ThemeChoice,
 } from "@/lib/preferences";
 
 /**
@@ -29,6 +30,32 @@ import {
  * worth knowing in a bug report — "it does X" is far more actionable with the
  * build number attached.
  */
+const APPEARANCE_OPTIONS: {
+	value: ThemeChoice;
+	label: string;
+	subtitle: string;
+	icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+	{
+		value: "system",
+		label: "Match my phone",
+		subtitle: "Follows your device setting.",
+		icon: "phone-portrait-outline",
+	},
+	{
+		value: "light",
+		label: "Light",
+		subtitle: "Always light.",
+		icon: "sunny-outline",
+	},
+	{
+		value: "dark",
+		label: "Dark",
+		subtitle: "Always dark.",
+		icon: "moon-outline",
+	},
+];
+
 export function Settings() {
 	const router = useRouter();
 	const confirm = useConfirm();
@@ -37,11 +64,13 @@ export function Settings() {
 
 	const [muted, setMuted] = useState(false);
 	const [hapticsOff, setHapticsOff] = useState(false);
+	const [appearance, setAppearance] = useState<ThemeChoice>("system");
 	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
 		void arePushNotificationsMuted().then(setMuted);
 		void areHapticsMuted().then(setHapticsOff);
+		void getThemeChoice().then(setAppearance);
 	}, []);
 
 	const version = Constants.expoConfig?.version ?? "unknown";
@@ -70,7 +99,6 @@ export function Settings() {
 	// hasn't arrived — and not otherwise distinguishable from the phone.
 	const channel = Updates.channel ?? "none";
 
-
 	// Signing out is a network round trip, and the row gave no sign it had heard
 	// the tap — so the natural response was to tap it again. SettingsRow already
 	// draws a spinner and refuses further presses when told it is busy; nothing
@@ -88,6 +116,16 @@ export function Settings() {
 		} catch {
 			setSigningOut(false);
 		}
+	}
+
+	async function chooseAppearance(next: ThemeChoice) {
+		haptics.select();
+		// Applied before the write, so the screen answers the tap immediately and
+		// storage catches up. Failing to persist costs the choice next launch,
+		// which is a smaller loss than a row that looks like it didn't register.
+		setAppearance(next);
+		applyColorScheme(next);
+		await saveThemeChoice(next);
 	}
 
 	async function toggleMute(next: boolean) {
@@ -147,11 +185,9 @@ export function Settings() {
 					hitSlop={10}
 					className="py-2 pr-3"
 				>
-					<Ionicons name="chevron-back" size={22} color="#0C3226" />
+					<Ionicons name="chevron-back" size={22} color={theme.brand} />
 				</Pressable>
-				<Text className="font-display-bold text-3xl text-forest-800">
-					Settings
-				</Text>
+				<Text className="font-display-bold text-3xl text-brand">Settings</Text>
 			</View>
 
 			<ScrollView
@@ -184,6 +220,28 @@ export function Settings() {
 							/>
 						}
 					/>
+				</SettingsGroup>
+
+				{/* Three rows rather than one switch: light/dark is two states but
+				    the honest default is a third — following the phone — and a
+				    switch cannot say "whatever you already decided". */}
+				<SettingsGroup title="Appearance">
+					{APPEARANCE_OPTIONS.map((option) => (
+						<SettingsRow
+							key={option.value}
+							icon={option.icon}
+							label={option.label}
+							subtitle={option.subtitle}
+							onPress={() => void chooseAppearance(option.value)}
+							accessory={
+								appearance === option.value ? (
+									<Ionicons name="checkmark" size={20} color={theme.brand} />
+								) : (
+									<View className="w-5" />
+								)
+							}
+						/>
+					))}
 				</SettingsGroup>
 
 				<SettingsGroup title="Legal">
@@ -220,18 +278,18 @@ export function Settings() {
 				</SettingsGroup>
 
 				<SettingsGroup title="About">
-					<SettingsRow icon="phone-portrait-outline" label="Version" detail={version} />
+					<SettingsRow
+						icon="phone-portrait-outline"
+						label="Version"
+						detail={version}
+					/>
 					<SettingsRow icon="hammer-outline" label="Build" detail={build} />
 					<SettingsRow
 						icon="cloud-download-outline"
 						label="Update"
 						detail={updateLabel}
 					/>
-					<SettingsRow
-						icon="radio-outline"
-						label="Channel"
-						detail={channel}
-					/>
+					<SettingsRow icon="radio-outline" label="Channel" detail={channel} />
 					{profile?.terms_accepted_at && (
 						<SettingsRow
 							icon="checkmark-circle-outline"

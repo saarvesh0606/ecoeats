@@ -1,4 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
 import { Modal, Pressable } from "react-native";
 import { ConfirmProvider, useConfirm } from "./ConfirmDialog";
 
@@ -36,7 +41,9 @@ describe("ConfirmProvider", () => {
 		const { ask } = renderConfirm();
 		ask();
 		expect(screen.getByText("End this post?")).toBeTruthy();
-		expect(screen.getByText("It disappears for everyone immediately.")).toBeTruthy();
+		expect(
+			screen.getByText("It disappears for everyone immediately."),
+		).toBeTruthy();
 		expect(screen.getByText("End post")).toBeTruthy();
 	});
 

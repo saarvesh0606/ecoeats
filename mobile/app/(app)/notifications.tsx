@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NotificationsList } from "@/components/NotificationsList";
+import { theme } from "@/hooks/useThemeColors";
 
 export default function NotificationsScreen() {
 	const router = useRouter();
@@ -15,9 +16,9 @@ export default function NotificationsScreen() {
 					accessibilityRole="button"
 					accessibilityLabel="Back"
 				>
-					<Ionicons name="chevron-back" size={24} color="#0C3226" />
+					<Ionicons name="chevron-back" size={24} color={theme.brand} />
 				</Pressable>
-				<Text className="font-display-bold text-2xl text-forest-800">
+				<Text className="font-display-bold text-2xl text-brand">
 					Notifications
 				</Text>
 			</View>

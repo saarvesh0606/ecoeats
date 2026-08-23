@@ -7,7 +7,9 @@ import { renderWithProviders } from "@/test-utils/render";
 // expo-router's require.context would register a .test.tsx there as a route.
 import ManageListing from "../../app/(app)/manage/[id]";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 jest.mock("@/lib/listings", () => ({
 	fetchListing: jest.fn(),
 	setListingStatus: jest.fn(),
@@ -29,8 +31,12 @@ jest.mock("@/hooks/useNow", () => ({
 }));
 
 const mockListing = fetchListing as jest.MockedFunction<typeof fetchListing>;
-const mockClaims = fetchListingClaims as jest.MockedFunction<typeof fetchListingClaims>;
-const mockStatus = setListingStatus as jest.MockedFunction<typeof setListingStatus>;
+const mockClaims = fetchListingClaims as jest.MockedFunction<
+	typeof fetchListingClaims
+>;
+const mockStatus = setListingStatus as jest.MockedFunction<
+	typeof setListingStatus
+>;
 const mockCancel = cancelListing as jest.MockedFunction<typeof cancelListing>;
 const mockPickup = confirmPickup as jest.MockedFunction<typeof confirmPickup>;
 const mockNoShow = markNoShow as jest.MockedFunction<typeof markNoShow>;
@@ -80,7 +86,9 @@ describe("manage listing", () => {
 			renderManage();
 			fireEvent.press(await screen.findByText("Out of Stock"));
 
-			await waitFor(() => expect(mockStatus).toHaveBeenCalledWith("l1", "claimed"));
+			await waitFor(() =>
+				expect(mockStatus).toHaveBeenCalledWith("l1", "claimed"),
+			);
 			expect(await screen.findByText("Marked out of stock.")).toBeTruthy();
 		});
 
@@ -90,7 +98,9 @@ describe("manage listing", () => {
 
 			fireEvent.press(await screen.findByText("Reopen"));
 
-			await waitFor(() => expect(mockStatus).toHaveBeenCalledWith("l1", "active"));
+			await waitFor(() =>
+				expect(mockStatus).toHaveBeenCalledWith("l1", "active"),
+			);
 			expect(await screen.findByText("Post reopened.")).toBeTruthy();
 		});
 	});
@@ -101,7 +111,9 @@ describe("manage listing", () => {
 			fireEvent.press(await screen.findByText("End Post Early"));
 
 			expect(await screen.findByText("End this post early?")).toBeTruthy();
-			expect(screen.getByText(/disappears for everyone immediately/)).toBeTruthy();
+			expect(
+				screen.getByText(/disappears for everyone immediately/),
+			).toBeTruthy();
 			// Nothing has happened yet — the dialog is a real gate.
 			expect(mockCancel).not.toHaveBeenCalled();
 		});
@@ -111,7 +123,9 @@ describe("manage listing", () => {
 			fireEvent.press(await screen.findByText("End Post Early"));
 			fireEvent.press(await screen.findByText("Cancel"));
 
-			await waitFor(() => expect(screen.queryByText("End this post early?")).toBeNull());
+			await waitFor(() =>
+				expect(screen.queryByText("End this post early?")).toBeNull(),
+			);
 			expect(mockCancel).not.toHaveBeenCalled();
 			expect(mockReplace).not.toHaveBeenCalled();
 		});
@@ -154,7 +168,9 @@ describe("manage listing", () => {
 		});
 
 		it("asks before marking a no-show, since it takes the portion back", async () => {
-			mockClaims.mockResolvedValue([makeClaim({ recipient_name: "Sam Rivera" })]);
+			mockClaims.mockResolvedValue([
+				makeClaim({ recipient_name: "Sam Rivera" }),
+			]);
 			renderManage();
 
 			fireEvent.press(await screen.findByText("No-show"));

@@ -42,7 +42,10 @@ function Ripple({ clock, phase }: { clock: Animated.Value; phase: number }) {
 
 	const opacity =
 		phase === 0
-			? clock.interpolate({ inputRange: [0, 1], outputRange: [PEAK_OPACITY, 0] })
+			? clock.interpolate({
+					inputRange: [0, 1],
+					outputRange: [PEAK_OPACITY, 0],
+				})
 			: clock.interpolate({
 					inputRange: [0, wrap, wrap + epsilon, 1],
 					outputRange: [

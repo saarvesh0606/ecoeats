@@ -1,12 +1,20 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
 import { RefreshControl } from "react-native";
-import { fetchFeed } from "@/lib/listings";
 import type { ListingStreamEvent } from "@/lib/listingStream";
 import { subscribeToListings } from "@/lib/listingStream";
+import { fetchFeed } from "@/lib/listings";
 import { makeListing, NOW } from "@/test-utils/fixtures";
 import { RecipientFeed } from "./RecipientFeed";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 jest.mock("@/lib/listings", () => ({
 	DIETARY_TAGS: ["vegetarian", "vegan", "halal", "kosher", "gluten-free"],
 	fetchFeed: jest.fn(),
@@ -50,7 +58,9 @@ const mockSubscribe = subscribeToListings as jest.MockedFunction<
 /** Fires an SSE event through whatever handler the screen registered. */
 let emit: (event: ListingStreamEvent) => void = () => {};
 
-function streamEvent(overrides: Partial<ListingStreamEvent> = {}): ListingStreamEvent {
+function streamEvent(
+	overrides: Partial<ListingStreamEvent> = {},
+): ListingStreamEvent {
 	return {
 		listing_id: "l1",
 		quantity_remaining: 3,
@@ -157,7 +167,9 @@ describe("RecipientFeed", () => {
 
 		it("offers a way to clear the box", async () => {
 			await renderFeed();
-			const box = screen.getByPlaceholderText("Search food, meals, or locations");
+			const box = screen.getByPlaceholderText(
+				"Search food, meals, or locations",
+			);
 			fireEvent.changeText(box, "pizza");
 
 			fireEvent.press(await screen.findByLabelText("Clear search"));
@@ -226,7 +238,10 @@ describe("RecipientFeed", () => {
 
 			await waitFor(() =>
 				expect(mockFeed).toHaveBeenLastCalledWith(
-					expect.objectContaining({ dietary: undefined, maxMinutes: undefined }),
+					expect.objectContaining({
+						dietary: undefined,
+						maxMinutes: undefined,
+					}),
 				),
 			);
 		});
@@ -236,7 +251,9 @@ describe("RecipientFeed", () => {
 			mockFeed.mockResolvedValue({ items: [], nextCursor: null });
 			fireEvent.press(screen.getByText("vegan"));
 
-			expect(await screen.findByText("Nothing matches those filters")).toBeTruthy();
+			expect(
+				await screen.findByText("Nothing matches those filters"),
+			).toBeTruthy();
 			expect(screen.getByText("Clear filters")).toBeTruthy();
 		});
 	});
@@ -360,7 +377,10 @@ describe("RecipientFeed", () => {
 
 			await waitFor(() =>
 				expect(mockFeed).toHaveBeenLastCalledWith(
-					expect.objectContaining({ maxMinutes: undefined, dietary: undefined }),
+					expect.objectContaining({
+						maxMinutes: undefined,
+						dietary: undefined,
+					}),
 				),
 			);
 		});
@@ -393,15 +413,25 @@ describe("RecipientFeed", () => {
 		it("drops a listing that has run out", async () => {
 			await renderFeed();
 			act(() => emit(streamEvent({ listing_id: "l1", quantity_remaining: 0 })));
-			await waitFor(() => expect(screen.queryByText("Leftover pizza")).toBeNull());
+			await waitFor(() =>
+				expect(screen.queryByText("Leftover pizza")).toBeNull(),
+			);
 		});
 
 		it("drops a listing that is no longer active", async () => {
 			await renderFeed();
 			act(() =>
-				emit(streamEvent({ listing_id: "l1", status: "cancelled", quantity_remaining: 5 })),
+				emit(
+					streamEvent({
+						listing_id: "l1",
+						status: "cancelled",
+						quantity_remaining: 5,
+					}),
+				),
 			);
-			await waitFor(() => expect(screen.queryByText("Leftover pizza")).toBeNull());
+			await waitFor(() =>
+				expect(screen.queryByText("Leftover pizza")).toBeNull(),
+			);
 		});
 
 		it("refetches when something arrives that isn't on this page", async () => {
@@ -435,7 +465,9 @@ describe("RecipientFeed", () => {
 			});
 			// Scrolling to the end can't be simulated meaningfully without layout,
 			// so drive the list's own end-reached hook directly.
-			const list = screen.UNSAFE_getAllByProps({ onEndReachedThreshold: 0.4 })[0];
+			const list = screen.UNSAFE_getAllByProps({
+				onEndReachedThreshold: 0.4,
+			})[0];
 			await act(async () => {
 				list.props.onEndReached();
 			});
@@ -448,15 +480,21 @@ describe("RecipientFeed", () => {
 	describe("failure", () => {
 		it("offers a retry rather than an empty screen", async () => {
 			const { ApiError } = jest.requireMock("@/lib/api");
-			mockFeed.mockRejectedValue(new ApiError(500, "Couldn't load food nearby."));
+			mockFeed.mockRejectedValue(
+				new ApiError(500, "Couldn't load food nearby."),
+			);
 
 			render(<RecipientFeed />);
 
-			expect(await screen.findByText("Couldn't load food nearby.")).toBeTruthy();
+			expect(
+				await screen.findByText("Couldn't load food nearby."),
+			).toBeTruthy();
 			const attempts = mockFeed.mock.calls.length;
 
 			fireEvent.press(screen.getByText("Try again"));
-			await waitFor(() => expect(mockFeed.mock.calls.length).toBe(attempts + 1));
+			await waitFor(() =>
+				expect(mockFeed.mock.calls.length).toBe(attempts + 1),
+			);
 		});
 	});
 

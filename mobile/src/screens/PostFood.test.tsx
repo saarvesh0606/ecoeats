@@ -10,7 +10,9 @@ import { uploadPhoto } from "@/lib/uploads";
 import { makeListing } from "@/test-utils/fixtures";
 import { PostFood } from "./PostFood";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 jest.mock("@/lib/listings", () => ({
 	createListing: jest.fn(),
 	DIETARY_TAGS: ["vegetarian", "vegan", "halal", "kosher", "gluten-free"],
@@ -43,7 +45,9 @@ jest.mock("@/hooks/useSpeech", () => ({
 }));
 
 const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
+jest.mock("expo-router", () => ({
+	useRouter: () => ({ replace: mockReplace }),
+}));
 
 // The app's own dialog, not Alert or window.confirm — see ConfirmDialog, which
 // exists because a browser dialog blocks the JS thread and can't carry the
@@ -61,7 +65,10 @@ const mockPick = ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
 
 /** Fills every required field so a test can focus on one thing at a time. */
 function fillRequired(overrides: Partial<Record<string, string>> = {}) {
-	fireEvent.changeText(screen.getByLabelText("Title"), overrides.title ?? "Pizza");
+	fireEvent.changeText(
+		screen.getByLabelText("Title"),
+		overrides.title ?? "Pizza",
+	);
 	fireEvent.changeText(
 		screen.getByLabelText("Feeds how many?"),
 		overrides.quantity ?? "12",

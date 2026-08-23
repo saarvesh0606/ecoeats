@@ -5,7 +5,9 @@ import { usePushNavigation } from "./usePushNavigation";
 // Stops the import chain at the API client: notifications → api → firebase →
 // AsyncStorage, whose native module doesn't exist under Jest. listingRouteFor
 // stays real, since which screen a push opens is the point of these tests.
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 
 const removeReceived = jest.fn();
 const removeResponse = jest.fn();

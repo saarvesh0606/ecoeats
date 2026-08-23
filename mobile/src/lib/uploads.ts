@@ -24,7 +24,9 @@ interface CloudinaryResult {
 }
 
 /** Turn a picked-image URI into a value FormData can send, per platform. */
-async function fileFromUri(uri: string): Promise<Blob | { uri: string; name: string; type: string }> {
+async function fileFromUri(
+	uri: string,
+): Promise<Blob | { uri: string; name: string; type: string }> {
 	if (Platform.OS === "web") {
 		// On web the URI is a blob:/data: URL we can fetch back into a Blob.
 		const response = await fetch(uri);

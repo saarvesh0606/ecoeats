@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
+import { ToastProvider } from "@/components/ui/Toast";
 import type { AppNotification } from "@/lib/notifications";
 import {
 	clearNotifications,
@@ -7,10 +13,11 @@ import {
 	markNotificationsRead,
 } from "@/lib/notifications";
 import { renderWithProviders } from "@/test-utils/render";
-import { ToastProvider } from "@/components/ui/Toast";
 import { NotificationsList } from "./NotificationsList";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 
 // The network calls are stubbed, but listingRouteFor stays real — it decides
 // which screen a tap opens, and a hand-written copy here would pass while the
@@ -31,10 +38,18 @@ jest.mock("@/context/AuthContext", () => ({
 	useAuth: () => ({ profile: { role: mockRole } }),
 }));
 
-const mockFetch = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
-const mockRead = markNotificationsRead as jest.MockedFunction<typeof markNotificationsRead>;
-const mockDelete = deleteNotification as jest.MockedFunction<typeof deleteNotification>;
-const mockClear = clearNotifications as jest.MockedFunction<typeof clearNotifications>;
+const mockFetch = fetchNotifications as jest.MockedFunction<
+	typeof fetchNotifications
+>;
+const mockRead = markNotificationsRead as jest.MockedFunction<
+	typeof markNotificationsRead
+>;
+const mockDelete = deleteNotification as jest.MockedFunction<
+	typeof deleteNotification
+>;
+const mockClear = clearNotifications as jest.MockedFunction<
+	typeof clearNotifications
+>;
 
 function note(overrides: Partial<AppNotification> = {}): AppNotification {
 	return {
@@ -69,7 +84,9 @@ function minutesIntoToday(m: number): string {
 
 function daysBeforeToday(days: number): string {
 	// Mid-morning on that day, so nothing sits on a boundary.
-	return new Date(startOfToday() - days * 86_400_000 + 10 * 3_600_000).toISOString();
+	return new Date(
+		startOfToday() - days * 86_400_000 + 10 * 3_600_000,
+	).toISOString();
 }
 
 function renderList() {
@@ -108,7 +125,10 @@ describe("NotificationsList", () => {
 	});
 
 	it("doesn't bother marking read when nothing is unread", async () => {
-		mockFetch.mockResolvedValue({ items: [note({ read: true })], unread_count: 0 });
+		mockFetch.mockResolvedValue({
+			items: [note({ read: true })],
+			unread_count: 0,
+		});
 		renderList();
 		await screen.findByText("Sam claimed Leftover pizza");
 		expect(mockRead).not.toHaveBeenCalled();
@@ -155,7 +175,9 @@ describe("NotificationsList", () => {
 
 		// Restored, and the user is told why it came back.
 		expect(await screen.findByText("Sam claimed Leftover pizza")).toBeTruthy();
-		expect(await screen.findByText("Couldn't delete that. Try again.")).toBeTruthy();
+		expect(
+			await screen.findByText("Couldn't delete that. Try again."),
+		).toBeTruthy();
 	});
 
 	it("restores into date order rather than at the end of the list", async () => {
@@ -235,9 +257,21 @@ describe("NotificationsList", () => {
 		it("separates today from yesterday and earlier", async () => {
 			mockFetch.mockResolvedValue({
 				items: [
-					note({ id: "a", message: "From today", created_at: minutesIntoToday(1) }),
-					note({ id: "b", message: "From yesterday", created_at: daysBeforeToday(1) }),
-					note({ id: "c", message: "From last week", created_at: daysBeforeToday(8) }),
+					note({
+						id: "a",
+						message: "From today",
+						created_at: minutesIntoToday(1),
+					}),
+					note({
+						id: "b",
+						message: "From yesterday",
+						created_at: daysBeforeToday(1),
+					}),
+					note({
+						id: "c",
+						message: "From last week",
+						created_at: daysBeforeToday(8),
+					}),
 				],
 				unread_count: 0,
 			});
@@ -251,7 +285,9 @@ describe("NotificationsList", () => {
 
 		it("shows only the sections it has anything for", async () => {
 			mockFetch.mockResolvedValue({
-				items: [note({ message: "From today", created_at: minutesIntoToday(2) })],
+				items: [
+					note({ message: "From today", created_at: minutesIntoToday(2) }),
+				],
 				unread_count: 0,
 			});
 			renderList();

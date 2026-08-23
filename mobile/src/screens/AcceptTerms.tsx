@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LegalDocumentView } from "@/components/LegalDocumentView";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
-import { acceptTerms, ApiError } from "@/lib/api";
+import { ApiError, acceptTerms } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
 import { FOOD_SAFETY_DISCLAIMER, TERMS } from "@/lib/legal";
 
@@ -53,7 +53,7 @@ export function AcceptTerms() {
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top", "bottom"]}>
 			<View className="px-5 pt-2 pb-3">
-				<Text className="font-display-bold text-3xl text-forest-800">
+				<Text className="font-display-bold text-3xl text-brand">
 					Before you start
 				</Text>
 				<Text className="font-body text-gray-500 mt-0.5">

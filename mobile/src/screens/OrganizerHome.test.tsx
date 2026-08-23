@@ -11,7 +11,9 @@ import { fetchImpact, fetchMyListings, publishListing } from "@/lib/listings";
 import { makeListing, NOW } from "@/test-utils/fixtures";
 import { OrganizerHome } from "./OrganizerHome";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 jest.mock("@/lib/listings", () => ({
 	fetchMyListings: jest.fn(),
 	fetchImpact: jest.fn(),
@@ -34,9 +36,13 @@ jest.mock("@/context/AuthContext", () => ({
 	useAuth: () => ({ profile: { name: "Sun Devil Jones", role: "organizer" } }),
 }));
 
-const mockListings = fetchMyListings as jest.MockedFunction<typeof fetchMyListings>;
+const mockListings = fetchMyListings as jest.MockedFunction<
+	typeof fetchMyListings
+>;
 const mockImpact = fetchImpact as jest.MockedFunction<typeof fetchImpact>;
-const mockPublish = publishListing as jest.MockedFunction<typeof publishListing>;
+const mockPublish = publishListing as jest.MockedFunction<
+	typeof publishListing
+>;
 const mockSubscribe = subscribeToListings as jest.MockedFunction<
 	typeof subscribeToListings
 >;
@@ -44,7 +50,9 @@ const mockSubscribe = subscribeToListings as jest.MockedFunction<
 /** Fires an SSE event through whatever handler the screen registered. */
 let emit: (event: ListingStreamEvent) => void = () => {};
 
-function streamEvent(overrides: Partial<ListingStreamEvent> = {}): ListingStreamEvent {
+function streamEvent(
+	overrides: Partial<ListingStreamEvent> = {},
+): ListingStreamEvent {
 	return {
 		listing_id: "l1",
 		quantity_remaining: 3,
@@ -167,7 +175,11 @@ describe("OrganizerHome", () => {
 	describe("post rows", () => {
 		it("shows what's left against the total on a live post", async () => {
 			mockListings.mockResolvedValue([
-				makeListing({ status: "active", quantity_remaining: 4, quantity_total: 10 }),
+				makeListing({
+					status: "active",
+					quantity_remaining: 4,
+					quantity_total: 10,
+				}),
 			]);
 			render(<OrganizerHome />);
 
@@ -176,7 +188,9 @@ describe("OrganizerHome", () => {
 		});
 
 		it("opens the manage screen when a post is tapped", async () => {
-			mockListings.mockResolvedValue([makeListing({ id: "l9", title: "Bagels" })]);
+			mockListings.mockResolvedValue([
+				makeListing({ id: "l9", title: "Bagels" }),
+			]);
 			render(<OrganizerHome />);
 
 			fireEvent.press(await screen.findByLabelText("Manage Bagels"));
@@ -204,7 +218,9 @@ describe("OrganizerHome", () => {
 
 			await waitFor(() => expect(mockPublish).toHaveBeenCalledWith("d1"));
 			// Reloaded, so the row moves to Active without a manual refresh.
-			await waitFor(() => expect(mockListings.mock.calls.length).toBeGreaterThan(1));
+			await waitFor(() =>
+				expect(mockListings.mock.calls.length).toBeGreaterThan(1),
+			);
 		});
 	});
 
@@ -214,7 +230,11 @@ describe("OrganizerHome", () => {
 		// about the claim, so the number beside it not moving read as a bug.
 		async function renderDashboard() {
 			mockListings.mockResolvedValue([
-				makeListing({ id: "l1", title: "Leftover pizza", quantity_remaining: 4 }),
+				makeListing({
+					id: "l1",
+					title: "Leftover pizza",
+					quantity_remaining: 4,
+				}),
 			]);
 			render(<OrganizerHome />);
 			return await screen.findByText("Leftover pizza");
@@ -247,7 +267,9 @@ describe("OrganizerHome", () => {
 				),
 			);
 
-			await waitFor(() => expect(screen.queryByText("Leftover pizza")).toBeNull());
+			await waitFor(() =>
+				expect(screen.queryByText("Leftover pizza")).toBeNull(),
+			);
 		});
 
 		it("ignores a listing this host doesn't own", async () => {
@@ -276,7 +298,9 @@ describe("OrganizerHome", () => {
 		mockListings.mockRejectedValue(new Error("401"));
 		render(<OrganizerHome />);
 
-		expect(await screen.findByText("Couldn't load your dashboard")).toBeTruthy();
+		expect(
+			await screen.findByText("Couldn't load your dashboard"),
+		).toBeTruthy();
 
 		const attempts = mockListings.mock.calls.length;
 		fireEvent.press(screen.getByText("Retry"));

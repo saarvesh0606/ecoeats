@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { UnreadProvider } from "@/context/UnreadContext";
 import { usePushNavigation } from "@/hooks/usePushNavigation";
+import { theme } from "@/hooks/useThemeColors";
 
 /**
  * The stack itself, as a child so `usePushNavigation` runs *inside*
@@ -20,7 +21,7 @@ function AppStack() {
 				headerShown: false,
 				animation: "slide_from_right",
 				gestureEnabled: true,
-				contentStyle: { backgroundColor: "#FBF9F4" },
+				contentStyle: { backgroundColor: theme.page },
 			}}
 		>
 			<Stack.Screen name="(tabs)" options={{ animation: "none" }} />

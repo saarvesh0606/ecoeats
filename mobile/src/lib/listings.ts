@@ -93,7 +93,9 @@ export async function fetchFeed(
 	filters: FeedFilters = {},
 	cursor?: string,
 ): Promise<FeedPage> {
-	const feed = await api.get<ListingFeed>(`/listings${toQuery(filters, cursor)}`);
+	const feed = await api.get<ListingFeed>(
+		`/listings${toQuery(filters, cursor)}`,
+	);
 	return { items: feed.items, nextCursor: feed.next_cursor };
 }
 

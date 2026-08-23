@@ -21,7 +21,7 @@ export function LegalDocumentView({
 }) {
 	const body = (
 		<View>
-			<Text className="font-display-bold text-2xl text-forest-800">
+			<Text className="font-display-bold text-2xl text-brand">
 				{document.title}
 			</Text>
 			<Text className="font-body text-ink-muted mt-2 leading-6">
@@ -30,7 +30,7 @@ export function LegalDocumentView({
 
 			{document.sections.map((section) => (
 				<View key={section.heading} className="mt-6">
-					<Text className="font-body-semibold text-base text-forest-800">
+					<Text className="font-body-semibold text-base text-brand">
 						{section.heading}
 					</Text>
 					<Text className="font-body text-ink-muted mt-1.5 leading-6">

@@ -1,4 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react-native";
 import {
 	authErrorMessage,
 	registerWithEmail,
@@ -20,10 +25,18 @@ jest.mock("@/context/AuthContext", () => ({
 	useAuth: () => ({ devSignIn: mockDevSignIn }),
 }));
 
-const mockSignIn = signInWithEmail as jest.MockedFunction<typeof signInWithEmail>;
-const mockRegister = registerWithEmail as jest.MockedFunction<typeof registerWithEmail>;
-const mockGoogle = signInWithGoogle as jest.MockedFunction<typeof signInWithGoogle>;
-const mockErrorMessage = authErrorMessage as jest.MockedFunction<typeof authErrorMessage>;
+const mockSignIn = signInWithEmail as jest.MockedFunction<
+	typeof signInWithEmail
+>;
+const mockRegister = registerWithEmail as jest.MockedFunction<
+	typeof registerWithEmail
+>;
+const mockGoogle = signInWithGoogle as jest.MockedFunction<
+	typeof signInWithGoogle
+>;
+const mockErrorMessage = authErrorMessage as jest.MockedFunction<
+	typeof authErrorMessage
+>;
 
 function type(label: string | RegExp, value: string) {
 	fireEvent.changeText(screen.getByLabelText(label), value);
@@ -102,7 +115,9 @@ describe("AuthScreen", () => {
 
 			fireEvent.press(screen.getByText("Create account"));
 
-			expect(screen.getByText("Password must be at least 6 characters.")).toBeTruthy();
+			expect(
+				screen.getByText("Password must be at least 6 characters."),
+			).toBeTruthy();
 			expect(mockRegister).not.toHaveBeenCalled();
 		});
 
@@ -127,7 +142,10 @@ describe("AuthScreen", () => {
 			fireEvent.press(screen.getByText("Sign in"));
 
 			await waitFor(() =>
-				expect(mockSignIn).toHaveBeenCalledWith("sun.devil@asu.edu", "hunter22"),
+				expect(mockSignIn).toHaveBeenCalledWith(
+					"sun.devil@asu.edu",
+					"hunter22",
+				),
 			);
 		});
 
@@ -210,7 +228,9 @@ describe("AuthScreen", () => {
 
 			fireEvent.press(screen.getByText("Continue with Google"));
 
-			expect(await screen.findByText("EcoEats is for ASU accounts.")).toBeTruthy();
+			expect(
+				await screen.findByText("EcoEats is for ASU accounts."),
+			).toBeTruthy();
 		});
 	});
 });

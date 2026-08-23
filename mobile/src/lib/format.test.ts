@@ -83,7 +83,9 @@ describe("formatDistance", () => {
 
 describe("formatLocation", () => {
 	it("includes the room when present", () => {
-		expect(formatLocation("Wrigley Hall", "205")).toBe("Wrigley Hall, Room 205");
+		expect(formatLocation("Wrigley Hall", "205")).toBe(
+			"Wrigley Hall, Room 205",
+		);
 	});
 	it("omits the room when absent", () => {
 		expect(formatLocation("Hayden Library", null)).toBe("Hayden Library");

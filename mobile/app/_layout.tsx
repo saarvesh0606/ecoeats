@@ -13,13 +13,15 @@ import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Appearance, StyleSheet } from "react-native";
+import { Animated, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { Splash } from "@/components/ui/Splash";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { applyColorScheme, useThemeColors } from "@/hooks/useThemeColors";
+import { getThemeChoice } from "@/lib/preferences";
 import "../global.css";
 
 /**
@@ -108,19 +110,16 @@ function SplashOverlay({ done }: { done: boolean }) {
 }
 
 export default function RootLayout() {
-	// Dark mode is not built yet, and half of it is worse than none: some
-	// screens would flip while the rest stayed cream, which reads as broken
-	// rather than unfinished.
-	//
-	// app.json nonetheless says userInterfaceStyle "automatic", because that is
-	// a *native* setting — baked in at build time and unreachable over the air.
-	// Leaving it "light" would have meant no amount of shipped JavaScript could
-	// ever turn dark mode on. So the capability is enabled in the binary and the
-	// choice is made here instead, where an update can change it.
-	//
-	// ⚠ When the dark palette lands, this is the line to remove.
+	// Restore the saved appearance choice before anything paints, and subscribe
+	// to it. The subscription is the contract the theme accessor depends on:
+	// nothing here is memoised, so a scheme change re-renders every screen and
+	// the icon colours move with the classes rather than a frame behind them.
+	useThemeColors();
 	useEffect(() => {
-		Appearance.setColorScheme("light");
+		void getThemeChoice().then((choice) => {
+			// "system" means hand it back to the OS rather than pin anything.
+			applyColorScheme(choice);
+		});
 	}, []);
 
 	// Hold the app behind the splash until the editorial fonts are ready, so

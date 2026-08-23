@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { usePulse } from "@/hooks/usePulse";
+import { theme } from "@/hooks/useThemeColors";
 import { ApiError } from "@/lib/api";
 import { createClaim } from "@/lib/claims";
 import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
@@ -52,9 +53,16 @@ function DetailRow({
 }) {
 	return (
 		<View className="flex-row gap-3 py-2">
-			<Ionicons name={icon} size={18} color="#0C3226" style={{ marginTop: 1 }} />
+			<Ionicons
+				name={icon}
+				size={18}
+				color={theme.brand}
+				style={{ marginTop: 1 }}
+			/>
 			<View className="flex-1">
-				<Text className="font-body-semibold text-gray-900 text-sm">{label}</Text>
+				<Text className="font-body-semibold text-gray-900 text-sm">
+					{label}
+				</Text>
 				<Text className="font-body text-gray-600 text-sm mt-0.5">{value}</Text>
 				{sub ? (
 					<Text className="font-body text-gray-400 text-xs mt-0.5">{sub}</Text>
@@ -314,7 +322,7 @@ export default function ListingDetail() {
 						accessibilityRole="button"
 						accessibilityLabel="Go back"
 					>
-						<Ionicons name="chevron-back" size={22} color="#0C3226" />
+						<Ionicons name="chevron-back" size={22} color={theme.brand} />
 					</Pressable>
 					<Pressable
 						onPress={onShare}
@@ -324,7 +332,7 @@ export default function ListingDetail() {
 						accessibilityRole="button"
 						accessibilityLabel="Share this listing"
 					>
-						<Ionicons name="share-outline" size={20} color="#0C3226" />
+						<Ionicons name="share-outline" size={20} color={theme.brand} />
 					</Pressable>
 					<View className="absolute bottom-4 left-4 bg-forest-900 rounded-full px-3 py-1">
 						<Text className="font-body-semibold text-xs text-white">
@@ -403,7 +411,11 @@ export default function ListingDetail() {
 								onPress={() => void onDirections()}
 								accessibilityLabel={`Directions to ${listing.building}`}
 								icon={
-									<Ionicons name="navigate-outline" size={16} color="#0C3226" />
+									<Ionicons
+										name="navigate-outline"
+										size={16}
+										color={theme.brand}
+									/>
 								}
 							>
 								Get Directions
@@ -414,7 +426,7 @@ export default function ListingDetail() {
 					{/* Shared by */}
 					<View className="flex-row items-center gap-3 mt-5 mb-2">
 						<View className="w-10 h-10 rounded-full bg-forest-100 items-center justify-center">
-							<Ionicons name="person-outline" size={20} color="#0C3226" />
+							<Ionicons name="person-outline" size={20} color={theme.brand} />
 						</View>
 						<View className="flex-1">
 							<Text className="font-body text-gray-400 text-xs">Shared by</Text>
@@ -425,7 +437,8 @@ export default function ListingDetail() {
 								<View className="flex-row items-center gap-1 mt-0.5">
 									<Ionicons name="star" size={12} color="#FFC627" />
 									<Text className="font-body text-gray-600 text-xs">
-										{listing.organizer.rating} ({listing.organizer.rating_count})
+										{listing.organizer.rating} ({listing.organizer.rating_count}
+										)
 									</Text>
 								</View>
 							) : (
@@ -477,7 +490,7 @@ export default function ListingDetail() {
 				{/* NativeWind doesn't process className on animated components and
 				    fails silently, so the styled box is this inner view. */}
 				<View className="flex-row items-center gap-1.5 bg-forest-800 rounded-full px-3 py-1.5">
-					<Ionicons name="chevron-down" size={13} color="#FBF9F4" />
+					<Ionicons name="chevron-down" size={13} color={theme.page} />
 					<Text className="font-body-semibold text-xs text-cream">
 						Scroll for pickup details
 					</Text>
@@ -522,7 +535,7 @@ export default function ListingDetail() {
 					bottom: 0,
 				}}
 			>
-			{/* Sits close to the bottom edge on purpose.
+				{/* Sits close to the bottom edge on purpose.
 			    The home-indicator inset exists to keep *tappable* things out of the
 			    swipe-up area, and the full inset was pushing the whole block into
 			    the middle of nowhere. The caption under the button is not tappable,
@@ -530,56 +543,71 @@ export default function ListingDetail() {
 			    itself still clear of the gesture area while the group as a whole
 			    reaches the bottom of the screen where it belongs.
 			    The floor covers older phones, where the inset is zero. */}
-			<View
-				style={{ paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12) }}
-				className="px-5 pt-4 border-t border-gray-100 bg-cream"
-			>
-				{claimError && (
-					<Text className="font-body text-red-500 text-sm mb-2 text-center">
-						{claimError}
-					</Text>
-				)}
-				{/* No label. A minus, a number and a plus directly above a button
+				<View
+					style={{
+						paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12),
+					}}
+					className="px-5 pt-4 border-t border-gray-100 bg-cream"
+				>
+					{claimError && (
+						<Text className="font-body text-red-500 text-sm mb-2 text-center">
+							{claimError}
+						</Text>
+					)}
+					{/* No label. A minus, a number and a plus directly above a button
 				    reading "Claim 3 Portions" is already unambiguous, and the word
 				    was the only thing keeping the control off-centre. */}
-				{canClaim && listing.quantity_remaining > 1 && (
-					<View className="flex-row items-center justify-center gap-5 mb-3">
-						<Pressable
-							onPress={() => stepQty(-1)}
-							hitSlop={8}
-							accessibilityRole="button"
-							accessibilityLabel="Fewer portions"
-						>
-							<Ionicons name="remove-circle-outline" size={30} color="#0C3226" />
-						</Pressable>
-						<Text className="font-display-bold text-xl text-gray-900 w-6 text-center">
-							{qty}
+					{canClaim && listing.quantity_remaining > 1 && (
+						<View className="flex-row items-center justify-center gap-5 mb-3">
+							<Pressable
+								onPress={() => stepQty(-1)}
+								hitSlop={8}
+								accessibilityRole="button"
+								accessibilityLabel="Fewer portions"
+							>
+								<Ionicons
+									name="remove-circle-outline"
+									size={30}
+									color={theme.brand}
+								/>
+							</Pressable>
+							<Text className="font-display-bold text-xl text-gray-900 w-6 text-center">
+								{qty}
+							</Text>
+							<Pressable
+								onPress={() => stepQty(1)}
+								hitSlop={8}
+								accessibilityRole="button"
+								accessibilityLabel="More portions"
+							>
+								<Ionicons
+									name="add-circle-outline"
+									size={30}
+									color={theme.brand}
+								/>
+							</Pressable>
+						</View>
+					)}
+					<Button
+						onPress={onClaim}
+						loading={claiming}
+						disabled={!canClaim}
+						size="lg"
+					>
+						{canClaim
+							? qty > 1
+								? `Claim ${qty} Portions`
+								: "Claim This Food"
+							: listing.quantity_remaining === 0
+								? "All claimed"
+								: "No longer available"}
+					</Button>
+					{canClaim && (
+						<Text className="font-body text-gray-400 text-xs text-center mt-2">
+							You'll have 15 minutes to confirm pickup.
 						</Text>
-						<Pressable
-							onPress={() => stepQty(1)}
-							hitSlop={8}
-							accessibilityRole="button"
-							accessibilityLabel="More portions"
-						>
-							<Ionicons name="add-circle-outline" size={30} color="#0C3226" />
-						</Pressable>
-					</View>
-				)}
-				<Button onPress={onClaim} loading={claiming} disabled={!canClaim} size="lg">
-					{canClaim
-						? qty > 1
-							? `Claim ${qty} Portions`
-							: "Claim This Food"
-						: listing.quantity_remaining === 0
-							? "All claimed"
-							: "No longer available"}
-				</Button>
-				{canClaim && (
-					<Text className="font-body text-gray-400 text-xs text-center mt-2">
-						You'll have 15 minutes to confirm pickup.
-					</Text>
-				)}
-			</View>
+					)}
+				</View>
 			</Animated.View>
 		</SafeAreaView>
 	);

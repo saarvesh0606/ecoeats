@@ -1,4 +1,3 @@
-import { NotificationBell } from "@/components/ui/NotificationBell";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,18 +13,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedFilterSheet } from "@/components/FeedFilterSheet";
 import { ListingCard } from "@/components/ListingCard";
-import { OfflineNotice } from "@/components/ui/OfflineNotice";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { OfflineNotice } from "@/components/ui/OfflineNotice";
 import { ReflowRow } from "@/components/ui/ReflowRow";
-import { useAuth } from "@/context/AuthContext";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { useAuth } from "@/context/AuthContext";
 import { useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useNow } from "@/hooks/useNow";
+import { theme } from "@/hooks/useThemeColors";
 import { ApiError } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
-import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
 import { subscribeToListings } from "@/lib/listingStream";
+import { DIETARY_TAGS, fetchFeed, type Listing } from "@/lib/listings";
 
 // "Expiring soon" — surfaces food about to be wasted, the whole point.
 const SOON_MINUTES = 20;
@@ -247,7 +248,7 @@ export function RecipientFeed() {
 		return (
 			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						Discover
 					</Text>
 					<Text className="font-body text-gray-500 mt-0.5">
@@ -292,7 +293,7 @@ export function RecipientFeed() {
 			{/* Header */}
 			<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
 				<View>
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						Discover
 					</Text>
 					<Text className="font-body text-gray-500 mt-0.5">
@@ -310,7 +311,7 @@ export function RecipientFeed() {
 						accessibilityRole="button"
 						accessibilityLabel="Saved food"
 					>
-						<Ionicons name="bookmark-outline" size={24} color="#0C3226" />
+						<Ionicons name="bookmark-outline" size={24} color={theme.brand} />
 					</Pressable>
 					<NotificationBell />
 				</View>
@@ -319,7 +320,7 @@ export function RecipientFeed() {
 			{/* Search */}
 			<View className="px-5 pb-3">
 				<View className="flex-row items-center bg-white border border-gray-200 rounded-full px-4 py-2.5">
-					<Ionicons name="search" size={18} color="#9CA3AF" />
+					<Ionicons name="search" size={18} color={theme.muted} />
 					<TextInput
 						// Size without a line height, for the reason Input documents: on
 						// iOS a lineHeight on a TextInput positions the text in a line
@@ -329,7 +330,7 @@ export function RecipientFeed() {
 						style={{ fontSize: 16, paddingVertical: 0 }}
 						className="flex-1 font-body text-gray-900 ml-2"
 						placeholder="Search food, meals, or locations"
-						placeholderTextColor="#9CA3AF"
+						placeholderTextColor={theme.muted}
 						value={query}
 						onChangeText={setQuery}
 						autoCapitalize="none"
@@ -342,7 +343,7 @@ export function RecipientFeed() {
 							accessibilityRole="button"
 							accessibilityLabel="Clear search"
 						>
-							<Ionicons name="close-circle" size={18} color="#9CA3AF" />
+							<Ionicons name="close-circle" size={18} color={theme.muted} />
 						</Pressable>
 					) : null}
 					{/* Stays put while typing — filtering a search is exactly when you
@@ -362,7 +363,7 @@ export function RecipientFeed() {
 						<Ionicons
 							name="options-outline"
 							size={18}
-							color={filtersActive ? "#0C3226" : "#9CA3AF"}
+							color={filtersActive ? theme.brand : theme.muted}
 						/>
 						{filtersActive ? (
 							<View className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-forest-700" />

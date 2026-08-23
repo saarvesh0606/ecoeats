@@ -17,20 +17,20 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { fetchProfile, type UserProfile } from "@/lib/api";
 import {
 	type FirebaseUser,
-	reloadUser,
 	signOut as fbSignOut,
+	reloadUser,
 	watchAuth,
 } from "@/lib/firebase";
-import { fetchProfile, type UserProfile } from "@/lib/api";
-import { registerForPush, unregisterForPush } from "@/lib/push";
 import { applyHapticPreference } from "@/lib/haptics";
 import {
 	areHapticsMuted,
 	arePushNotificationsMuted,
 	setPushNotificationsMuted,
 } from "@/lib/preferences";
+import { registerForPush, unregisterForPush } from "@/lib/push";
 import { getDevToken, setDevToken } from "@/lib/session";
 
 export type AuthStatus =

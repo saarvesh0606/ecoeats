@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Children, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { theme } from "@/hooks/useThemeColors";
 
 /**
  * The grouped-list idiom used by Settings and the bottom of Profile.
@@ -62,7 +63,7 @@ export function SettingsRow({
 	/** Replaces the chevron — a Switch, for instance. */
 	accessory?: ReactNode;
 }) {
-	const tint = danger ? "#DC2626" : "#0C3226";
+	const tint = danger ? "#DC2626" : theme.brand;
 
 	const content = (
 		<View className="flex-row items-center px-4 py-3.5">
@@ -75,9 +76,7 @@ export function SettingsRow({
 			</View>
 
 			<View className="flex-1 ml-3">
-				<Text
-					className={`font-body ${danger ? "text-red-600" : "text-ink"}`}
-				>
+				<Text className={`font-body ${danger ? "text-red-600" : "text-ink"}`}>
 					{label}
 				</Text>
 				{subtitle && (
@@ -93,10 +92,10 @@ export function SettingsRow({
 			{loading ? (
 				<ActivityIndicator size="small" color={tint} />
 			) : (
-				accessory ??
+				(accessory ??
 				(onPress ? (
-					<Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-				) : null)
+					<Ionicons name="chevron-forward" size={16} color={theme.muted} />
+				) : null))
 			)}
 		</View>
 	);

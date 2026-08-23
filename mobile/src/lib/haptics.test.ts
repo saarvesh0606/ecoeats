@@ -90,15 +90,23 @@ describe("haptics on Android", () => {
 		// impactAsync on Android is a raw Vibrator pulse and needs the VIBRATE
 		// permission; the named effects are tuned and need neither.
 		haptics.tap();
-		expect(Haptics.performAndroidHapticsAsync).toHaveBeenCalledWith("virtual-key");
+		expect(Haptics.performAndroidHapticsAsync).toHaveBeenCalledWith(
+			"virtual-key",
+		);
 		expect(Haptics.impactAsync).not.toHaveBeenCalled();
 	});
 
 	it("confirms a success and rejects a failure", () => {
 		haptics.success();
 		haptics.error();
-		expect(Haptics.performAndroidHapticsAsync).toHaveBeenNthCalledWith(1, "confirm");
-		expect(Haptics.performAndroidHapticsAsync).toHaveBeenNthCalledWith(2, "reject");
+		expect(Haptics.performAndroidHapticsAsync).toHaveBeenNthCalledWith(
+			1,
+			"confirm",
+		);
+		expect(Haptics.performAndroidHapticsAsync).toHaveBeenNthCalledWith(
+			2,
+			"reject",
+		);
 		expect(Haptics.notificationAsync).not.toHaveBeenCalled();
 	});
 });

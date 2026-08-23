@@ -7,9 +7,10 @@ import { EmptyBell } from "@/components/ui/EmptyBell";
 import { Spinner } from "@/components/ui/Spinner";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
 import { useToast } from "@/components/ui/Toast";
-import { haptics } from "@/lib/haptics";
 import { useAuth } from "@/context/AuthContext";
 import { useUnread } from "@/context/UnreadContext";
+import { haptics } from "@/lib/haptics";
+import { theme } from "@/hooks/useThemeColors";
 import {
 	type AppNotification,
 	clearNotifications,
@@ -41,7 +42,7 @@ const APPEARANCE: Record<
 	NotificationKind,
 	{ icon: keyof typeof Ionicons.glyphMap; tint: string; bubble: string }
 > = {
-	claim: { icon: "basket-outline", tint: "#0C3226", bubble: "bg-forest-100" },
+	claim: { icon: "basket-outline", tint: theme.brand, bubble: "bg-forest-100" },
 	pickup: {
 		icon: "checkmark-circle-outline",
 		tint: "#2D6A4F",
@@ -198,7 +199,7 @@ export function NotificationsList() {
 							accessibilityRole="button"
 							accessibilityLabel="Clear all notifications"
 						>
-							<Text className="font-body-semibold text-sm text-forest-700">
+							<Text className="font-body-semibold text-sm text-brand">
 								Clear all
 							</Text>
 						</Pressable>

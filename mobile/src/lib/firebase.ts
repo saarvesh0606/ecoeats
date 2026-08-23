@@ -12,17 +12,17 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import * as firebaseAuth from "firebase/auth";
 import {
 	createUserWithEmailAndPassword,
-	getAuth,
+	type User as FirebaseUser,
+	signOut as fbSignOut,
 	GoogleAuthProvider,
+	getAuth,
 	initializeAuth,
 	onAuthStateChanged,
 	type Persistence,
 	sendEmailVerification,
 	signInWithEmailAndPassword,
 	signInWithPopup,
-	signOut as fbSignOut,
 	updateProfile,
-	type User as FirebaseUser,
 } from "firebase/auth";
 import { Platform } from "react-native";
 import { ALLOWED_EMAIL_DOMAIN, config } from "@/config";

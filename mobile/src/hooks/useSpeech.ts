@@ -39,10 +39,16 @@ interface WebSpeechRecognition {
 	interimResults: boolean;
 	start: () => void;
 	stop: () => void;
-	onresult: ((event: {
-		resultIndex: number;
-		results: { 0: { transcript: string }; isFinal: boolean; length: number }[];
-	}) => void) | null;
+	onresult:
+		| ((event: {
+				resultIndex: number;
+				results: {
+					0: { transcript: string };
+					isFinal: boolean;
+					length: number;
+				}[];
+		  }) => void)
+		| null;
 	onerror: (() => void) | null;
 	onend: (() => void) | null;
 }

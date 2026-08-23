@@ -28,7 +28,12 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
 		status: "active",
 		created_at: new Date().toISOString(),
 		scheduled_for: null,
-		organizer: { id: "org-1", name: "Front Desk", rating: null, rating_count: 0 },
+		organizer: {
+			id: "org-1",
+			name: "Front Desk",
+			rating: null,
+			rating_count: 0,
+		},
 		photo_urls: [],
 		distance_miles: null,
 		seconds_remaining: 1800,
@@ -84,14 +89,19 @@ describe("ListingCard", () => {
 
 			// The glow says the card is for you; the chip says which preference
 			// made it so, which a card carrying three tags otherwise leaves unsaid.
-			expect(getByText("vegetarian").props.className).toContain("forest");
-			expect(getByText("halal").props.className).not.toContain("forest");
+			// text-brand is the ink green, which lifts in dark mode; the surface
+			// greens keep the forest- names.
+			expect(getByText("vegetarian").props.className).toContain("text-brand");
+			expect(getByText("halal").props.className).not.toContain("text-brand");
 		});
 
 		it("still shows food that matches nothing", () => {
 			const { getByText } = render(
 				<ListingCard
-					listing={makeListing({ title: "Beef tacos", dietary_tags: ["halal"] })}
+					listing={makeListing({
+						title: "Beef tacos",
+						dietary_tags: ["halal"],
+					})}
 					now={Date.now()}
 					onPress={() => {}}
 					prefs={["vegan"]}
@@ -106,7 +116,11 @@ describe("ListingCard", () => {
 
 	it("shows the title and location", () => {
 		const { getByText } = render(
-			<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			<ListingCard
+				listing={makeListing()}
+				now={Date.now()}
+				onPress={() => {}}
+			/>,
 		);
 		expect(getByText("Leftover pizza")).toBeTruthy();
 		expect(getByText("Wrigley Hall, Room 205")).toBeTruthy();
@@ -114,14 +128,22 @@ describe("ListingCard", () => {
 
 	it("surfaces the allergen warning prominently", () => {
 		const { getByText } = render(
-			<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			<ListingCard
+				listing={makeListing()}
+				now={Date.now()}
+				onPress={() => {}}
+			/>,
 		);
 		expect(getByText(/Contains gluten and dairy/)).toBeTruthy();
 	});
 
 	it("shows the dietary tags", () => {
 		const { getByText } = render(
-			<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+			<ListingCard
+				listing={makeListing()}
+				now={Date.now()}
+				onPress={() => {}}
+			/>,
 		);
 		expect(getByText("vegetarian")).toBeTruthy();
 	});
@@ -129,7 +151,11 @@ describe("ListingCard", () => {
 	describe("how much is left", () => {
 		it("shows the portions remaining", () => {
 			const { getByText } = render(
-				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+				<ListingCard
+					listing={makeListing()}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
 			);
 			expect(getByText("8 portions")).toBeTruthy();
 		});
@@ -149,7 +175,11 @@ describe("ListingCard", () => {
 			// Two chips ending in the same word read as a pair of times, and the
 			// accessibility label would run "30m left, 8 left".
 			const { getByText, queryByText } = render(
-				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+				<ListingCard
+					listing={makeListing()}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
 			);
 			expect(getByText("8 portions")).toBeTruthy();
 			expect(queryByText("8 left")).toBeNull();
@@ -174,7 +204,11 @@ describe("ListingCard", () => {
 		// The card now also contains a bookmark button, so target the card by its
 		// label rather than the ambiguous role.
 		const { getByLabelText } = render(
-			<ListingCard listing={makeListing()} now={Date.now()} onPress={onPress} />,
+			<ListingCard
+				listing={makeListing()}
+				now={Date.now()}
+				onPress={onPress}
+			/>,
 		);
 		fireEvent.press(getByLabelText(/Leftover pizza/));
 		expect(onPress).toHaveBeenCalledTimes(1);
@@ -189,7 +223,11 @@ describe("ListingCard", () => {
 			// Without a role a screen reader reads the card out as plain text and
 			// gives no indication the whole thing opens the listing.
 			const { getByLabelText } = render(
-				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+				<ListingCard
+					listing={makeListing()}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
 			);
 			const card = getByLabelText(/Leftover pizza/);
 			expect(card.props.accessibilityRole).toBe("button");
@@ -201,16 +239,32 @@ describe("ListingCard", () => {
 			// native both must stay independently focusable, so this pins that the
 			// card's label never swallows the bookmark's.
 			const { getByLabelText } = render(
-				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+				<ListingCard
+					listing={makeListing()}
+					now={Date.now()}
+					onPress={() => {}}
+				/>,
 			);
 			expect(getByLabelText("Save for later")).toBeTruthy();
 		});
 
 		it("reads the time and the amount left in the label", () => {
+			// One fixed instant for both the deadline and "now". Deriving them from
+			// two separate Date.now() calls made this flake: straddling a second
+			// boundary turned "30m left" into "29m left".
+			const at = Date.parse("2026-08-23T12:00:00Z");
 			const { getByLabelText } = render(
-				<ListingCard listing={makeListing()} now={Date.now()} onPress={() => {}} />,
+				<ListingCard
+					listing={makeListing({
+						expires_at: new Date(at + 30 * 60_000).toISOString(),
+					})}
+					now={at}
+					onPress={() => {}}
+				/>,
 			);
-			expect(getByLabelText(/Leftover pizza, 30m left, 8 portions/)).toBeTruthy();
+			expect(
+				getByLabelText(/Leftover pizza, 30m left, 8 portions/),
+			).toBeTruthy();
 		});
 	});
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { View } from "react-native";
 import { usePulse } from "@/hooks/usePulse";
+import { theme } from "@/hooks/useThemeColors";
 
 const CYCLE_MS = 2600;
 const HALO = 96;
@@ -29,13 +30,13 @@ export function EmptyBell() {
 					width: HALO,
 					height: HALO,
 					borderRadius: HALO / 2,
-					backgroundColor: "#dcf5e7",
+					backgroundColor: theme.halo,
 					opacity: 0.35 + pulse * 0.5,
 					transform: [{ scale: 0.78 + pulse * 0.22 }],
 				}}
 			/>
 			<View style={{ transform: [{ translateY: 2 - pulse * 5 }] }}>
-				<Ionicons name="notifications-outline" size={34} color="#0C3226" />
+				<Ionicons name="notifications-outline" size={34} color={theme.brand} />
 			</View>
 		</View>
 	);

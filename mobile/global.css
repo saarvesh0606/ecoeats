@@ -1,3 +1,92 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * The palette, as variables, so one swap moves the whole app.
+ *
+ * The alternative was writing a dark: variant beside each of the four hundred
+ * colour classes in the screens, which would have meant every future colour
+ * needing two edits and every missed one being a hole nobody notices until a
+ * screen is opened at night.
+ *
+ * Names are kept as they are — cream, white, gray — even though in dark they no
+ * longer describe the colour. Renaming them across every screen would have been
+ * a far larger change than dark mode itself, and a wrong rename is a silent
+ * miss. Read them as roles: cream is the page, white is a card, gray-900 is the
+ * text you read, gray-400 the text you glance at.
+ *
+ * The dark values are chosen rather than inverted. This design rests on warm
+ * cream and deep forest green; mathematically inverting cream gives a cold blue
+ * and inverting the green gives something sickly. So dark keeps a trace of
+ * warmth in the greys, and the greens are re-picked from the existing ramp
+ * rather than computed.
+ */
+@layer base {
+	:root {
+		/* Page and cards */
+		--c-cream: 251 249 244;
+		--c-card: 255 255 255;
+
+		/* Text, brightest to faintest */
+		--c-gray-900: 17 24 39;
+		--c-gray-700: 55 65 81;
+		--c-gray-600: 75 85 99;
+		--c-gray-500: 107 114 128;
+		--c-gray-400: 156 163 175;
+
+		/* Hairlines and quiet fills */
+		--c-gray-300: 209 213 219;
+		--c-gray-200: 229 231 235;
+		--c-gray-100: 243 244 246;
+		--c-gray-50: 249 250 251;
+
+		/* Green as a surface — buttons, badges, filled chips. White sits on it. */
+		--c-forest-800: 12 50 38;
+		--c-forest-700: 22 69 47;
+		--c-forest-600: 45 106 79;
+		--c-forest-50: 241 247 244;
+
+		/*
+		 * Green as ink — headings, icons, links.
+		 *
+		 * Separate from the surface green because the two must move opposite
+		 * ways. In dark the button has to stay saturated enough for white text,
+		 * while a heading in that same deep green on a near-black page would be
+		 * unreadable, so the ink lifts to the pale end of the ramp instead.
+		 */
+		--c-brand: 12 50 38;
+	}
+
+	.dark:root {
+		--c-cream: 18 19 17;
+		/* Lifted off the page rather than level with it. Dark UIs separate a card
+		   from its background by making it lighter, and the first attempt sat at
+		   a contrast ratio of 1.10 against the page — flat enough that the cards
+		   stopped reading as cards. */
+		--c-card: 33 35 30;
+
+		--c-gray-900: 242 241 234;
+		--c-gray-700: 200 203 193;
+		--c-gray-600: 179 182 172;
+		--c-gray-500: 158 161 151;
+		/* Raised to clear 4.5:1 on a card. The first value measured 4.08, which
+		   is below the readable threshold for the small text it is used on. */
+		--c-gray-400: 140 143 133;
+
+		/* Hairlines and chip fills, all a step lighter than the card. gray-100 is
+		   both a border and a fill here, and at the card's own lightness the
+		   borders simply disappeared. */
+		--c-gray-300: 70 73 63;
+		--c-gray-200: 56 58 50;
+		--c-gray-100: 45 47 40;
+		--c-gray-50: 39 41 35;
+
+		--c-forest-800: 45 106 79;
+		--c-forest-700: 34 84 62;
+		--c-forest-600: 82 183 136;
+		--c-forest-50: 22 36 29;
+
+		--c-brand: 168 207 189;
+	}
+}

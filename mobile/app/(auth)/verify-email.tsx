@@ -37,7 +37,7 @@ export default function VerifyEmailScreen() {
 
 	return (
 		<View className="flex-1 bg-cream justify-center px-6">
-			<Text className="font-display-bold text-3xl text-forest-800 text-center">
+			<Text className="font-display-bold text-3xl text-brand text-center">
 				Confirm your email
 			</Text>
 			<Text className="font-body text-gray-500 text-center mt-3 mb-2">
@@ -55,12 +55,12 @@ export default function VerifyEmailScreen() {
 			    configured, "check your spam folder" is not boilerplate here, it
 			    is the single most useful thing this screen can say. */}
 			<Text className="font-body text-gray-500 text-sm text-center mb-10">
-				It can take a minute. Check your spam or junk folder — these often
-				land there.
+				It can take a minute. Check your spam or junk folder — these often land
+				there.
 			</Text>
 
 			{message && (
-				<Text className="font-body text-sm text-forest-600 text-center mb-4">
+				<Text className="font-body text-sm text-brand text-center mb-4">
 					{message}
 				</Text>
 			)}

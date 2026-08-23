@@ -37,7 +37,10 @@ export type LocationStatus =
 export function useDeviceLocation({
 	auto = false,
 	accuracy = Location.Accuracy.Balanced,
-}: { auto?: boolean; accuracy?: Location.Accuracy } = {}) {
+}: {
+	auto?: boolean;
+	accuracy?: Location.Accuracy;
+} = {}) {
 	const [coords, setCoords] = useState<Coords | null>(null);
 	const [status, setStatus] = useState<LocationStatus>("idle");
 	/** A second press while the OS dialog is open must not open a second one. */

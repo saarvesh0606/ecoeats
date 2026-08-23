@@ -3,13 +3,17 @@ import { changeRole, type UserProfile, updateProfile } from "@/lib/api";
 import { renderWithProviders } from "@/test-utils/render";
 import { Profile } from "./Profile";
 
-jest.mock("@/lib/api", () => jest.requireActual("@/test-utils/render").apiModuleMock());
+jest.mock("@/lib/api", () =>
+	jest.requireActual("@/test-utils/render").apiModuleMock(),
+);
 jest.mock("@/lib/listings", () => ({
 	DIETARY_TAGS: ["vegetarian", "vegan", "halal", "kosher", "gluten-free"],
 }));
 
 const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
+jest.mock("expo-router", () => ({
+	useRouter: () => ({ replace: mockReplace }),
+}));
 
 const mockApply = jest.fn();
 const mockSignOut = jest.fn();
@@ -198,13 +202,17 @@ describe("Profile", () => {
 		it("offers a recipient the way to become a host", () => {
 			renderProfile();
 			expect(screen.getByLabelText("Switch to host account")).toBeTruthy();
-			expect(screen.getByText("You're set up to find and claim food.")).toBeTruthy();
+			expect(
+				screen.getByText("You're set up to find and claim food."),
+			).toBeTruthy();
 		});
 
 		it("offers a host the way to become a recipient", () => {
 			renderProfile(profile({ role: "organizer" }));
 			expect(screen.getByLabelText("Switch to recipient account")).toBeTruthy();
-			expect(screen.getByText("You're set up to post surplus food.")).toBeTruthy();
+			expect(
+				screen.getByText("You're set up to post surplus food."),
+			).toBeTruthy();
 		});
 
 		it("does nothing if the confirmation is dismissed", async () => {
@@ -222,7 +230,9 @@ describe("Profile", () => {
 
 			await confirmSwitch("host");
 
-			await waitFor(() => expect(mockChangeRole).toHaveBeenCalledWith("organizer"));
+			await waitFor(() =>
+				expect(mockChangeRole).toHaveBeenCalledWith("organizer"),
+			);
 			expect(mockApply).toHaveBeenCalled();
 			// The tab bar rebuilds from profile.role, but the route underneath does
 			// not — without this the user is left on a tab their new role can't use.
@@ -235,7 +245,9 @@ describe("Profile", () => {
 
 			await confirmSwitch("recipient");
 
-			await waitFor(() => expect(mockChangeRole).toHaveBeenCalledWith("recipient"));
+			await waitFor(() =>
+				expect(mockChangeRole).toHaveBeenCalledWith("recipient"),
+			);
 			expect(mockReplace).toHaveBeenCalledWith("/feed");
 		});
 

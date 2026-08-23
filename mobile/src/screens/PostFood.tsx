@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { Accuracy as LocationAccuracy } from "expo-location";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
 	Image,
@@ -12,11 +13,10 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { VoicePanel } from "@/components/VoicePanel";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
-import { Accuracy as LocationAccuracy } from "expo-location";
+import { VoicePanel } from "@/components/VoicePanel";
 import { type Coords, useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useSpeech } from "@/hooks/useSpeech";
 import { ApiError } from "@/lib/api";
@@ -59,9 +59,9 @@ export function PostFood() {
 	// Which entry affordance is on screen. Defaults to voice because the spec
 	// leads with speaking; typing stays available in both modes.
 	const [entryMode, setEntryMode] = useState<"voice" | "manual">("voice");
-	const [descriptionSource, setDescriptionSource] = useState<"voice" | "manual">(
-		"manual",
-	);
+	const [descriptionSource, setDescriptionSource] = useState<
+		"voice" | "manual"
+	>("manual");
 	const [allergens, setAllergens] = useState("");
 	const [tags, setTags] = useState<string[]>([]);
 	const [quantity, setQuantity] = useState("");
@@ -241,7 +241,9 @@ export function PostFood() {
 			router.replace("/posts");
 		} catch (err) {
 			haptics.error();
-			setError(err instanceof ApiError ? err.message : "Couldn't post. Try again.");
+			setError(
+				err instanceof ApiError ? err.message : "Couldn't post. Try again.",
+			);
 		} finally {
 			setSubmitting(false);
 		}
@@ -255,7 +257,7 @@ export function PostFood() {
 			>
 				<View className="px-5 pt-2 pb-3 flex-row items-start justify-between">
 					<View className="flex-1">
-						<Text className="font-display-bold text-3xl text-forest-800">
+						<Text className="font-display-bold text-3xl text-brand">
 							Create a Post
 						</Text>
 						<Text className="font-body text-gray-500 mt-0.5">
@@ -272,9 +274,7 @@ export function PostFood() {
 							hitSlop={8}
 							className="pt-2 pl-3"
 						>
-							<Text className="font-body-medium text-sm text-forest-700">
-								Clear
-							</Text>
+							<Text className="font-body-medium text-sm text-brand">Clear</Text>
 						</Pressable>
 					)}
 				</View>
@@ -313,7 +313,7 @@ export function PostFood() {
 								disabled={uploading}
 								className="w-20 h-20 rounded-btn border-2 border-dashed border-forest-300 items-center justify-center bg-white"
 							>
-								<Text className="font-body text-forest-600 text-xs">
+								<Text className="font-body text-brand text-xs">
 									{uploading ? "…" : "+ Add"}
 								</Text>
 							</Pressable>
@@ -559,9 +559,7 @@ export function PostFood() {
 					)}
 
 					<Button
-						onPress={() =>
-							submit(scheduleMode === "now" ? "now" : "scheduled")
-						}
+						onPress={() => submit(scheduleMode === "now" ? "now" : "scheduled")}
 						loading={submitting}
 						size="lg"
 					>

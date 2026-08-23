@@ -58,7 +58,9 @@ describe("VerifyEmailScreen", () => {
 
 		fireEvent.press(screen.getByText("Resend the email"));
 
-		expect(await screen.findByText("Too many requests. Try later.")).toBeTruthy();
+		expect(
+			await screen.findByText("Too many requests. Try later."),
+		).toBeTruthy();
 	});
 
 	it("re-checks verification on demand and says when it still isn't done", async () => {

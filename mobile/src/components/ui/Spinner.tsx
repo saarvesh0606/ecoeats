@@ -1,4 +1,5 @@
 import { ActivityIndicator, View } from "react-native";
+import { theme } from "@/hooks/useThemeColors";
 
 interface SpinnerProps {
 	size?: "small" | "large";
@@ -8,7 +9,7 @@ interface SpinnerProps {
 
 export function Spinner({
 	size = "large",
-	color = "#0C3226",
+	color = theme.brand,
 	className = "",
 }: SpinnerProps) {
 	return (

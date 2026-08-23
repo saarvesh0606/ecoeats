@@ -19,6 +19,7 @@ import {
 } from "@/lib/claims";
 import { formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
+import { theme } from "@/hooks/useThemeColors";
 import {
 	cancelListing,
 	fetchListing,
@@ -34,7 +35,7 @@ const STATUS_LABEL: Record<Claim["status"], string> = {
 };
 
 const STATUS_STYLE: Record<Claim["status"], string> = {
-	pending: "bg-forest-100 text-forest-700",
+	pending: "bg-forest-100 text-brand",
 	picked_up: "bg-forest-700 text-white",
 	no_show: "bg-red-100 text-red-700",
 	cancelled: "bg-gray-100 text-gray-500",
@@ -177,7 +178,7 @@ export default function ManageListing() {
 					</Text>
 					<View className="flex-row items-center gap-1 mt-1">
 						{live && <View className="w-2 h-2 rounded-full bg-lime" />}
-						<Text className="font-body-medium text-forest-600 text-xs capitalize">
+						<Text className="font-body-medium text-brand text-xs capitalize">
 							{live ? "Live" : listing.status}
 							{live ? ` · ${formatTimeLeft(listing.expires_at, now)}` : ""}
 						</Text>
@@ -189,7 +190,7 @@ export default function ManageListing() {
 			<View className="bg-white rounded-card p-4 border border-gray-100 mt-3">
 				<Text className="font-body-semibold text-gray-900">Quantity Left</Text>
 				<View className="flex-row items-baseline gap-1 mt-1">
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						{listing.quantity_remaining}
 					</Text>
 					<Text className="font-body text-gray-500">
@@ -254,9 +255,9 @@ export default function ManageListing() {
 					accessibilityRole="button"
 					accessibilityLabel="Back to your posts"
 				>
-					<Ionicons name="chevron-back" size={24} color="#0C3226" />
+					<Ionicons name="chevron-back" size={24} color={theme.brand} />
 				</Pressable>
-				<Text className="font-display-bold text-2xl text-forest-800">
+				<Text className="font-display-bold text-2xl text-brand">
 					Post Management
 				</Text>
 			</View>

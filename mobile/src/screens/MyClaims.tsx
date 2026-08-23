@@ -16,8 +16,9 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
 import { useRefreshOnPush } from "@/hooks/useRefreshOnPush";
+import { theme } from "@/hooks/useThemeColors";
 import { ApiError } from "@/lib/api";
-import { cancelClaim, type Claim, fetchMyClaims, rateHost } from "@/lib/claims";
+import { type Claim, cancelClaim, fetchMyClaims, rateHost } from "@/lib/claims";
 import { formatLocation } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { openDirections } from "@/lib/maps";
@@ -120,7 +121,7 @@ function PickupChecklist() {
 			</Text>
 			{PICKUP_STEPS.map((step) => (
 				<View key={step} className="flex-row gap-2 py-1">
-					<Ionicons name="checkmark-circle" size={18} color="#0C3226" />
+					<Ionicons name="checkmark-circle" size={18} color={theme.brand} />
 					<Text className="font-body text-gray-600 text-sm flex-1">{step}</Text>
 				</View>
 			))}
@@ -237,7 +238,7 @@ export function MyClaims() {
 		return (
 			<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 				<View className="px-5 pt-2 pb-3">
-					<Text className="font-display-bold text-3xl text-forest-800">
+					<Text className="font-display-bold text-3xl text-brand">
 						My Claims
 					</Text>
 				</View>
@@ -258,9 +259,7 @@ export function MyClaims() {
 	return (
 		<SafeAreaView className="flex-1 bg-cream" edges={["top"]}>
 			<View className="px-5 pt-2 pb-3">
-				<Text className="font-display-bold text-3xl text-forest-800">
-					My Claims
-				</Text>
+				<Text className="font-display-bold text-3xl text-brand">My Claims</Text>
 				<Text className="font-body text-gray-500 mt-0.5">
 					Your reserved food and pickup info.
 				</Text>
@@ -314,12 +313,16 @@ export function MyClaims() {
 									/>
 								) : (
 									<View className="w-16 h-16 rounded-xl bg-forest-50 items-center justify-center">
-										<Ionicons name="fast-food-outline" size={22} color="#A8CFBD" />
+										<Ionicons
+											name="fast-food-outline"
+											size={22}
+											color="#A8CFBD"
+										/>
 									</View>
 								)}
 								<View className="flex-1">
 									<View className="flex-row items-center gap-2">
-										<Text className="font-body-semibold text-[11px] text-forest-700 uppercase tracking-wide">
+										<Text className="font-body-semibold text-[11px] text-brand uppercase tracking-wide">
 											{STATUS_LABEL[item.status]}
 										</Text>
 									</View>
@@ -346,7 +349,7 @@ export function MyClaims() {
 										<Text className="font-body text-gray-400 text-xs">
 											Time remaining
 										</Text>
-										<Text className="font-display-bold text-2xl text-forest-800">
+										<Text className="font-display-bold text-2xl text-brand">
 											{mmss(item.reservation_expires_at, now)}
 										</Text>
 									</View>
@@ -381,7 +384,7 @@ export function MyClaims() {
 
 							{item.status === "picked_up" &&
 								(item.is_rated ? (
-									<Text className="font-body text-forest-700 text-sm mt-3">
+									<Text className="font-body text-brand text-sm mt-3">
 										★ You rated this host — thanks!
 									</Text>
 								) : (
@@ -403,7 +406,7 @@ export function MyClaims() {
 									accessibilityRole="button"
 									accessibilityLabel={`View details for ${l.title}`}
 								>
-									<Text className="font-body-semibold text-forest-700 text-sm text-center">
+									<Text className="font-body-semibold text-brand text-sm text-center">
 										View Details
 									</Text>
 								</Pressable>
@@ -426,7 +429,10 @@ export function MyClaims() {
 						</Text>
 						{tab === "active" && (
 							<View className="mt-6">
-								<Button variant="outline" onPress={() => router.replace("/feed")}>
+								<Button
+									variant="outline"
+									onPress={() => router.replace("/feed")}
+								>
 									Browse food
 								</Button>
 							</View>

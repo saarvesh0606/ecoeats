@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, View } from "react-native";
 import { useUnread } from "@/context/UnreadContext";
+import { theme } from "@/hooks/useThemeColors";
 
 /**
  * The bell, with a dot when something is waiting.
@@ -28,7 +29,7 @@ export function NotificationBell() {
 			}
 		>
 			<View>
-				<Ionicons name="notifications-outline" size={24} color="#0C3226" />
+				<Ionicons name="notifications-outline" size={24} color={theme.brand} />
 				{unread > 0 && (
 					// Cream ring so the dot reads as separate from the bell rather
 					// than as part of the glyph, on either home screen's background.

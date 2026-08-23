@@ -7,9 +7,9 @@
  * refreshes it as needed, so this is cheap and always current.
  */
 
+import { config } from "@/config";
 import { auth } from "@/lib/firebase";
 import { getDevToken } from "@/lib/session";
-import { config } from "@/config";
 
 export class ApiError extends Error {
 	constructor(

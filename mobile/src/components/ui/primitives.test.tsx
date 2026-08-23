@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Animated, Text } from "react-native";
 import { haptics } from "@/lib/haptics";
 import { AnimatedNumber } from "./AnimatedNumber";
@@ -143,14 +143,28 @@ describe("Input", () => {
 	});
 
 	it("masks a password by default", () => {
-		render(<Input label="Password" secureTextEntry value="hunter22" onChangeText={() => {}} />);
+		render(
+			<Input
+				label="Password"
+				secureTextEntry
+				value="hunter22"
+				onChangeText={() => {}}
+			/>,
+		);
 		expect(screen.getByLabelText("Password").props.secureTextEntry).toBe(true);
 	});
 
 	it("reveals the password when the eye is tapped", () => {
 		// Typing a password blind on a phone keyboard is the most common reason a
 		// correct one gets rejected.
-		render(<Input label="Password" secureTextEntry value="hunter22" onChangeText={() => {}} />);
+		render(
+			<Input
+				label="Password"
+				secureTextEntry
+				value="hunter22"
+				onChangeText={() => {}}
+			/>,
+		);
 
 		fireEvent.press(screen.getByLabelText("Show password"));
 
@@ -164,7 +178,14 @@ describe("Input", () => {
 	});
 
 	it("shows an error message when given one", () => {
-		render(<Input label="Name" error="Name can't be empty." value="" onChangeText={() => {}} />);
+		render(
+			<Input
+				label="Name"
+				error="Name can't be empty."
+				value=""
+				onChangeText={() => {}}
+			/>,
+		);
 		expect(screen.getByText("Name can't be empty.")).toBeTruthy();
 	});
 });
@@ -205,7 +226,9 @@ describe("Avatar", () => {
 describe("ProgressBar", () => {
 	/** The fill's width is an interpolated animated value; read what it resolves to. */
 	function fillWidth() {
-		return screen.UNSAFE_getByType(Animated.View).props.style.width.__getValue();
+		return screen
+			.UNSAFE_getByType(Animated.View)
+			.props.style.width.__getValue();
 	}
 
 	it("fills proportionally", () => {

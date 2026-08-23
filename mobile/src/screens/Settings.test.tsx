@@ -33,10 +33,20 @@ jest.mock("@/context/AuthContext", () => ({
 const mockMuted = jest.fn(async () => false);
 const mockHapticsMuted = jest.fn(async () => false);
 const mockSetHapticsMuted = jest.fn(async (_muted: boolean) => {});
+const mockThemeChoice = jest.fn(async () => "system" as const);
+const mockSaveTheme = jest.fn(async (_c: string) => {});
 jest.mock("@/lib/preferences", () => ({
 	arePushNotificationsMuted: () => mockMuted(),
 	areHapticsMuted: () => mockHapticsMuted(),
 	setHapticsMuted: (v: boolean) => mockSetHapticsMuted(v),
+	getThemeChoice: () => mockThemeChoice(),
+	setThemeChoice: (c: string) => mockSaveTheme(c),
+}));
+
+const mockSetScheme = jest.fn();
+jest.mock("nativewind", () => ({
+	colorScheme: { set: (v: string) => mockSetScheme(v), get: () => "light" },
+	useColorScheme: () => ({ colorScheme: "light" }),
 }));
 
 const mockDelete = deleteAccount as jest.MockedFunction<typeof deleteAccount>;
@@ -84,7 +94,11 @@ describe("Settings", () => {
 		it("hands the push token back when muted", async () => {
 			// Muting has to actually stop delivery, not just hide banners.
 			renderWithProviders(<Settings />);
-			fireEvent(screen.getByLabelText("Mute notifications"), "valueChange", true);
+			fireEvent(
+				screen.getByLabelText("Mute notifications"),
+				"valueChange",
+				true,
+			);
 
 			await waitFor(() => expect(mockSetPushMuted).toHaveBeenCalledWith(true));
 		});
@@ -105,7 +119,9 @@ describe("Settings", () => {
 			// The switch reads "Haptic feedback ON", so turning it off is false.
 			fireEvent(screen.getByLabelText("Haptic feedback"), "valueChange", false);
 
-			await waitFor(() => expect(mockSetHapticsMuted).toHaveBeenCalledWith(true));
+			await waitFor(() =>
+				expect(mockSetHapticsMuted).toHaveBeenCalledWith(true),
+			);
 		});
 
 		it("shows haptics already off when the device says so", async () => {
@@ -113,8 +129,32 @@ describe("Settings", () => {
 			renderWithProviders(<Settings />);
 
 			await waitFor(() =>
-				expect(screen.getByLabelText("Haptic feedback").props.value).toBe(false),
+				expect(screen.getByLabelText("Haptic feedback").props.value).toBe(
+					false,
+				),
 			);
+		});
+	});
+
+	describe("appearance", () => {
+		it("offers following the phone as well as the two fixed choices", async () => {
+			renderWithProviders(<Settings />);
+
+			// "System" is the default and has to be reachable, otherwise someone who
+			// tried dark can never hand the decision back to their phone.
+			expect(await screen.findByText("Match my phone")).toBeTruthy();
+			expect(screen.getByText("Light")).toBeTruthy();
+			expect(screen.getByText("Dark")).toBeTruthy();
+		});
+
+		it("applies the choice and remembers it", async () => {
+			renderWithProviders(<Settings />);
+			fireEvent.press(await screen.findByText("Dark"));
+
+			// Applied to the running app and written down. Doing only the first
+			// loses it on next launch; only the second changes nothing on screen.
+			await waitFor(() => expect(mockSetScheme).toHaveBeenCalledWith("dark"));
+			expect(mockSaveTheme).toHaveBeenCalledWith("dark");
 		});
 	});
 

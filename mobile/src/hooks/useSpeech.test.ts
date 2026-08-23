@@ -140,7 +140,9 @@ describe("the device recogniser", () => {
 
 		emit("error", { error: "no-speech" });
 
-		expect(result.current.error).toBe("Didn't catch that. Try again, or type it.");
+		expect(result.current.error).toBe(
+			"Didn't catch that. Try again, or type it.",
+		);
 		expect(result.current.listening).toBe(false);
 	});
 

@@ -196,7 +196,9 @@ describe("MyClaims", () => {
 		});
 
 		it("offers a rating on a collected claim", async () => {
-			mockFetch.mockResolvedValue([claim({ status: "picked_up", is_rated: false })]);
+			mockFetch.mockResolvedValue([
+				claim({ status: "picked_up", is_rated: false }),
+			]);
 			renderClaims();
 			fireEvent.press(await screen.findByText("Picked Up"));
 
@@ -206,7 +208,9 @@ describe("MyClaims", () => {
 		});
 
 		it("does not ask twice once the host has been rated", async () => {
-			mockFetch.mockResolvedValue([claim({ status: "picked_up", is_rated: true })]);
+			mockFetch.mockResolvedValue([
+				claim({ status: "picked_up", is_rated: true }),
+			]);
 			renderClaims();
 			fireEvent.press(await screen.findByText("Picked Up"));
 
@@ -252,9 +256,7 @@ describe("MyClaims", () => {
 			expect(await screen.findByText("Reserved")).toBeTruthy();
 
 			// The host confirms the handover: the server now calls it collected.
-			mockFetch.mockResolvedValue([
-				claim({ id: "c-1", status: "picked_up" }),
-			]);
+			mockFetch.mockResolvedValue([claim({ id: "c-1", status: "picked_up" })]);
 
 			const onPush = (addNotificationReceivedListener as jest.Mock).mock
 				.calls[0][0];

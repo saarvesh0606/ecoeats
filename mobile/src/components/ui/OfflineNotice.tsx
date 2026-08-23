@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { usePulse } from "@/hooks/usePulse";
+import { theme } from "@/hooks/useThemeColors";
 
 /** One breath of the icon. Slow: this is reassurance, not an alarm. */
 const BREATH_MS = 2000;
@@ -51,7 +52,7 @@ export function OfflineNotice({
 			<Ionicons
 				name="cloud-offline-outline"
 				size={52}
-				color="#9CA3AF"
+				color={theme.muted}
 				// Scaled as well as faded, so the motion still reads for someone who
 				// can't easily separate the two greys.
 				style={{

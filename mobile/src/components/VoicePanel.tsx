@@ -48,7 +48,9 @@ export function VoicePanel({
 	return (
 		<View className="bg-white rounded-card border border-gray-100 p-5 items-center">
 			<Text className="font-body text-gray-500 text-sm mb-3">
-				{listening ? "Listening — say what the food is" : "Tap to speak about the food"}
+				{listening
+					? "Listening — say what the food is"
+					: "Tap to speak about the food"}
 			</Text>
 
 			{/* The strip is always present so the panel keeps its shape, but the
@@ -63,7 +65,7 @@ export function VoicePanel({
 			)}
 
 			<Text
-				className={`font-display-bold text-2xl mt-2 ${listening ? "text-forest-800" : "text-gray-300"}`}
+				className={`font-display-bold text-2xl mt-2 ${listening ? "text-brand" : "text-gray-300"}`}
 			>
 				{clock(seconds)}
 			</Text>

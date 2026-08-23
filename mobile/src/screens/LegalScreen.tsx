@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegalDocumentView } from "@/components/LegalDocumentView";
+import { theme } from "@/hooks/useThemeColors";
 import { LEGAL_DOCUMENTS, type LegalDocumentKey } from "@/lib/legal";
 
 /**
@@ -30,8 +31,8 @@ export function LegalScreen() {
 					hitSlop={10}
 					className="flex-row items-center py-2"
 				>
-					<Ionicons name="chevron-back" size={18} color="#0C3226" />
-					<Text className="font-body-medium text-forest-800 ml-1">Settings</Text>
+					<Ionicons name="chevron-back" size={18} color={theme.brand} />
+					<Text className="font-body-medium text-brand ml-1">Settings</Text>
 				</Pressable>
 			</View>
 
