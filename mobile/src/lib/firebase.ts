@@ -146,21 +146,60 @@ export async function signInWithGoogle(): Promise<void> {
  * then refused by every API call, which looks like the app being broken.
  */
 export async function completeGoogleSignIn(idToken: string): Promise<void> {
+	// Checked BEFORE the exchange, not after.
+	//
+	// Signing in first and correcting afterwards means Firebase has already
+	// created the account and already told the app someone is signed in — the
+	// router moves to role selection, and the sign-out lands a beat later, so a
+	// rejected account still gets a look at the inside of the app and leaves a
+	// real account behind. Reading the claim first means none of that happens.
+	//
+	// The token is not trusted here — it is only being asked whether it is worth
+	// presenting to Firebase, which verifies it properly. A forged claim can
+	// only get itself refused twice.
+	const claimed = emailFromIdToken(idToken);
+	if (claimed !== null) rejectForeignDomain(claimed);
+
 	const credential = await signInWithCredential(
 		auth,
 		GoogleAuthProvider.credential(idToken),
 	);
+	// Still checked afterwards, for a token that carried no email claim at all.
 	await enforceAllowedDomain(credential.user.email ?? "");
+}
+
+/** The email claim from a Google id token, or null if it can't be read. */
+function emailFromIdToken(idToken: string): string | null {
+	try {
+		const payload = idToken.split(".")[1];
+		if (!payload) return null;
+		const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+		const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+		const decode = (globalThis as { atob?: (s: string) => string }).atob;
+		if (!decode) return null;
+		const claims = JSON.parse(decode(padded)) as { email?: string };
+		return claims.email ?? null;
+	} catch {
+		// Unreadable is not the same as wrong. Fall through to the check that
+		// runs against what Firebase itself reports.
+		return null;
+	}
+}
+
+/** Throws for anything outside the allowed domain. Signs nothing out. */
+function rejectForeignDomain(email: string): void {
+	if (email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return;
+	throw new Error(
+		`That Google account isn't an @${ALLOWED_EMAIL_DOMAIN} address. ` +
+			"Use your ASU account.",
+	);
 }
 
 /** Signs the account back out and explains, rather than leaving it half in. */
 async function enforceAllowedDomain(email: string): Promise<void> {
 	if (email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return;
 	await fbSignOut(auth);
-	throw new Error(
-		`That Google account isn't an @${ALLOWED_EMAIL_DOMAIN} address. ` +
-			"Use your ASU account.",
-	);
+	rejectForeignDomain(email);
 }
 
 export async function registerWithEmail(

@@ -120,6 +120,31 @@ describe("GoogleSignInButton", () => {
 			expect(mockComplete).not.toHaveBeenCalled();
 		});
 
+		it("refuses a foreign account without ever signing it in", async () => {
+			// The rejection has to happen before the exchange: signing in first
+			// creates a real Firebase account and lets the router move on, so a
+			// refused account still gets a look inside and leaves an account
+			// behind. A token whose email claim is not ASU must not reach Firebase.
+			const payload = Buffer.from(
+				JSON.stringify({ email: "someone@gmail.com" }),
+			).toString("base64url");
+			mockResponse = {
+				type: "success",
+				params: { id_token: `header.${payload}.signature` },
+			};
+			mockComplete.mockRejectedValue(
+				new Error("That Google account isn't an @asu.edu address."),
+			);
+			const onError = jest.fn();
+			render(<GoogleSignInButton onError={onError} />);
+
+			await waitFor(() =>
+				expect(onError).toHaveBeenCalledWith(
+					"That Google account isn't an @asu.edu address.",
+				),
+			);
+		});
+
 		it("stays quiet when the browser is dismissed", async () => {
 			mockResponse = { type: "dismiss" };
 			const onError = jest.fn();

@@ -77,38 +77,49 @@ export default function RoleScreen() {
 				{CHOICES.map((choice) => {
 					const active = selected === choice.role;
 					return (
-						<PressableScale
-							key={choice.role}
-							onPress={() => setSelected(choice.role)}
-							accessibilityRole="radio"
-							accessibilityState={{ selected: active }}
-							className={`flex-1 rounded-card border p-5 ${
-								active
-									? "border-forest-800 bg-forest-800"
-									: "border-gray-200 bg-card"
-							}`}
-						>
-							{choice.renderIcon(active ? "#ffffff" : theme.brand)}
-							<Text
-								className={`font-display-bold text-lg mt-3 ${
-									active ? "text-white" : "text-gray-900"
+						// The flex-1 belongs out here, on the row's actual child.
+						// PressableScale puts className on a View *inside* its
+						// Pressable, so flex-1 given to it lands on a box with no flex
+						// parent to grow into — flexBasis 0 with nothing to grow
+						// against collapses, and the card renders as an empty stub
+						// while its sibling overflows the screen.
+						<View key={choice.role} className="flex-1">
+							<PressableScale
+								onPress={() => setSelected(choice.role)}
+								accessibilityRole="radio"
+								accessibilityState={{ selected: active }}
+								className={`rounded-card border p-5 ${
+									active
+										? "border-forest-800 bg-forest-800"
+										: "border-gray-200 bg-card"
 								}`}
 							>
-								{choice.title}
-							</Text>
-							<Text
-								className={`font-body text-sm mt-1 ${
-									active ? "text-forest-100" : "text-gray-500"
-								}`}
-							>
-								{choice.blurb}
-							</Text>
-							{active && (
-								<View className="mt-3">
-									<Ionicons name="checkmark-circle" size={20} color="#ffffff" />
-								</View>
-							)}
-						</PressableScale>
+								{choice.renderIcon(active ? "#ffffff" : theme.brand)}
+								<Text
+									className={`font-display-bold text-lg mt-3 ${
+										active ? "text-white" : "text-gray-900"
+									}`}
+								>
+									{choice.title}
+								</Text>
+								<Text
+									className={`font-body text-sm mt-1 ${
+										active ? "text-forest-100" : "text-gray-500"
+									}`}
+								>
+									{choice.blurb}
+								</Text>
+								{active && (
+									<View className="mt-3">
+										<Ionicons
+											name="checkmark-circle"
+											size={20}
+											color="#ffffff"
+										/>
+									</View>
+								)}
+							</PressableScale>
+						</View>
 					);
 				})}
 			</View>

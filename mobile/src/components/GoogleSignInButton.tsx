@@ -3,7 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Image, Platform } from "react-native";
 import { Button } from "@/components/ui/Button";
-import { config } from "@/config";
+import { ALLOWED_EMAIL_DOMAIN, config } from "@/config";
 import {
 	authErrorMessage,
 	completeGoogleSignIn,
@@ -40,6 +40,11 @@ export function GoogleSignInButton({
 	const [, response, prompt] = Google.useIdTokenAuthRequest({
 		iosClientId: config.google.iosClientId,
 		clientId: config.google.webClientId,
+		// Points Google's own picker at ASU accounts. A hint, not a guarantee —
+		// it can be bypassed, which is why the domain is still checked on the way
+		// back — but it stops most people picking the wrong account in the first
+		// place, which is a nicer failure than being refused afterwards.
+		extraParams: { hd: ALLOWED_EMAIL_DOMAIN },
 	});
 
 	useEffect(() => {
