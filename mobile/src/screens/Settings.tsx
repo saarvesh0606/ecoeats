@@ -70,6 +70,26 @@ export function Settings() {
 	// hasn't arrived — and not otherwise distinguishable from the phone.
 	const channel = Updates.channel ?? "none";
 
+
+	// Signing out is a network round trip, and the row gave no sign it had heard
+	// the tap — so the natural response was to tap it again. SettingsRow already
+	// draws a spinner and refuses further presses when told it is busy; nothing
+	// was ever telling it.
+	//
+	// The flag is only cleared on failure. A sign-out that works unmounts this
+	// screen, so clearing it on the way out would be writing to something that
+	// is already leaving — and worse, would briefly restore a live-looking
+	// button on a screen mid-exit.
+	const [signingOut, setSigningOut] = useState(false);
+	async function onSignOut() {
+		setSigningOut(true);
+		try {
+			await signOut();
+		} catch {
+			setSigningOut(false);
+		}
+	}
+
 	async function toggleMute(next: boolean) {
 		haptics.select();
 		// Moved before the await so the switch answers the thumb immediately;
@@ -225,7 +245,8 @@ export function Settings() {
 					<SettingsRow
 						icon="log-out-outline"
 						label="Sign out"
-						onPress={() => void signOut()}
+						loading={signingOut}
+						onPress={() => void onSignOut()}
 					/>
 					<SettingsRow
 						icon="trash-outline"

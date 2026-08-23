@@ -118,6 +118,32 @@ describe("Settings", () => {
 		});
 	});
 
+	describe("signing out", () => {
+		it("reports that it is working, so nobody taps it twice", async () => {
+			// Held open so the in-flight state can be observed; a resolved promise
+			// would be finished before the first assertion could run.
+			let finish = () => {};
+			mockSignOut.mockReturnValue(
+				new Promise<void>((resolve) => {
+					finish = resolve;
+				}),
+			);
+
+			renderWithProviders(<Settings />);
+			fireEvent.press(screen.getByLabelText("Sign out"));
+
+			await waitFor(() => {
+				const row = screen.getByLabelText("Sign out");
+				expect(row.props.accessibilityState.busy).toBe(true);
+				// Announced as busy and actually refusing input — a spinner alone
+				// would still let a second press through.
+				expect(row.props.accessibilityState.disabled).toBe(true);
+			});
+
+			finish();
+		});
+	});
+
 	describe("deleting the account", () => {
 		it("asks first, and does nothing if you back out", async () => {
 			renderWithProviders(<Settings />);

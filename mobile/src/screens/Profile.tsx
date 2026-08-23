@@ -32,6 +32,26 @@ export function Profile() {
 	const [saved, setSaved] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [switching, setSwitching] = useState(false);
+
+	// Signing out is a network round trip, and the row gave no sign it had heard
+	// the tap — so the natural response was to tap it again. SettingsRow already
+	// draws a spinner and refuses further presses when told it is busy; nothing
+	// was ever telling it.
+	//
+	// The flag is only cleared on failure. A sign-out that works unmounts this
+	// screen, so clearing it on the way out would be writing to something that
+	// is already leaving — and worse, would briefly restore a live-looking
+	// button on a screen mid-exit.
+	const [signingOut, setSigningOut] = useState(false);
+	async function onSignOut() {
+		setSigningOut(true);
+		try {
+			await signOut();
+		} catch {
+			setSigningOut(false);
+		}
+	}
+
 	// Separate from `error`: a refused switch has to be readable next to the
 	// button that was refused, not up beside Save where it would look like the
 	// name failed to save.
@@ -216,7 +236,8 @@ export function Profile() {
 						<SettingsRow
 							icon="log-out-outline"
 							label="Sign out"
-							onPress={signOut}
+							loading={signingOut}
+							onPress={() => void onSignOut()}
 						/>
 					</SettingsGroup>
 				</View>
