@@ -23,6 +23,8 @@ const HERO_HEIGHT = 288;
 const BAR_TRAVEL = 28;
 /** How much of the home-indicator inset the non-tappable caption may sit in. */
 const INDICATOR_OVERLAP = 20;
+/** Cream at nine-tenths: page content stays faintly readable behind the bar. */
+const BAR_TINT = "rgba(251, 249, 244, 0.92)";
 
 /** One line of the pickup-details card: an icon, a caption, and its value. */
 function DetailRow({
@@ -59,6 +61,10 @@ export default function ListingDetail() {
 	// not: a flat offset puts them inside the clock and the signal bars on any
 	// notched phone. They get the inset the container gave up.
 	const insets = useSafeAreaInsets();
+	// The claim bar floats over the page, so the page has to be told how much
+	// of itself is covered. Its height varies with the portions stepper and the
+	// error line, so it is measured rather than guessed.
+	const [barHeight, setBarHeight] = useState(0);
 	const toast = useToast();
 
 	const [listing, setListing] = useState<Listing | null>(null);
@@ -219,6 +225,8 @@ export default function ListingDetail() {
 		<SafeAreaView className="flex-1 bg-cream" edges={[]}>
 			<Animated.ScrollView
 				showsVerticalScrollIndicator={false}
+				// Enough room to scroll everything out from under the bar.
+				contentContainerStyle={{ paddingBottom: barHeight }}
 				scrollEventThrottle={16}
 				onScroll={Animated.event(
 					[{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -410,7 +418,16 @@ export default function ListingDetail() {
 			    arrives rather than appearing to have always been there. The styled
 			    box is the inner View — NativeWind doesn't process className on
 			    animated components, and fails silently when you try. */}
-			<Animated.View style={{ transform: [{ translateY: barLift }] }}>
+			<Animated.View
+				onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+				style={{
+					transform: [{ translateY: barLift }],
+					position: "absolute",
+					left: 0,
+					right: 0,
+					bottom: 0,
+				}}
+			>
 			{/* Sits close to the bottom edge on purpose.
 			    The home-indicator inset exists to keep *tappable* things out of the
 			    swipe-up area, and the full inset was pushing the whole block into
@@ -420,17 +437,25 @@ export default function ListingDetail() {
 			    reaches the bottom of the screen where it belongs.
 			    The floor covers older phones, where the inset is zero. */}
 			<View
-				style={{ paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12) }}
-				className="px-5 pt-4 border-t border-gray-100 bg-cream"
+				style={{
+					paddingBottom: Math.max(insets.bottom - INDICATOR_OVERLAP, 12),
+					backgroundColor: BAR_TINT,
+				}}
+				className="px-5 pt-4 border-t border-gray-100"
 			>
 				{claimError && (
 					<Text className="font-body text-red-500 text-sm mb-2 text-center">
 						{claimError}
 					</Text>
 				)}
+				{/* The label sits out of the flow so the stepper centres on the
+				    screen. Counting it as a flex child pushed the number and its two
+				    buttons noticeably right of centre. */}
 				{canClaim && listing.quantity_remaining > 1 && (
-					<View className="flex-row items-center justify-center gap-5 mb-3">
-						<Text className="font-body text-gray-500 text-sm">Portions</Text>
+					<View className="relative flex-row items-center justify-center gap-5 mb-3">
+						<Text className="absolute left-0 font-body text-gray-500 text-sm">
+							Portions
+						</Text>
 						<Pressable
 							onPress={() => stepQty(-1)}
 							hitSlop={8}
