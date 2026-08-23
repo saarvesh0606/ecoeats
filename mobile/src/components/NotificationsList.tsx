@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, SectionList, Text, View } from "react-native";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyBell } from "@/components/ui/EmptyBell";
 import { Spinner } from "@/components/ui/Spinner";
 import { SwipeableRow } from "@/components/ui/SwipeableRow";
@@ -11,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUnread } from "@/context/UnreadContext";
 import {
 	type AppNotification,
+	clearNotifications,
 	deleteNotification,
 	fetchNotifications,
 	listingRouteFor,
@@ -102,6 +104,7 @@ export function NotificationsList() {
 	// A host and a recipient get sent to different screens for the same post.
 	const { profile } = useAuth();
 	const { clear: clearUnread, drop: dropUnread } = useUnread();
+	const confirm = useConfirm();
 	const [items, setItems] = useState<AppNotification[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -123,6 +126,34 @@ export function NotificationsList() {
 			);
 			haptics.error();
 			toast.show("Couldn't delete that. Try again.");
+		}
+	}
+
+	async function onClearAll() {
+		// Confirmed, unlike deleting one row. A single swipe takes back one thing
+		// and the row is still in hand to re-read; this takes the lot, there is no
+		// undo, and it sits one tap from where people are reading.
+		const ok = await confirm({
+			title: "Clear all notifications?",
+			message: "This removes everything here. It cannot be undone.",
+			confirmLabel: "Clear everything",
+			cancelLabel: "Keep them",
+		});
+		if (!ok) return;
+
+		const previous = items;
+		// Emptied straight away, like a single delete, and put back if the server
+		// disagrees — the round trip is long enough that waiting reads as a dead
+		// button.
+		setItems([]);
+		clearUnread();
+		haptics.press();
+		try {
+			await clearNotifications();
+		} catch {
+			setItems(previous);
+			haptics.error();
+			toast.show("Couldn't clear those. Try again.");
 		}
 	}
 
@@ -156,6 +187,24 @@ export function NotificationsList() {
 			contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
 			showsVerticalScrollIndicator={false}
 			stickySectionHeadersEnabled={false}
+			// Only offered when there is something to clear: a button that empties
+			// an empty list is noise on the one screen that should feel calm.
+			ListHeaderComponent={
+				items.length > 0 ? (
+					<View className="flex-row justify-end">
+						<Pressable
+							onPress={() => void onClearAll()}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="Clear all notifications"
+						>
+							<Text className="font-body-semibold text-sm text-forest-700">
+								Clear all
+							</Text>
+						</Pressable>
+					</View>
+				) : null
+			}
 			renderSectionHeader={({ section }) => (
 				<Text className="font-body-semibold text-ink-muted text-xs uppercase tracking-wide mt-4 mb-2">
 					{section.title}

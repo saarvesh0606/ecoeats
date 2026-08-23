@@ -123,6 +123,57 @@ async def test_cannot_delete_someone_elses_notification(
     assert target in [n["id"] for n in after["items"]]
 
 
+async def test_clear_removes_every_notification(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    listing = await post_listing(client, organizer)
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+
+    before = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert len(before["items"]) >= 1
+
+    r = await client.delete("/notifications", headers=organizer.headers)
+    assert r.status_code == 204
+
+    after = (await client.get("/notifications", headers=organizer.headers)).json()
+    assert after["items"] == []
+    # The dot goes with them: an unread count outliving its rows would leave a
+    # badge pointing at nothing, with no way to clear it.
+    assert after["unread_count"] == 0
+
+
+async def test_clear_leaves_other_users_alone(
+    client: AsyncClient, organizer: Account, recipient: Account
+) -> None:
+    """Clearing is scoped by user_id, like deleting one is."""
+    listing = await post_listing(client, organizer)
+    await client.post(
+        "/claims", headers=recipient.headers, json={"listing_id": listing["id"]}
+    )
+    mine = (await client.get("/claims/mine", headers=recipient.headers)).json()
+    claim_id = mine["items"][0]["id"]
+    await client.post(f"/claims/{claim_id}/pickup", headers=organizer.headers)
+
+    # The pickup notified the recipient; the claim notified the organizer.
+    theirs = (await client.get("/notifications", headers=recipient.headers)).json()
+    assert len(theirs["items"]) >= 1
+
+    await client.delete("/notifications", headers=organizer.headers)
+
+    still = (await client.get("/notifications", headers=recipient.headers)).json()
+    assert len(still["items"]) == len(theirs["items"])
+
+
+async def test_clear_when_there_is_nothing_is_not_an_error(
+    client: AsyncClient, organizer: Account
+) -> None:
+    """Asking for an empty list and already having one is the same outcome."""
+    r = await client.delete("/notifications", headers=organizer.headers)
+    assert r.status_code == 204
+
+
 async def test_delete_unknown_notification_is_404(
     client: AsyncClient, organizer: Account
 ) -> None:

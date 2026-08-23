@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import type { AppNotification } from "@/lib/notifications";
 import {
+	clearNotifications,
 	deleteNotification,
 	fetchNotifications,
 	markNotificationsRead,
 } from "@/lib/notifications";
+import { renderWithProviders } from "@/test-utils/render";
 import { ToastProvider } from "@/components/ui/Toast";
 import { NotificationsList } from "./NotificationsList";
 
@@ -18,6 +20,7 @@ jest.mock("@/lib/notifications", () => ({
 	fetchNotifications: jest.fn(),
 	markNotificationsRead: jest.fn(),
 	deleteNotification: jest.fn(),
+	clearNotifications: jest.fn(),
 }));
 
 const mockPush = jest.fn();
@@ -31,6 +34,7 @@ jest.mock("@/context/AuthContext", () => ({
 const mockFetch = fetchNotifications as jest.MockedFunction<typeof fetchNotifications>;
 const mockRead = markNotificationsRead as jest.MockedFunction<typeof markNotificationsRead>;
 const mockDelete = deleteNotification as jest.MockedFunction<typeof deleteNotification>;
+const mockClear = clearNotifications as jest.MockedFunction<typeof clearNotifications>;
 
 function note(overrides: Partial<AppNotification> = {}): AppNotification {
 	return {
@@ -76,11 +80,17 @@ function renderList() {
 	);
 }
 
+/** With the real confirm dialog, for the paths that have to answer one. */
+function renderListAsking() {
+	return renderWithProviders(<NotificationsList />);
+}
+
 describe("NotificationsList", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockRead.mockResolvedValue(undefined);
 		mockDelete.mockResolvedValue(undefined);
+		mockClear.mockResolvedValue(undefined);
 		mockRole = "recipient";
 	});
 
@@ -280,6 +290,46 @@ describe("NotificationsList", () => {
 			fireEvent.press(await screen.findByLabelText(tappable.message));
 
 			expect(mockPush).toHaveBeenCalledWith("/manage/l9");
+		});
+	});
+
+	describe("clearing everything", () => {
+		it("asks first, and keeps them if you back out", async () => {
+			mockFetch.mockResolvedValue({ items: [note()], unread_count: 0 });
+			renderListAsking();
+			fireEvent.press(await screen.findByLabelText("Clear all notifications"));
+
+			fireEvent.press(await screen.findByText("Keep them"));
+
+			await waitFor(() => expect(mockClear).not.toHaveBeenCalled());
+			expect(screen.getByText("Sam claimed Leftover pizza")).toBeTruthy();
+		});
+
+		it("empties the list once confirmed", async () => {
+			mockFetch.mockResolvedValue({ items: [note()], unread_count: 0 });
+			renderListAsking();
+			fireEvent.press(await screen.findByLabelText("Clear all notifications"));
+			fireEvent.press(await screen.findByText("Clear everything"));
+
+			await waitFor(() => expect(mockClear).toHaveBeenCalled());
+			expect(screen.queryByText("Sam claimed Leftover pizza")).toBeNull();
+			// The control goes with them; a button that empties an empty list is
+			// noise on the one screen that should feel calm.
+			expect(screen.queryByLabelText("Clear all notifications")).toBeNull();
+		});
+
+		it("puts them back when the server refuses", async () => {
+			mockFetch.mockResolvedValue({ items: [note()], unread_count: 0 });
+			mockClear.mockRejectedValue(new Error("offline"));
+			renderListAsking();
+			fireEvent.press(await screen.findByLabelText("Clear all notifications"));
+			fireEvent.press(await screen.findByText("Clear everything"));
+
+			// Emptied optimistically, so a failure has to restore them — otherwise
+			// the rows are gone from the screen and still on the server.
+			expect(
+				await screen.findByText("Sam claimed Leftover pizza"),
+			).toBeTruthy();
 		});
 	});
 });

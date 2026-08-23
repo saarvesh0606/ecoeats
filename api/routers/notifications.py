@@ -74,6 +74,21 @@ async def mark_all_read(db: DbSession, user: CurrentUser) -> None:
     )
 
 
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_notifications(db: DbSession, user: CurrentUser) -> None:
+    """Remove every notification for the user.
+
+    Declared before /{notification_id} so an empty path segment can never be
+    read as an id.
+
+    Deliberately not an error when there is nothing to clear. The caller is
+    asking for an empty list, and an empty list is what they get; failing here
+    would only mean the client had to check first to avoid an error it would
+    then ignore.
+    """
+    await db.execute(delete(Notification).where(Notification.user_id == user.id))
+
+
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(
     notification_id: uuid.UUID, db: DbSession, user: CurrentUser

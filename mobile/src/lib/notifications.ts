@@ -56,6 +56,11 @@ export async function markNotificationsRead(): Promise<void> {
 }
 
 /** Remove one notification. 404s if it's already gone or isn't yours. */
+/** Remove every notification. Not an error when there are none. */
+export async function clearNotifications(): Promise<void> {
+	await api.del<void>("/notifications");
+}
+
 export async function deleteNotification(id: string): Promise<void> {
 	await api.del<void>(`/notifications/${id}`);
 }
