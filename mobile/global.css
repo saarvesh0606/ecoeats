@@ -110,10 +110,22 @@
 		--c-gray-100: 45 47 40;
 		--c-gray-50: 39 41 35;
 
-		--c-forest-800: 45 106 79;
-		--c-forest-700: 34 84 62;
+		/*
+		 * Saturated rather than lightened.
+		 *
+		 * The first pass reused the mid green from the light ramp, which has a
+		 * saturation of 0.58 — fine against cream, muddy against near-black,
+		 * where a desaturated green reads as olive. It also sat at only 2.9
+		 * against the page, so a button barely registered as a shape.
+		 *
+		 * This is more saturated (0.86) and lighter, which lifts separation from
+		 * the page to 3.8 while keeping white legends at 4.9 — still above the
+		 * readable threshold, which caps how bright the green can go.
+		 */
+		--c-forest-800: 18 128 90;
+		--c-forest-700: 14 106 74;
 		--c-forest-600: 82 183 136;
-		--c-forest-50: 22 36 29;
+		--c-forest-50: 16 42 32;
 
 		--c-brand: 168 207 189;
 

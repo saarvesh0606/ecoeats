@@ -25,8 +25,7 @@ const HERO_HEIGHT = 288;
 const BAR_TRAVEL = 28;
 /** How much of the home-indicator inset the non-tappable caption may sit in. */
 const INDICATOR_OVERLAP = 20;
-/** The page colour, as rgb parts, so the fade below can vary its alpha. */
-const CREAM_RGB = "251, 249, 244";
+
 /** Height of the fade that dissolves the page into the claim bar. */
 const FADE_HEIGHT = 28;
 /** Bands in that fade. Enough to read as a gradient, few enough to be cheap.
@@ -503,7 +502,10 @@ export default function ListingDetail() {
 			    something to scroll — and a see-through bar solves that but looks
 			    muddy without a blur behind it, and expo-blur is native, so it
 			    cannot arrive in an update. Stacked bands of increasing opacity
-			    give the gradient a real one would, in plain views. */}
+			    give the gradient a real one would, in plain views.
+			    ⚠ The colour comes from the theme, not a literal. Hard-coded cream
+			    here painted a pale band straight across a dark page — the fade is
+			    the page fading, so it has to be whatever the page currently is. */}
 			<View
 				pointerEvents="none"
 				style={{
@@ -519,7 +521,7 @@ export default function ListingDetail() {
 						key={alpha}
 						style={{
 							flex: 1,
-							backgroundColor: `rgba(${CREAM_RGB}, ${alpha})`,
+							backgroundColor: `rgba(${theme.pageRgb}, ${alpha})`,
 						}}
 					/>
 				))}

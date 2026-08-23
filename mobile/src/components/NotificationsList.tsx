@@ -38,27 +38,42 @@ function timeAgo(iso: string): string {
  * rating were indistinguishable until you read the sentence. Giving each its
  * own mark is what makes the list scannable rather than merely readable.
  */
-const APPEARANCE: Record<
+const KIND_ICON: Record<
 	NotificationKind,
-	{ icon: keyof typeof Ionicons.glyphMap; tint: string; bubble: string }
+	keyof typeof Ionicons.glyphMap
 > = {
-	claim: { icon: "basket-outline", tint: theme.brand, bubble: "bg-forest-100" },
-	pickup: {
-		icon: "checkmark-circle-outline",
-		tint: "#2D6A4F",
-		bubble: "bg-[#DCF4E7]",
-	},
-	rating: { icon: "star", tint: "#B08D3F", bubble: "bg-[#FFF3D6]" },
-	activity: {
-		icon: "notifications-outline",
-		tint: "#414845",
-		bubble: "bg-surface-high",
-	},
+	claim: "basket-outline",
+	pickup: "checkmark-circle-outline",
+	rating: "star",
+	activity: "notifications-outline",
 };
+
+/**
+ * The icon tint and the disc behind it, read at render rather than at import.
+ *
+ * This was a module-level table holding theme.brand, which reads the palette
+ * once when the file loads and then never again — so the colours froze at
+ * whichever scheme happened to be active at startup and stopped following the
+ * theme. Anything reading from the theme has to be evaluated per render.
+ */
+function coloursFor(kind: NotificationKind): { tint: string; disc: string } {
+	switch (kind) {
+		case "claim":
+			return { tint: theme.brand, disc: theme.successTint };
+		case "pickup":
+			return { tint: theme.success, disc: theme.successTint };
+		case "rating":
+			return { tint: theme.gold, disc: theme.goldTint };
+		default:
+			return { tint: theme.neutral, disc: theme.neutralTint };
+	}
+}
 
 /** Unrecognised kinds render as plain activity rather than crashing. */
 function appearanceFor(kind: string) {
-	return APPEARANCE[kind as NotificationKind] ?? APPEARANCE.activity;
+	const known = (KIND_ICON[kind as NotificationKind] ? kind : "activity") as
+		NotificationKind;
+	return { icon: KIND_ICON[known], ...coloursFor(known) };
 }
 
 type Bucket = "Today" | "Yesterday" | "Earlier";
@@ -225,7 +240,8 @@ export function NotificationsList() {
 					>
 						<View className="flex-row items-start gap-3">
 							<View
-								className={`w-9 h-9 rounded-full items-center justify-center ${look.bubble}`}
+								style={{ backgroundColor: look.disc }}
+								className="w-9 h-9 rounded-full items-center justify-center"
 							>
 								<Ionicons name={look.icon} size={16} color={look.tint} />
 							</View>

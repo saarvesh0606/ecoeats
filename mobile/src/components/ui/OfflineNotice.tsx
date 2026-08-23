@@ -37,7 +37,7 @@ export function OfflineNotice({
 				<Ionicons
 					name="cloud-offline-outline"
 					size={16}
-					color="#B45309"
+					color={theme.warning}
 					style={{ opacity: 0.55 + breath * 0.45 }}
 				/>
 				<Text className="font-body text-xs text-amber-800 flex-1">

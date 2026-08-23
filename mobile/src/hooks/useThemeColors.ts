@@ -23,8 +23,20 @@ export interface ThemeColors {
 	secondary: string;
 	hairline: string;
 	page: string;
+	/** The page colour as "r, g, b", for anything building its own rgba(). */
+	pageRgb: string;
 	card: string;
 	halo: string;
+	/** Destructive actions, and the warning amber beside them. */
+	danger: string;
+	warning: string;
+	/** The four notification kinds: an icon tint and the disc behind it. */
+	success: string;
+	successTint: string;
+	gold: string;
+	goldTint: string;
+	neutral: string;
+	neutralTint: string;
 }
 
 const LIGHT: ThemeColors = {
@@ -38,10 +50,19 @@ const LIGHT: ThemeColors = {
 	hairline: "#E5E7EB",
 	/** The page itself, for anything that has to paint its own background. */
 	page: "#FBF9F4",
+	pageRgb: "251, 249, 244",
 	/** A raised surface: cards, and the tab bar that sits on top of them. */
 	card: "#FFFFFF",
 	/** The soft glow behind an empty-state icon. */
 	halo: "#DCF5E7",
+	danger: "#DC2626",
+	warning: "#B45309",
+	success: "#2D6A4F",
+	successTint: "#DCF4E7",
+	gold: "#B08D3F",
+	goldTint: "#FFF3D6",
+	neutral: "#414845",
+	neutralTint: "#EAE8E3",
 };
 
 const DARK: ThemeColors = {
@@ -51,9 +72,20 @@ const DARK: ThemeColors = {
 	secondary: "#9EA197",
 	hairline: "#383A32",
 	page: "#121311",
+	pageRgb: "18, 19, 17",
 	card: "#21231E",
 	// Pale green on a dark page reads as a bright blob rather than a glow.
 	halo: "#1E3A2C",
+	danger: "#F87171",
+	warning: "#E8B25C",
+	// The discs become deep washes of their own hue; the glyph on top lifts, so
+	// each kind still reads at a glance instead of turning into a grey dot.
+	success: "#52B788",
+	successTint: "#12301F",
+	gold: "#E5C069",
+	goldTint: "#332B14",
+	neutral: "#B3B6AC",
+	neutralTint: "#2B2D27",
 };
 
 /**

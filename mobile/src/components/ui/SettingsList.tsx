@@ -63,7 +63,7 @@ export function SettingsRow({
 	/** Replaces the chevron — a Switch, for instance. */
 	accessory?: ReactNode;
 }) {
-	const tint = danger ? "#DC2626" : theme.brand;
+	const tint = danger ? theme.danger : theme.brand;
 
 	const content = (
 		<View className="flex-row items-center px-4 py-3.5">

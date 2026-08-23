@@ -451,7 +451,7 @@ export function RecipientFeed() {
 						ListFooterComponent={
 							loadingMore ? (
 								<View className="py-6">
-									<ActivityIndicator color="#166534" />
+									<ActivityIndicator color={theme.brand} />
 								</View>
 							) : null
 						}
