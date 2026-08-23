@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
@@ -50,6 +51,24 @@ export function Settings() {
 		Constants.expoConfig?.ios?.buildNumber ??
 		Constants.expoConfig?.android?.versionCode?.toString() ??
 		"—";
+
+	// Which over-the-air update is actually running.
+	//
+	// Fixes now reach the phone as updates rather than builds, and an update is
+	// invisible by design: the app looks identical, so "I don't see the change"
+	// can equally mean it never arrived or that it arrived and the change was
+	// wrong. Those need opposite responses and there was no way to tell them
+	// apart from the outside. isEmbedded means the binary's own bundle, i.e. no
+	// update has been applied yet.
+	const updateLabel = Updates.isEmbeddedLaunch
+		? "Original (no update)"
+		: Updates.createdAt
+			? Updates.createdAt.toLocaleString()
+			: (Updates.updateId?.slice(0, 8) ?? "unknown");
+	// The channel the binary listens on. Null here means this build cannot
+	// receive updates at all, which is a different fault from one that simply
+	// hasn't arrived — and not otherwise distinguishable from the phone.
+	const channel = Updates.channel ?? "none";
 
 	async function toggleMute(next: boolean) {
 		haptics.select();
@@ -183,6 +202,16 @@ export function Settings() {
 				<SettingsGroup title="About">
 					<SettingsRow icon="phone-portrait-outline" label="Version" detail={version} />
 					<SettingsRow icon="hammer-outline" label="Build" detail={build} />
+					<SettingsRow
+						icon="cloud-download-outline"
+						label="Update"
+						detail={updateLabel}
+					/>
+					<SettingsRow
+						icon="radio-outline"
+						label="Channel"
+						detail={channel}
+					/>
 					{profile?.terms_accepted_at && (
 						<SettingsRow
 							icon="checkmark-circle-outline"
