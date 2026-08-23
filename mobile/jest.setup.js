@@ -25,3 +25,25 @@ jest.mock("expo-speech-recognition", () => ({
 	useSpeechRecognitionEvent: () => {},
 }));
 
+// Reanimated's real entry point initialises the native worklets runtime, which
+// does not exist under Jest — importing it throws before any test runs. Its
+// own shipped mock is no use either: react-native-reanimated/mock re-imports
+// the real index, so it throws in exactly the same place. Hence a hand-written
+// stand-in covering only what ReflowRow touches — Animated.View and two
+// chainable animation builders.
+jest.mock("react-native-reanimated", () => {
+	const { View } = require("react-native");
+	const builder = () => {
+		const chain = new Proxy(
+			{},
+			{ get: () => () => chain },
+		);
+		return chain;
+	};
+	return {
+		__esModule: true,
+		default: { View },
+		FadeOut: builder(),
+		LinearTransition: builder(),
+	};
+});

@@ -16,6 +16,7 @@ import { FeedFilterSheet } from "@/components/FeedFilterSheet";
 import { ListingCard } from "@/components/ListingCard";
 import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { ReflowRow } from "@/components/ui/ReflowRow";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { useDeviceLocation } from "@/hooks/useDeviceLocation";
 import { useNow } from "@/hooks/useNow";
@@ -350,14 +351,16 @@ export function RecipientFeed() {
 						) : null
 					}
 					renderItem={({ item, index }) => (
-						<FadeInItem index={index}>
-							<ListingCard
-								listing={item}
-								now={now}
-								featured={index === 0 && !searching}
-								onPress={() => router.push(`/listing/${item.id}`)}
-							/>
-						</FadeInItem>
+						<ReflowRow>
+							<FadeInItem index={index}>
+								<ListingCard
+									listing={item}
+									now={now}
+									featured={index === 0 && !searching}
+									onPress={() => router.push(`/listing/${item.id}`)}
+								/>
+							</FadeInItem>
+						</ReflowRow>
 					)}
 					ListEmptyComponent={
 						<View className="items-center justify-center px-8 pt-24">
