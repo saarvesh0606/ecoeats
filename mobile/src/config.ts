@@ -48,6 +48,14 @@ export const config = {
 			process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 		),
 	},
+	/**
+	 * Sentry DSN for the client. Optional: unset simply means no reporting.
+	 *
+	 * Read from the environment rather than written into the source, because
+	 * this repo is going public and Sentry's own onboarding tells you to paste
+	 * it straight into a file.
+	 */
+	sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
 	google: {
 		/**
 		 * Absent means the Google button simply doesn't appear, rather than

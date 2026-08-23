@@ -21,8 +21,14 @@ import { Splash } from "@/components/ui/Splash";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { applyColorScheme, useThemeColors } from "@/hooks/useThemeColors";
+import { initMonitoring } from "@/lib/monitoring";
 import { getThemeChoice } from "@/lib/preferences";
 import "../global.css";
+
+// At module load, before any screen renders — an error thrown on the way to
+// the first paint is exactly the kind this is meant to catch, and starting it
+// inside a component would miss it.
+initMonitoring();
 
 /**
  * Keeps the visible screen in step with auth status. Each status has a home
