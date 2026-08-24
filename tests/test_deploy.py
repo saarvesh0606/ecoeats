@@ -210,3 +210,42 @@ def test_the_image_installs_from_the_lockfile_with_hash_checking() -> None:
     assert "-r requirements.lock" in dockerfile
     # Installing the app itself must not re-resolve and reintroduce the ranges.
     assert "pip install --no-deps ." in dockerfile
+
+
+# --- build identity -----------------------------------------------------
+
+
+def _revision_settings(**overrides) -> Settings:
+    base = {"database_url": "postgresql://x/y"}
+    base.update(overrides)
+    return Settings(**base)  # type: ignore[arg-type]
+
+
+def test_an_explicit_commit_wins_over_the_platforms() -> None:
+    """GIT_COMMIT is the portable override, so it has to beat the host's."""
+    settings = _revision_settings(git_commit="abc123", render_git_commit="def456")
+    assert settings.build_revision == "abc123"
+
+
+def test_the_platform_value_is_used_when_nothing_overrides_it() -> None:
+    """Render injects RENDER_GIT_COMMIT, which is why production needs no
+    configuration for this."""
+    settings = _revision_settings(git_commit=None, render_git_commit="def456")
+    assert settings.build_revision == "def456"
+
+
+def test_an_unset_build_arg_counts_as_absent() -> None:
+    """A Docker ARG that was never passed arrives as "", not as nothing — so an
+    image built without one must still fall through to the host's value."""
+    settings = _revision_settings(git_commit="", render_git_commit="def456")
+    assert settings.build_revision == "def456"
+
+
+def test_an_unknown_revision_says_so() -> None:
+    """Reporting a plausible-looking value where none is known would be worse
+    than admitting it: the endpoint exists to be trusted."""
+    settings = _revision_settings(
+        git_commit="", render_git_commit="", render_git_branch=""
+    )
+    assert settings.build_revision == "unknown"
+    assert settings.build_branch is None

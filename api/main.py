@@ -196,6 +196,28 @@ def create_app(
             await session.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
 
+    @app.get("/health/version", tags=["ops"])
+    async def version() -> dict[str, str]:
+        """Which build is serving, so a deploy can be verified in one request.
+
+        The other two health endpoints cannot answer this. They return the same
+        thing before a swap, after it, and when a build failed and the old
+        container carried on — three states an operator very much needs to tell
+        apart. Compare `revision` against `git rev-parse HEAD`.
+
+        Unauthenticated on purpose: a check that needs a token is a check that
+        does not get run, and this is the endpoint you reach for when something
+        is already wrong. The cost is admitting which commit is deployed, which
+        for a repo that is going public is not a secret worth protecting.
+        """
+        payload = {
+            "revision": settings.build_revision,
+            "environment": settings.app_env,
+        }
+        if settings.build_branch:
+            payload["branch"] = settings.build_branch
+        return payload
+
     # Business routes live under /api/v1; health and docs stay unversioned.
     v1 = APIRouter(prefix=API_V1_PREFIX)
     v1.include_router(users_router)

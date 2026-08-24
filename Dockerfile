@@ -24,6 +24,16 @@ COPY requirements.lock ./
 RUN pip install --upgrade pip \
     && pip install --require-hashes --no-deps -r requirements.lock
 
+# Which commit this image was built from, so /health/version can report it.
+# Render injects RENDER_GIT_COMMIT at runtime and needs nothing here — this is
+# for every other host, and for a local build, which should report its own
+# revision rather than claiming to be whatever was deployed last.
+#
+# Declared after the dependency layer so passing it never re-resolves packages.
+# Unset arrives as an empty string, which build_revision treats as absent.
+ARG GIT_COMMIT=""
+ENV GIT_COMMIT=$GIT_COMMIT
+
 # Then the application itself, with --no-deps: everything it needs is installed
 # above, and resolving again here would silently reintroduce the unpinned ranges.
 COPY pyproject.toml alembic.ini ./

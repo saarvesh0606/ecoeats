@@ -27,6 +27,11 @@ services:
     autoDeploy: true
     envVars:
       # --- non-secret runtime config (committed) ---
+      # Note: RENDER_GIT_COMMIT and RENDER_GIT_BRANCH are injected by Render on
+      # every deploy and are deliberately NOT declared here — declaring them
+      # would shadow the real values with whatever was set once. They are what
+      # /health/version reports, which is how you confirm a deploy landed
+      # without opening the dashboard.
       - key: APP_ENV
         value: production
       - key: WEB_CONCURRENCY

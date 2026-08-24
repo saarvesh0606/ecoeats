@@ -58,6 +58,23 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
 
+    # --- build identity ---------------------------------------------------
+    # Which commit is actually serving.
+    #
+    # Without this a deploy cannot be verified from outside: /health answers
+    # identically before a swap, after it, and — the case that matters — when a
+    # build failed and the previous container kept serving. Render swaps in
+    # about 70 seconds, faster than any sensible poll, so watching for a blip
+    # does not answer it either.
+    #
+    # RENDER_GIT_COMMIT is injected by Render on every deploy, so production
+    # needs no configuration. GIT_COMMIT is the portable override, passed as a
+    # Docker build arg anywhere else — including a local image, which should
+    # report its own revision rather than borrowing someone else's.
+    git_commit: str | None = None
+    render_git_commit: str | None = None
+    render_git_branch: str | None = None
+
     # --- observability ---------------------------------------------------
     log_level: str = "INFO"
     # None → JSON in production, readable console lines otherwise.
@@ -161,6 +178,21 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def build_revision(self) -> str:
+        """The running commit, or "unknown" when nothing supplied one.
+
+        "unknown" is deliberate and honest: a local checkout or a host that
+        injects nothing genuinely does not know, and reporting a plausible-
+        looking value there would be worse than admitting it. An empty string
+        counts as absent — an unset Docker build arg arrives that way.
+        """
+        return self.git_commit or self.render_git_commit or "unknown"
+
+    @property
+    def build_branch(self) -> str | None:
+        return self.render_git_branch or None
 
     @property
     def log_as_json(self) -> bool:
