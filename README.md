@@ -125,31 +125,84 @@ with name-pattern rules behind it. Cloudinary's signing secret stays server-side
 ## Layout
 
 ```text
-api/
-  main.py            app factory, middleware order, health endpoints
-  config.py          settings validated at boot — no silent fallbacks
-  deps.py            auth, sessions, per-user rate limits
-  errors.py          typed errors to HTTP status, one handler
-  events.py          Redis pub/sub behind the SSE stream
-  middleware.py      request context, security headers, access log
-  monitoring.py      Sentry init and URL credential scrubbing
-  ratelimit.py       Redis limiter, in-memory fallback for dev
-  auth/              token verification: protocol, Firebase, dev bypass
-  models/            SQLAlchemy tables and enums
-  schemas/           Pydantic request and response shapes
-  routers/           listings, claims, users, notifications, devices, uploads
-  services/          business logic, push delivery, background sweeper
-mobile/
-  app/               expo-router routes: (auth), (app)/(tabs), detail screens
-  src/screens/       screen implementations
-  src/components/    shared UI
-  src/context/       auth, theme, unread state
-  src/hooks/         device location, audio levels, feeds
-  src/lib/           API client, Firebase, streaming, validation
-migrations/          Alembic revisions
-tests/               backend suite — hard-fails without a database
-scripts/             dev_account.py, CI helpers, container entrypoint
-flutter_app/         parked prototype, not part of the product
+ecoeats/
+│
+├── api/                        FastAPI backend
+│   ├── main.py                 app factory, middleware order, health endpoints
+│   ├── config.py               settings validated at boot — no silent fallbacks
+│   ├── db.py                   async engine, session dependency, declarative base
+│   ├── deps.py                 auth rules, sessions, per-user rate limits
+│   ├── errors.py               typed errors to HTTP status, one handler
+│   ├── events.py               Redis pub/sub behind the SSE stream
+│   ├── middleware.py           request context, security headers, access log
+│   ├── monitoring.py           Sentry init + URL credential scrubbing
+│   ├── ratelimit.py            Redis limiter, in-memory fallback for dev
+│   ├── logging_config.py       structured JSON logs in production
+│   ├── pagination.py           keyset cursors — stable as rows expire mid-scroll
+│   ├── geo.py                  distance maths for the radius filter
+│   ├── legal.py                terms version, per-role acceptance
+│   │
+│   ├── auth/
+│   │   ├── tokens.py           TokenVerifier protocol + VerifiedIdentity
+│   │   ├── firebase.py         real verification, check_revoked=True
+│   │   └── dev.py              dev:<slug> bypass — cannot start in production
+│   │
+│   ├── models/                 SQLAlchemy tables + constraints
+│   │   ├── user.py             ck_users_asu_email, lowercase email
+│   │   ├── listing.py          quantity and expiry constraints
+│   │   ├── claim.py            uq_claim_per_recipient — double-claim guard
+│   │   ├── rating.py           saved.py  device.py  notification.py
+│   │   └── enums.py            types.py
+│   │
+│   ├── schemas/                Pydantic request/response shapes
+│   │   ├── user.py             RegisterProfile — deliberately no email or id
+│   │   ├── listing.py          claim.py  rating.py
+│   │   └── notification.py     device.py
+│   │
+│   ├── routers/                HTTP surface only — no business logic
+│   │   ├── listings.py         feed, search, saved, impact, SSE stream
+│   │   ├── claims.py           claim, pickup, no-show, cancel, rate
+│   │   ├── users.py            profile, role switch, terms, delete
+│   │   ├── notifications.py    devices.py  uploads.py
+│   │   └── ...
+│   │
+│   └── services/               the actual behaviour
+│       ├── listings.py         claims.py — ownership and inventory rules
+│       ├── notify.py           push.py — fan-out and Expo delivery
+│       ├── scheduler.py        sweeper: release lapsed, retire expired
+│       └── uploads.py          Cloudinary signing, secret never leaves here
+│
+├── mobile/                     Expo / React Native client
+│   ├── app/                    expo-router — the file tree IS the navigation
+│   │   ├── (auth)/             login, register, verify-email, role, terms
+│   │   └── (app)/
+│   │       ├── (tabs)/         feed, post, posts, claims, activity, profile
+│   │       ├── listing/[id]    detail + claim
+│   │       ├── manage/[id]     host view of one listing
+│   │       ├── notifications   saved
+│   │       └── settings/       index + [doc] legal pages
+│   │
+│   ├── src/
+│   │   ├── screens/            screen implementations behind the routes
+│   │   ├── components/         shared UI, components/ui primitives
+│   │   ├── context/            AuthContext, UnreadContext
+│   │   ├── hooks/              location, speech, audio levels, push nav
+│   │   └── lib/                api, firebase, listingStream, validation,
+│   │                           push, uploads, session, preferences
+│   └── app.json                native config, plugins, bundle id
+│
+├── migrations/                 Alembic revisions
+├── tests/                      backend suite — hard-fails without a database
+├── scripts/
+│   ├── dev_account.py          Firebase accounts without inbox access
+│   ├── start.sh                migrate, then exec uvicorn
+│   └── ci_fake_firebase.py     throwaway service account for CI
+│
+├── flutter_app/                parked prototype — not part of the product
+├── Dockerfile                  hash-pinned install, non-root user
+├── requirements.lock           58 packages, digest-verified
+├── render.yaml                 Render blueprint, autoDeploy from main
+└── docker-compose.yml          local Postgres + Redis
 ```
 
 There is deliberately no module-level `app = create_app()`. Building the app at
