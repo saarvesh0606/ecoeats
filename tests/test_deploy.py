@@ -1,6 +1,9 @@
 """Production-readiness config: the checks that keep a bad deploy from booting."""
 
 import json
+import re
+import tomllib
+from pathlib import Path
 
 import pytest
 
@@ -138,3 +141,72 @@ def test_json_credentials_win_over_a_bad_path() -> None:
         credentials_json=raw,
     )
     assert verifier is not None
+
+
+# --- dependency pinning -------------------------------------------------
+#
+# pyproject declares `>=` ranges, which is right for a library and wrong for a
+# deployed image: every rebuild would pull whatever was newest, so what runs in
+# production would be unknowable and a compromised upstream release would ship
+# unreviewed. requirements.lock is what the Dockerfile actually installs.
+
+_ROOT = Path(__file__).resolve().parent.parent
+_LOCK = _ROOT / "requirements.lock"
+_PYPROJECT = _ROOT / "pyproject.toml"
+_DOCKERFILE = _ROOT / "Dockerfile"
+
+
+def _normalise(name: str) -> str:
+    """PEP 503 name normalisation, so sentry_sdk and sentry-sdk are one name."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _declared_dependencies() -> set[str]:
+    data = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
+    names = set()
+    for spec in data["project"]["dependencies"]:
+        # "sqlalchemy[asyncio]>=2.0.36" -> "sqlalchemy"
+        names.add(_normalise(re.split(r"[\[<>=!;~ ]", spec, maxsplit=1)[0]))
+    return names
+
+
+def _locked_requirements() -> dict[str, list[str]]:
+    """Map each pinned name to the lines belonging to its entry."""
+    entries: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in _LOCK.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():
+            current = _normalise(re.split(r"[\[<>=!;~ ]", line.strip(), maxsplit=1)[0])
+            entries[current] = [line]
+        elif current is not None:
+            entries[current].append(line)
+    return entries
+
+
+def test_every_production_dependency_is_locked() -> None:
+    """Adding a dependency without regenerating the lock fails here rather than
+    at deploy time, where --require-hashes would break the build."""
+    missing = _declared_dependencies() - set(_locked_requirements())
+    assert not missing, (
+        f"Not in requirements.lock: {sorted(missing)}. "
+        "Regenerate it — see the header of that file."
+    )
+
+
+def test_the_lockfile_pins_exact_versions_with_hashes() -> None:
+    """A range or a missing digest would defeat the point of locking."""
+    for name, lines in _locked_requirements().items():
+        entry = " ".join(lines)
+        assert "==" in lines[0], f"{name} is not pinned to one version"
+        assert "--hash=sha256:" in entry, f"{name} carries no hash"
+
+
+def test_the_image_installs_from_the_lockfile_with_hash_checking() -> None:
+    """The lock only protects anything if the Dockerfile actually uses it."""
+    dockerfile = _DOCKERFILE.read_text(encoding="utf-8")
+    assert "--require-hashes" in dockerfile
+    assert "-r requirements.lock" in dockerfile
+    # Installing the app itself must not re-resolve and reintroduce the ranges.
+    assert "pip install --no-deps ." in dockerfile
