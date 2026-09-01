@@ -20,8 +20,9 @@ import {
 	onAuthStateChanged,
 	type Persistence,
 	sendEmailVerification,
-	signInWithEmailAndPassword,
+	sendPasswordResetEmail,
 	signInWithCredential,
+	signInWithEmailAndPassword,
 	signInWithPopup,
 	updateProfile,
 } from "firebase/auth";
@@ -68,17 +69,19 @@ export const auth = createAuth();
 
 export type { FirebaseUser };
 
+/** The `auth/...` code off a Firebase error, or "" for anything else. */
+function errorCode(error: unknown): string {
+	return typeof error === "object" && error !== null && "code" in error
+		? String((error as { code: unknown }).code)
+		: "";
+}
+
 /**
  * A friendly message for the Firebase error codes users actually hit, instead
  * of leaking "auth/invalid-credential" into the UI.
  */
 export function authErrorMessage(error: unknown): string {
-	const code =
-		typeof error === "object" && error !== null && "code" in error
-			? String((error as { code: unknown }).code)
-			: "";
-
-	switch (code) {
+	switch (errorCode(error)) {
 		case "auth/invalid-email":
 			return "That email address doesn't look right.";
 		case "auth/email-already-in-use":
@@ -234,6 +237,35 @@ export async function signInWithEmail(
 export async function resendVerification(): Promise<void> {
 	if (auth.currentUser) {
 		await sendEmailVerification(auth.currentUser);
+	}
+}
+
+/**
+ * Send a password-reset link, and say nothing about whether the account exists.
+ *
+ * Firebase throws `auth/user-not-found` for an address it has never seen.
+ * Surfacing that difference turns the reset screen into an oracle: type
+ * addresses, watch which ones error, and you have enumerated who on campus has
+ * an EcoEats account. Firebase's own email-enumeration protection defends the
+ * same thing, but it is a console toggle this code cannot see the state of, so
+ * the guarantee is made here rather than assumed of a setting.
+ *
+ * The price is that a typo looks exactly like success, which is why the screen
+ * echoes the address back instead of saying a bare "sent".
+ *
+ * Nothing else is swallowed. A rate limit or a dead network is the user's
+ * problem to see and act on, not a secret worth keeping.
+ *
+ * ⚠ This mail rides the same sender as the verification mail, so until
+ * custom SMTP is configured it lands in spam on Gmail and is silently
+ * quarantined by university gateways. The screen has to say so.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+	try {
+		await sendPasswordResetEmail(auth, email);
+	} catch (error) {
+		if (errorCode(error) === "auth/user-not-found") return;
+		throw error;
 	}
 }
 

@@ -46,7 +46,10 @@ function Gate() {
 		const current = segments[segments.length - 1] ?? "";
 		const inApp = segments[0] === "(app)";
 
-		if (status === "signed-out" && !["login", "register"].includes(current)) {
+		if (
+			status === "signed-out" &&
+			!["login", "register", "forgot-password"].includes(current)
+		) {
 			router.replace("/login");
 		} else if (status === "unverified" && current !== "verify-email") {
 			router.replace("/verify-email");

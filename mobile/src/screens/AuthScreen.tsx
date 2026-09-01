@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
 	Animated,
@@ -40,6 +41,7 @@ const ASU_LOGO_WIDTH = 104;
  */
 export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 	const { devSignIn } = useAuth();
+	const router = useRouter();
 	const [mode, setMode] = useState<Mode>(initialMode);
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
@@ -68,6 +70,21 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 		// settle it on a timer too. It starts at FADE_FROM rather than 0 for the
 		// same reason: a form nobody can see is worse than one that didn't fade.
 		setTimeout(() => formFade.setValue(1), 400);
+	}
+
+	/**
+	 * Hand the typed address to the reset screen so it does not have to be typed
+	 * twice. Unvalidated on purpose — that screen validates, and bouncing someone
+	 * with an error for a field they are trying to escape reads as the app
+	 * refusing to help.
+	 */
+	function onForgotPassword() {
+		const typed = email.trim();
+		router.push(
+			typed
+				? { pathname: "/forgot-password", params: { email: typed } }
+				: "/forgot-password",
+		);
 	}
 
 	async function onSubmit() {
@@ -208,6 +225,22 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 						<Button onPress={onSubmit} loading={loading} size="lg">
 							{registering ? "Create account" : "Sign in"}
 						</Button>
+
+						{/* Sign-in only. On the register tab there is no password to have
+						    forgotten, and offering the escape hatch there just invites
+						    people to reset an account they have not made yet. */}
+						{!registering && (
+							<Pressable
+								onPress={onForgotPassword}
+								className="self-center mt-4"
+								hitSlop={8}
+								accessibilityRole="button"
+							>
+								<Text className="font-body-semibold text-sm text-brand">
+									Forgot your password?
+								</Text>
+							</Pressable>
+						)}
 					</Animated.View>
 
 					{googleSignInSupported && (

@@ -25,6 +25,11 @@ jest.mock("@/context/AuthContext", () => ({
 	useAuth: () => ({ devSignIn: mockDevSignIn }),
 }));
 
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+	useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
+}));
+
 const mockSignIn = signInWithEmail as jest.MockedFunction<
 	typeof signInWithEmail
 >;
@@ -203,6 +208,38 @@ describe("AuthScreen", () => {
 		it("offers Google when the platform supports it", () => {
 			render(<AuthScreen />);
 			expect(screen.getByText("Continue with Google")).toBeTruthy();
+		});
+	});
+
+	describe("the forgotten-password way out", () => {
+		it("is offered on the sign-in tab", () => {
+			render(<AuthScreen />);
+			expect(screen.getByText("Forgot your password?")).toBeTruthy();
+		});
+
+		it("is not offered on the register tab", () => {
+			// There is no password to have forgotten for an account that does not
+			// exist yet.
+			render(<AuthScreen initialMode="register" />);
+			expect(screen.queryByText("Forgot your password?")).toBeNull();
+		});
+
+		it("carries the typed address over, so it isn't typed twice", () => {
+			render(<AuthScreen />);
+			type("ASU email", "  Sun.Devil@asu.edu  ");
+			fireEvent.press(screen.getByText("Forgot your password?"));
+
+			expect(mockPush).toHaveBeenCalledWith({
+				pathname: "/forgot-password",
+				params: { email: "Sun.Devil@asu.edu" },
+			});
+		});
+
+		it("goes there with nothing when nothing was typed", () => {
+			render(<AuthScreen />);
+			fireEvent.press(screen.getByText("Forgot your password?"));
+
+			expect(mockPush).toHaveBeenCalledWith("/forgot-password");
 		});
 	});
 });
