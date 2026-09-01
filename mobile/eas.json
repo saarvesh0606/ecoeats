@@ -30,7 +30,8 @@
 			"env": {
 				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
 			},
-			"channel": "preview"
+			"channel": "preview",
+			"environment": "preview"
 		},
 		"production": {
 			"autoIncrement": true,
