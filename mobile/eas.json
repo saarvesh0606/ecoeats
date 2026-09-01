@@ -25,6 +25,13 @@
 			},
 			"channel": "preview"
 		},
+		"testflight": {
+			"autoIncrement": true,
+			"env": {
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
+			},
+			"channel": "preview"
+		},
 		"production": {
 			"autoIncrement": true,
 			"env": {
@@ -34,6 +41,7 @@
 		}
 	},
 	"submit": {
-		"production": {}
+		"production": {},
+		"testflight": {}
 	}
 }
