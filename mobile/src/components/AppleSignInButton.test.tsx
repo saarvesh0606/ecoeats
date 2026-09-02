@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { completeAppleSignIn } from "@/lib/firebase";
 import { AppleSignInButton } from "./AppleSignInButton";
@@ -6,6 +7,14 @@ import { AppleSignInButton } from "./AppleSignInButton";
 jest.mock("@/lib/firebase", () => ({
 	completeAppleSignIn: jest.fn(),
 	authErrorMessage: jest.fn(() => "That didn't work."),
+}));
+
+// Steered per test: the glyph takes a colour prop rather than a class, so the
+// theme has to be driven from here to see what colour it actually gets.
+let mockScheme = "light";
+jest.mock("nativewind", () => ({
+	colorScheme: { set: jest.fn(), get: () => mockScheme },
+	useColorScheme: () => ({ colorScheme: mockScheme }),
 }));
 
 jest.mock("expo-apple-authentication", () => ({
@@ -50,8 +59,14 @@ async function renderAvailable() {
 
 beforeEach(() => {
 	jest.clearAllMocks();
+	mockScheme = "light";
 	appleReturns();
 });
+
+/** The colour actually handed to the Apple glyph. */
+function glyphColour(): unknown {
+	return screen.UNSAFE_getByType(Ionicons).props.color;
+}
 
 describe("AppleSignInButton", () => {
 	describe("when the OS cannot offer it", () => {
@@ -129,6 +144,31 @@ describe("AppleSignInButton", () => {
 					expect.objectContaining({ fullName: null }),
 				),
 			);
+		});
+	});
+
+	describe("the mark in dark mode", () => {
+		// This shipped broken: the glyph was a hardcoded near-black, so on a dark
+		// page it was a black Apple logo on a black background — invisible, and
+		// only caught on hardware. It has to move with the theme, like the
+		// "Continue with Apple" text beside it.
+		it("is not the same colour in both themes", async () => {
+			await renderAvailable();
+			const light = glyphColour();
+
+			screen.unmount();
+			mockScheme = "dark";
+			await renderAvailable();
+
+			expect(glyphColour()).not.toBe(light);
+		});
+
+		it("never hardcodes a near-black that would vanish on a dark page", async () => {
+			mockScheme = "dark";
+			await renderAvailable();
+
+			expect(glyphColour()).not.toBe("#111111");
+			expect(glyphColour()).toBe("#A8CFBD"); // the dark theme's brand ink
 		});
 	});
 

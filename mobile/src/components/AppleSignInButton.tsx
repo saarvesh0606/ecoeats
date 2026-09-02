@@ -3,6 +3,7 @@ import * as Crypto from "expo-crypto";
 import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "@/components/ui/Button";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { authErrorMessage, completeAppleSignIn } from "@/lib/firebase";
 
 /** Apple's cancel code. Backing out is a decision, not a failure. */
@@ -28,6 +29,13 @@ export function AppleSignInButton({
 }) {
 	const [available, setAvailable] = useState(false);
 	const [loading, setLoading] = useState(false);
+	// An icon takes a colour prop, not a className, so the CSS variables that
+	// flip the rest of the app never reach it. Left as a hex it stays put and
+	// the black Apple mark vanishes into the dark page — which is exactly what
+	// happened on hardware. `brand` is what this button's own label uses
+	// (`text-brand` on the outline variant), so the glyph and the words beside
+	// it now move together.
+	const colors = useThemeColors();
 
 	useEffect(() => {
 		let alive = true;
@@ -108,7 +116,7 @@ export function AppleSignInButton({
 			size="lg"
 			loading={loading}
 			onPress={() => void onPress()}
-			icon={<Ionicons name="logo-apple" size={18} color="#111111" />}
+			icon={<Ionicons name="logo-apple" size={18} color={colors.brand} />}
 		>
 			Continue with Apple
 		</Button>
