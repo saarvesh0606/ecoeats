@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { SignInMethods } from "@/components/SignInMethods";
 import { SettingsGroup, SettingsRow } from "@/components/ui/SettingsList";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -221,6 +222,11 @@ export function Settings() {
 						}
 					/>
 				</SettingsGroup>
+
+				<SignInMethods
+					onError={(m) => m && toast.show(m)}
+					onLinked={(label) => toast.show(`${label} linked to this account.`)}
+				/>
 
 				{/* Three rows rather than one switch: light/dark is two states but
 				    the honest default is a third — following the phone — and a

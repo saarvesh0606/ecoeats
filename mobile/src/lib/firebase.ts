@@ -11,12 +11,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import * as firebaseAuth from "firebase/auth";
 import {
+	type AuthCredential,
 	createUserWithEmailAndPassword,
 	type User as FirebaseUser,
 	signOut as fbSignOut,
 	GoogleAuthProvider,
 	getAuth,
 	initializeAuth,
+	linkWithCredential,
 	OAuthProvider,
 	onAuthStateChanged,
 	type Persistence,
@@ -195,6 +197,56 @@ export async function completeAppleSignIn({
 			// selection anyway.
 		}
 	}
+}
+
+/**
+ * Which ways in this account already has.
+ *
+ * Firebase keys these as provider ids; the app talks about "Apple" and
+ * "Google", so the mapping stays here rather than in a screen.
+ */
+export function linkedProviders(): string[] {
+	return auth.currentUser?.providerData.map((p) => p.providerId) ?? [];
+}
+
+export const APPLE_PROVIDER = "apple.com";
+export const GOOGLE_PROVIDER = "google.com";
+export const PASSWORD_PROVIDER = "password";
+
+/**
+ * Attach another way of signing in to the account already signed in.
+ *
+ * This is the answer to duplicate accounts, and the reason it has to be done
+ * from *inside* an account rather than at sign-in: `linkWithCredential` adds a
+ * provider to the CURRENT user and leaves the uid alone. The uid is our
+ * `User.id`, so the EcoEats account — its listings, claims, ratings, history —
+ * is untouched and simply gains another door.
+ *
+ * The failure that matters is `auth/credential-already-in-use`: that identity
+ * is already its own Firebase account. Nothing here can safely absorb it,
+ * because it may have its own listings and claims, so it is reported plainly
+ * rather than forced.
+ */
+export async function linkCredential(credential: AuthCredential): Promise<void> {
+	const user = auth.currentUser;
+	if (!user) throw new Error("Sign in first.");
+	await linkWithCredential(user, credential);
+}
+
+/** Build the Apple credential from what expo-apple-authentication returned. */
+export function appleCredential(
+	identityToken: string,
+	rawNonce: string,
+): AuthCredential {
+	return new OAuthProvider(APPLE_PROVIDER).credential({
+		idToken: identityToken,
+		rawNonce,
+	});
+}
+
+/** Build the Google credential from an id token. */
+export function googleCredential(idToken: string): AuthCredential {
+	return GoogleAuthProvider.credential(idToken);
 }
 
 export async function registerWithEmail(

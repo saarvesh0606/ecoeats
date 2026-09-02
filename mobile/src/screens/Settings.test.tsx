@@ -43,6 +43,13 @@ jest.mock("@/lib/preferences", () => ({
 	setThemeChoice: (c: string) => mockSaveTheme(c),
 }));
 
+// Stubbed out: these tests are about the settings screen, and the real one
+// reaches Firebase (and through it AsyncStorage) on import. Linking has its own
+// suite in SignInMethods.test.tsx.
+jest.mock("@/components/SignInMethods", () => ({
+	SignInMethods: () => null,
+}));
+
 const mockSetScheme = jest.fn();
 jest.mock("nativewind", () => ({
 	colorScheme: { set: (v: string) => mockSetScheme(v), get: () => "light" },
