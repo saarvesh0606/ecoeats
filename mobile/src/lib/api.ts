@@ -8,7 +8,7 @@
  */
 
 import { config } from "@/config";
-import { auth } from "@/lib/firebase";
+import { auth, refreshIdToken } from "@/lib/firebase";
 import { getDevToken } from "@/lib/session";
 
 export class ApiError extends Error {
@@ -39,10 +39,21 @@ async function authHeader(): Promise<Record<string, string>> {
 	return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * The server's answer when the token says the address is unverified.
+ *
+ * Matched on the status plus the shape of the message rather than the exact
+ * wording, so a copy edit on the backend does not quietly disable the retry.
+ */
+function looksLikeStaleVerification(status: number, message: string): boolean {
+	return status === 403 && /confirm your email/i.test(message);
+}
+
 async function request<T>(
 	method: string,
 	path: string,
 	body?: unknown,
+	{ retryOnStaleToken = true }: { retryOnStaleToken?: boolean } = {},
 ): Promise<T> {
 	let response: Response;
 	try {
@@ -75,6 +86,21 @@ async function request<T>(
 		if (response.status === 404) {
 			throw new ProfileNotFoundError(message, 404);
 		}
+
+		// A verification clicked moments ago is not in the cached token yet, and
+		// Firebase holds that token for up to an hour. Mint a fresh one and try
+		// once more: somebody who really has verified gets through, and somebody
+		// who has not sees the same refusal.
+		//
+		// Once only, and never recursively — a genuinely unverified account
+		// would otherwise loop.
+		if (retryOnStaleToken && looksLikeStaleVerification(response.status, message)) {
+			const refreshed = await refreshIdToken().catch(() => null);
+			if (refreshed) {
+				return request<T>(method, path, body, { retryOnStaleToken: false });
+			}
+		}
+
 		throw new ApiError(message, response.status);
 	}
 

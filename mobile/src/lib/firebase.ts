@@ -317,11 +317,30 @@ export async function signOut(): Promise<void> {
 	await fbSignOut(auth);
 }
 
-/** Re-fetch the user from Firebase so a just-clicked verification is seen. */
+/**
+ * Re-fetch the user from Firebase so a just-clicked verification is seen.
+ *
+ * ⚠️ `reload()` alone is NOT enough, and this is the trap: it refreshes the
+ * local user object — so `emailVerified` flips and the app happily moves on —
+ * but it leaves the cached ID token alone, and Firebase holds that for up to an
+ * hour. The API only ever reads the token. So without forcing a new one the
+ * server keeps seeing `email_verified: false` and refuses every request, and
+ * the user is told to confirm an address they just confirmed.
+ *
+ * Found on a real device: verify by email, tap through, pick a role, get
+ * "confirm your email address" on an account that is verified.
+ */
 export async function reloadUser(): Promise<FirebaseUser | null> {
 	if (!auth.currentUser) return null;
 	await auth.currentUser.reload();
+	await auth.currentUser.getIdToken(true);
 	return auth.currentUser;
+}
+
+/** Mint a fresh ID token, ignoring the cached one. */
+export async function refreshIdToken(): Promise<string | null> {
+	if (!auth.currentUser) return null;
+	return auth.currentUser.getIdToken(true);
 }
 
 export function watchAuth(
