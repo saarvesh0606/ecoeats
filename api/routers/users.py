@@ -1,6 +1,7 @@
 """User profile routes."""
 
 import logging
+from dataclasses import asdict
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, status
@@ -12,8 +13,9 @@ from api.deps import (
     CurrentUser,
     DbSession,
     rate_limited_by_identity,
+    verify_token,
 )
-from api.errors import ConflictError
+from api.errors import ConflictError, NotFoundError, ValidationError
 from api.legal import CURRENT_TERMS_VERSION
 from api.models import Claim, Listing, User
 from api.models.enums import (
@@ -26,11 +28,14 @@ from api.models.enums import (
 from api.schemas.user import (
     AppleAuthorization,
     ChangeRole,
+    MergeAccount,
+    MergeResult,
     RegisterProfile,
     UpdateProfile,
     UserProfile,
 )
 from api.services.apple import AppleAuthError
+from api.services.merge import merge_accounts
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -280,6 +285,62 @@ async def store_apple_authorization(
         )
     except AppleAuthError:
         logger.warning("Could not exchange Apple's code for %s", user.id)
+
+
+@router.post("/me/merge", response_model=MergeResult)
+async def merge_into_me(
+    request: Request,
+    body: MergeAccount,
+    identity: CurrentIdentity,
+    user: CurrentUser,
+    db: DbSession,
+) -> MergeResult:
+    """Fold another account of the same person into this one.
+
+    The account making the request survives; the one whose token is in the body
+    is absorbed and deleted. Both halves are proved: the caller is authenticated
+    as the survivor, and holding a valid token for the other is what proves they
+    control it too. Neither is taken on the client's word.
+
+    Why this exists: Apple's "Hide My Email" gives a relay address that cannot
+    be matched to somebody's real one, so one person signing in two ways becomes
+    two accounts with no way for us to tell. Linking prevents new ones; this
+    cleans up a pair that already exist.
+
+    ⚠️ It cannot be undone. Everything moves in one transaction, and the
+    absorbed account and its identity are gone at the end of it.
+    """
+    other = await verify_token(
+        body.token,
+        request.app.state.token_verifier,
+        request.app.state.settings.allowed_email_domain,
+    )
+
+    if other.uid == identity.uid:
+        raise ValidationError("That is the account you are already signed in to.")
+
+    absorbed = await db.get(User, other.uid)
+    if absorbed is None:
+        # Nothing to merge. They wanted linking, which is the safe operation,
+        # and saying so is more useful than reporting an empty success.
+        raise NotFoundError(
+            "That account has no EcoEats profile, so there is nothing to move. "
+            "Link it from Settings instead."
+        )
+
+    summary = await merge_accounts(
+        db, keep_id=user.id, absorb_id=absorbed.id
+    )
+
+    await db.delete(absorbed)
+    await db.flush()
+
+    # Last, and allowed to fail: the rows are already moved, and leaving a
+    # signed-out identity behind is far better than reporting a failure for a
+    # merge that actually happened.
+    request.app.state.token_verifier.delete(other.uid)
+
+    return MergeResult(**asdict(summary))
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

@@ -83,6 +83,30 @@ class AppleAuthorization(BaseModel):
     authorization_code: str = Field(min_length=1, max_length=2048)
 
 
+class MergeAccount(BaseModel):
+    """A Firebase ID token for the OTHER account, the one being absorbed.
+
+    Holding a valid token for it is the proof that one person controls both.
+    The account making the request is the one that survives.
+    """
+
+    token: str = Field(min_length=1, max_length=4096)
+
+
+class MergeResult(BaseModel):
+    """What moved. A merge is never silent — the caller is told, and the client
+    shows it, because this is the one action here that cannot be undone."""
+
+    listings: int
+    claims: int
+    ratings: int
+    saved: int
+    notifications: int
+    devices: int
+    self_claims_removed: int
+    skipped: list[str]
+
+
 class UpdateProfile(BaseModel):
     """Partial update.
 
