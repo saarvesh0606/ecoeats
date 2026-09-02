@@ -55,6 +55,27 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      # --- optional: Sign in with Apple revocation ---------------------
+      # Only needed to withdraw a user's Apple authorisation when they delete
+      # their account, which Apple requires of any app offering deletion
+      # (Review Guideline 5.1.1(v)). Signing in works without any of it, and
+      # unset is a supported state: revocation simply stays dormant.
+      #
+      # APPLE_CLIENT_ID is deliberately not declared — it defaults to the
+      # bundle identifier, which is what a NATIVE iOS sign-in authenticates as.
+      # A Services ID belongs to the web and Android flows and would be wrong.
+      #
+      # The private key is the .p8 from the Apple Developer portal, pasted
+      # whole including the BEGIN/END lines. It is `sync: false` because it is
+      # a signing key: anyone holding it plus a refresh token can revoke a
+      # user's authorisation.
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY_INLINE
+        sync: false
+
       # --- optional: web origins allowed to call the API (browser CORS only) ---
       # Defaults to localhost dev origins if unset; set once a web client is
       # deployed. Native iOS builds don't need this (no browser CORS).

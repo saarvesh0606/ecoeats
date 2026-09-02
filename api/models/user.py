@@ -22,6 +22,16 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(2048))
 
+    # Apple's refresh token, kept for exactly one purpose: revoking the
+    # authorisation when this account is deleted, which Apple requires of any
+    # app offering deletion. Null for everyone who did not sign in with Apple.
+    #
+    # ⚠ It is a credential. It cannot read anything about the person, but
+    # anyone holding it plus our signing key could revoke their authorisation —
+    # so it is written by the server from a one-shot code, never accepted from
+    # a client, and goes when the row goes.
+    apple_refresh_token: Mapped[str | None] = mapped_column(String(512))
+
     role: Mapped[UserRole] = mapped_column(
         enum_column(UserRole, name="userrole"), nullable=False
     )

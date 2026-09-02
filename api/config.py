@@ -148,6 +148,24 @@ class Settings(BaseSettings):
     # so any value here turns off both social buttons for most people.
     allowed_email_domain: str | None = None
 
+    # --- Sign in with Apple -----------------------------------------------
+    # Only needed to REVOKE an authorisation when an account is deleted, which
+    # Apple requires of any app offering deletion (Review Guideline 5.1.1(v)).
+    # Signing in works without any of this.
+    #
+    # apple_client_id is the app's BUNDLE IDENTIFIER for a native iOS sign-in,
+    # not a Services ID — Services IDs belong to the web and Android flows.
+    # Getting it wrong returns `invalid_client` and says no more than that.
+    #
+    # The key is the .p8 from the Apple Developer portal. A path for local work
+    # (the file is gitignored); the contents inline for containers, which get
+    # secrets as env vars rather than files. Unset means revocation is dormant.
+    apple_team_id: str | None = None
+    apple_key_id: str | None = None
+    apple_private_key_path: str | None = None
+    apple_private_key_inline: str | None = None
+    apple_client_id: str = "com.saarvesh.ecoeats"
+
     # --- development only ------------------------------------------------
     # Accept `dev:<slug>` stand-in tokens so the client can be built and tested
     # without real accounts. Off by default; the app refuses to start if this
@@ -204,6 +222,31 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @property
+    def apple_private_key(self) -> str | None:
+        """The signing key, from wherever this deployment keeps it."""
+        if self.apple_private_key_inline:
+            return self.apple_private_key_inline
+        if self.apple_private_key_path:
+            from pathlib import Path as _Path
+
+            path = _Path(self.apple_private_key_path)
+            if path.is_file():
+                return path.read_text(encoding="utf-8")
+            # Configured but absent is worth saying out loud: silently falling
+            # back to "revocation off" is how you discover at review time that
+            # it never ran.
+            raise FileNotFoundError(
+                f"APPLE_PRIVATE_KEY_PATH points at {path}, which is not there."
+            )
+        return None
+
+    @property
+    def apple_configured(self) -> bool:
+        return bool(
+            self.apple_team_id and self.apple_key_id and self.apple_private_key
+        )
 
     @property
     def is_production(self) -> bool:

@@ -1,5 +1,6 @@
 """User profile routes."""
 
+import logging
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, status
@@ -22,9 +23,18 @@ from api.models.enums import (
     UserRole,
     display_name_from_email,
 )
-from api.schemas.user import ChangeRole, RegisterProfile, UpdateProfile, UserProfile
+from api.schemas.user import (
+    AppleAuthorization,
+    ChangeRole,
+    RegisterProfile,
+    UpdateProfile,
+    UserProfile,
+)
+from api.services.apple import AppleAuthError
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -243,6 +253,35 @@ async def accept_terms(user: CurrentUser, db: DbSession) -> User:
     return user
 
 
+@router.post("/me/apple-authorization", status_code=status.HTTP_204_NO_CONTENT)
+async def store_apple_authorization(
+    request: Request,
+    body: AppleAuthorization,
+    user: CurrentUser,
+    db: DbSession,
+) -> None:
+    """Trade Apple's one-shot code for a refresh token and keep it.
+
+    Only so the authorisation can be withdrawn when this account is deleted,
+    which Apple requires of any app offering deletion. Nothing reads it
+    otherwise.
+
+    Nothing here is allowed to fail the sign-in that triggered it. The user is
+    already authenticated by the time this runs; a code Apple will not honour,
+    or Apple being unreachable, costs a revocation later — not a way in now.
+    """
+    apple = request.app.state.apple
+    if apple is None:
+        return  # not configured; revocation is dormant
+
+    try:
+        user.apple_refresh_token = await apple.exchange_code(
+            body.authorization_code
+        )
+    except AppleAuthError:
+        logger.warning("Could not exchange Apple's code for %s", user.id)
+
+
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_me(
     request: Request,
@@ -269,7 +308,29 @@ async def delete_me(
     treated as brand new, rather than the data surviving a deletion they were
     told had happened.
     """
+    # Before the row goes, because the token goes with it. Apple requires the
+    # authorisation to be withdrawn when an account is deleted, and without it
+    # Apple stops re-prompting — so someone who deletes and signs up again is
+    # silently given no name and no email, which is how this was found.
+    await _revoke_apple(request, user)
+
     await db.delete(user)
     await db.flush()
 
     request.app.state.token_verifier.delete(identity.uid)
+
+
+async def _revoke_apple(request: Request, user: User) -> None:
+    """Withdraw the Apple authorisation, if there is one and we can.
+
+    Never allowed to fail the deletion. Someone asking for their account to be
+    gone must not be told it failed because a third party was unreachable — the
+    row and the identity are what they asked to be rid of, and both still go.
+    """
+    apple = request.app.state.apple
+    if apple is None or not user.apple_refresh_token:
+        return
+    try:
+        await apple.revoke(user.apple_refresh_token)
+    except AppleAuthError:
+        logger.warning("Could not revoke Apple for %s; deleting anyway", user.id)

@@ -24,6 +24,7 @@ from api.routers import (
     uploads_router,
     users_router,
 )
+from api.services.apple import build_apple_client
 from api.services.scheduler import sweep_forever
 
 #: Version prefix for the business API. Clients pin to a version, so a future
@@ -159,6 +160,7 @@ def create_app(
     app.state.token_verifier = token_verifier or _build_verifier(settings)
     app.state.limiter = build_limiter(settings.redis_url)
     app.state.event_bus = build_event_bus(settings.redis_url)
+    app.state.apple = build_apple_client(settings)
 
     if settings.rate_limit_enabled:
         app.add_middleware(

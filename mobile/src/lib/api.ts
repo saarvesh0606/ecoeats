@@ -147,6 +147,19 @@ export async function registerProfile(
 	return api.post<UserProfile>("/users/me", { role, name });
 }
 
+/**
+ * Hand Apple's one-shot code to the server, which trades it for a refresh
+ * token so deleting this account can also revoke the Apple authorisation.
+ *
+ * Best-effort by design: it needs a profile to attach to, and a failure costs
+ * a revocation later rather than a way in now, so callers ignore the outcome.
+ */
+export async function sendAppleAuthorization(code: string): Promise<void> {
+	await api.post<void>("/users/me/apple-authorization", {
+		authorization_code: code,
+	});
+}
+
 export async function updateProfile(patch: {
 	name?: string;
 	dietary_prefs?: string[];

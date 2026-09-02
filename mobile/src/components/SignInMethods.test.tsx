@@ -36,6 +36,7 @@ beforeEach(() => {
 		identityToken: "apple-token",
 		rawNonce: "raw-nonce",
 		fullName: null,
+		authorizationCode: "code-123",
 	});
 });
 

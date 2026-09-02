@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/hooks/useThemeColors";
+import { flushAppleAuthorization } from "@/lib/appleAuth";
 import { ApiError, registerProfile, type UserRole } from "@/lib/api";
 
 // The backend role value stays "organizer"; the interface calls it "Host".
@@ -67,6 +68,11 @@ export default function RoleScreen() {
 				selected,
 				name.trim() || undefined,
 			);
+			// Now that a profile exists, any Apple code held from sign-in has
+			// somewhere to attach. Best-effort: it buys a revocation at deletion
+			// time, and must not stand between someone and their account.
+			await flushAppleAuthorization();
+
 			completeProfile(profile); // flips status to "ready"; gate routes to home
 		} catch (err) {
 			setError(

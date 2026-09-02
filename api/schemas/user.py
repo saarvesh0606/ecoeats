@@ -72,6 +72,17 @@ class RegisterProfile(BaseModel):
     dietary_prefs: list[str] = Field(default_factory=list, max_length=20)
 
 
+class AppleAuthorization(BaseModel):
+    """The one-shot code Apple hands the app at sign-in.
+
+    Exchanged server-side for a refresh token. It is valid for five minutes and
+    once only, which is why it is sent at sign-in rather than kept for the
+    deletion that will eventually need it.
+    """
+
+    authorization_code: str = Field(min_length=1, max_length=2048)
+
+
 class UpdateProfile(BaseModel):
     """Partial update.
 

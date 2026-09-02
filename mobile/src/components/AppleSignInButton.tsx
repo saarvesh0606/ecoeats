@@ -5,6 +5,8 @@ import { useThemeColors } from "@/hooks/useThemeColors";
 import {
 	APPLE_CANCELLED,
 	appleSignInAvailable,
+	flushAppleAuthorization,
+	holdAppleAuthorization,
 	requestAppleCredential,
 } from "@/lib/appleAuth";
 import { authErrorMessage, completeAppleSignIn } from "@/lib/firebase";
@@ -51,9 +53,15 @@ export function AppleSignInButton({
 		onError(null);
 		setLoading(true);
 		try {
-			const { identityToken, rawNonce, fullName } =
+			const { identityToken, rawNonce, fullName, authorizationCode } =
 				await requestAppleCredential();
 			await completeAppleSignIn({ identityToken, rawNonce, fullName });
+
+			// Held rather than sent: a brand new account has no profile for the
+			// server to attach it to yet, and role selection flushes it after
+			// registering. For a returning user the flush below spends it now.
+			holdAppleAuthorization(authorizationCode);
+			await flushAppleAuthorization();
 		} catch (err) {
 			const code =
 				typeof err === "object" && err !== null && "code" in err
