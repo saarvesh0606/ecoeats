@@ -2,7 +2,7 @@
   "expo": {
     "name": "EcoEats",
     "slug": "ecoeats",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -18,6 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saarvesh.ecoeats",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "EcoEats needs access to your photos so you can add pictures of the food you're posting.",
         "NSCameraUsageDescription": "EcoEats uses the camera so you can take a photo of the food you're posting.",
@@ -72,6 +73,7 @@
         }
       ],
       "expo-web-browser",
+      "expo-apple-authentication",
       "@sentry/react-native"
     ],
     "experiments": {

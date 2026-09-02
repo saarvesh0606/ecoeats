@@ -10,6 +10,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -248,14 +249,24 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 						)}
 					</Animated.View>
 
-					{googleSignInSupported && (
+					{/* The divider earns its place only if something follows it. Apple's
+					    button hides itself when the OS cannot offer it, so the check
+					    here is the same one it makes — iOS — rather than a second
+					    source of truth that could disagree and leave a rule with
+					    nothing under it. */}
+					{(googleSignInSupported || Platform.OS === "ios") && (
 						<>
 							<View className="flex-row items-center my-5">
 								<View className="flex-1 h-px bg-gray-200" />
 								<Text className="font-body text-gray-400 text-xs mx-3">or</Text>
 								<View className="flex-1 h-px bg-gray-200" />
 							</View>
-							<GoogleSignInButton onError={setError} />
+							<View className="gap-3">
+								{googleSignInSupported && (
+									<GoogleSignInButton onError={setError} />
+								)}
+								<AppleSignInButton onError={setError} />
+							</View>
 						</>
 					)}
 

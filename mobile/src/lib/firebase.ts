@@ -17,6 +17,7 @@ import {
 	GoogleAuthProvider,
 	getAuth,
 	initializeAuth,
+	OAuthProvider,
 	onAuthStateChanged,
 	type Persistence,
 	sendEmailVerification,
@@ -145,6 +146,55 @@ export async function signInWithGoogle(): Promise<void> {
  */
 export async function completeGoogleSignIn(idToken: string): Promise<void> {
 	await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+}
+
+/**
+ * Finish a Sign in with Apple, from what expo-apple-authentication returned.
+ *
+ * Two things about Apple that do not apply to Google, and that both fail
+ * quietly if you get them wrong:
+ *
+ * **The nonce is used twice, in two forms.** Apple is handed the SHA-256 of a
+ * random string and puts that hash inside the identity token; Firebase is
+ * handed the *raw* string and hashes it again to compare. Passing the same
+ * form to both — either form — makes every sign-in fail with an opaque
+ * credential error, so the hashing lives at the call site and the raw value
+ * arrives here.
+ *
+ * **The name comes back exactly once.** Apple includes givenName/familyName
+ * only on the very first authorisation for an app; every sign-in afterwards
+ * returns null for them, and reinstalling does not reset it. Firebase does not
+ * store it either. So if it is present it must be written to the profile now —
+ * there is no second chance to read it, and the alternative is an account with
+ * no display name forever.
+ */
+export async function completeAppleSignIn({
+	identityToken,
+	rawNonce,
+	fullName,
+}: {
+	identityToken: string;
+	rawNonce: string;
+	fullName?: string | null;
+}): Promise<void> {
+	const provider = new OAuthProvider("apple.com");
+	const credential = await signInWithCredential(
+		auth,
+		provider.credential({ idToken: identityToken, rawNonce }),
+	);
+
+	// Only on a first authorisation, and only when Apple actually gave a name —
+	// never overwrite one the account already has with a later empty response.
+	const name = fullName?.trim();
+	if (name && !credential.user.displayName) {
+		try {
+			await updateProfile(credential.user, { displayName: name });
+		} catch {
+			// A profile write failing must not fail the sign-in: the user is
+			// authenticated either way, and our own API asks for a name at role
+			// selection anyway.
+		}
+	}
 }
 
 export async function registerWithEmail(
