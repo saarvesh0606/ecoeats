@@ -2,6 +2,9 @@
 
 import json
 import logging
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import firebase_admin
@@ -12,13 +15,96 @@ from api.auth.tokens import InvalidTokenError, VerifiedIdentity
 
 logger = logging.getLogger(__name__)
 
+#: How long an account's revocation state is trusted before Google is asked
+#: again. The window this opens is bounded and small: a revoked token is
+#: accepted for at most this long, against the hour it would otherwise stay
+#: valid with no revocation check at all.
+REVOCATION_TTL_SECONDS = 60
+
+#: Ceiling on cached accounts, so a long-running process cannot grow without
+#: bound. Far above any plausible number of users active within one TTL.
+MAX_CACHED_ACCOUNTS = 10_000
+
+
+class _RevokedTokenError(Exception):
+    """Minted before the account's tokens were revoked."""
+
+
+class _DisabledAccountError(Exception):
+    """The account has been disabled in Firebase."""
+
+
+@dataclass(frozen=True, slots=True)
+class _AccountState:
+    """The two account facts a revocation check needs from Google."""
+
+    disabled: bool
+    tokens_valid_after_ms: int
+
+
+class _AccountStateCache:
+    """Account state by uid, remembered briefly.
+
+    Exists because firebase_admin's ``check_revoked=True`` fetches the user
+    record from Google on *every* verification — a blocking network round trip
+    on the request path. One worker serving requests one at a time means that
+    round trip, not the CPU, sets the throughput ceiling.
+
+    Caching turns it into one fetch per user per TTL. Correctness is unchanged
+    for the part that varies per token: only the *account* facts are cached,
+    and each token's own ``iat`` is still compared against them, so a cache hit
+    still rejects a token issued before the revocation it knows about.
+
+    Takes its clock as an argument so expiry is testable without sleeping.
+    """
+
+    def __init__(
+        self,
+        fetch: Callable[[str], _AccountState],
+        *,
+        ttl_seconds: float,
+        max_entries: int = MAX_CACHED_ACCOUNTS,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._fetch = fetch
+        self._ttl = ttl_seconds
+        self._max_entries = max_entries
+        self._clock = clock
+        self._entries: dict[str, tuple[_AccountState, float]] = {}
+
+    def get(self, uid: str) -> _AccountState:
+        now = self._clock()
+        cached = self._entries.get(uid)
+        if cached is not None and cached[1] > now:
+            return cached[0]
+
+        state = self._fetch(uid)
+
+        # Verification runs in a worker thread, so two requests for the same
+        # uid can race here. Both write the same value, and an entry dropped by
+        # the sweep below costs one extra fetch — neither is worth a lock on
+        # the hot path.
+        if len(self._entries) >= self._max_entries:
+            self._entries = {
+                key: value
+                for key, value in self._entries.items()
+                if value[1] > now
+            }
+        self._entries[uid] = (state, now + self._ttl)
+        return state
+
+    def forget(self, uid: str) -> None:
+        """Drop what we remember, so the next check asks Google again."""
+        self._entries.pop(uid, None)
+
 
 class FirebaseTokenVerifier:
     """Verifies Google-signed Firebase ID tokens.
 
-    ``check_revoked=True`` costs an extra lookup per request but means signing
-    a user out actually ends their session. Without it a stolen token stays
-    valid until it expires on its own.
+    Revocation is checked on every request — signing a user out has to actually
+    end their session, and without the check a stolen token stays valid until
+    it expires on its own. What is *not* done on every request is asking Google
+    for the account record; see ``_AccountStateCache``.
     """
 
     def __init__(
@@ -38,6 +124,10 @@ class FirebaseTokenVerifier:
             self._app = firebase_admin.initialize_app(
                 cert, {"projectId": project_id}
             )
+
+        self._accounts = _AccountStateCache(
+            self._fetch_account_state, ttl_seconds=REVOCATION_TTL_SECONDS
+        )
 
     @staticmethod
     def _load_certificate(
@@ -70,9 +160,11 @@ class FirebaseTokenVerifier:
 
     def verify(self, token: str) -> VerifiedIdentity:
         try:
-            claims = firebase_auth.verify_id_token(
-                token, app=self._app, check_revoked=True
-            )
+            # check_revoked stays False: it would make firebase_admin fetch the
+            # user record from Google inline, on every single request. The same
+            # check runs below, against state that is cached for a minute.
+            claims = firebase_auth.verify_id_token(token, app=self._app)
+            self._check_revoked(claims)
         except Exception as exc:
             # Deliberately opaque to the caller. The reason a token failed is
             # useful to an attacker and useless to a legitimate client, which
@@ -92,6 +184,26 @@ class FirebaseTokenVerifier:
             picture=claims.get("picture"),
         )
 
+    def _check_revoked(self, claims: dict) -> None:
+        """Reject a token the account has since invalidated.
+
+        Mirrors firebase_admin's own ``_check_jwt_revoked_or_disabled``: a token
+        issued before ``tokens_valid_after_timestamp`` was left behind by a
+        sign-out-everywhere, and a disabled account may not authenticate at all.
+        """
+        state = self._accounts.get(claims["uid"])
+        if state.disabled:
+            raise _DisabledAccountError("The user record is disabled")
+        if claims["iat"] * 1000 < state.tokens_valid_after_ms:
+            raise _RevokedTokenError("The Firebase ID token has been revoked")
+
+    def _fetch_account_state(self, uid: str) -> _AccountState:
+        record = firebase_auth.get_user(uid, app=self._app)
+        return _AccountState(
+            disabled=bool(record.disabled),
+            tokens_valid_after_ms=int(record.tokens_valid_after_timestamp or 0),
+        )
+
     def delete(self, uid: str) -> None:
         """Remove the Firebase account behind a deleted profile.
 
@@ -105,6 +217,10 @@ class FirebaseTokenVerifier:
         afterwards would tell the user their deletion did not happen when most
         of it did.
         """
+        # Before the call, not after: the cached state is stale either way, and
+        # dropping it first means a delete that half-fails cannot leave the
+        # account authenticating from cache for the rest of the TTL.
+        self._accounts.forget(uid)
         try:
             firebase_auth.delete_user(uid, app=self._app)
         except firebase_auth.UserNotFoundError:
