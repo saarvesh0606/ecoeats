@@ -66,3 +66,27 @@ EXPIRY_CHOICES: tuple[int, ...] = (15, 20, 30, 45, 60)
 
 #: How long a claimed portion stays reserved before it returns to the pool.
 RESERVATION_MINUTES = 20
+
+#: Domains whose local part is machine-generated and means nothing to a human.
+#: Sign in with Apple's "Hide My Email" issues addresses like
+#: ``x7k2m9p4qr@privaterelay.appleid.com`` — deriving a display name from that
+#: produces a string of random letters, which is exactly what it looks like.
+OPAQUE_EMAIL_DOMAINS = frozenset({"privaterelay.appleid.com"})
+
+#: Shown when nothing better is known. Deliberately obviously-a-placeholder, so
+#: it reads as "not set yet" and invites an edit, rather than as a name someone
+#: chose. The Profile screen can change it.
+PLACEHOLDER_NAME = "New member"
+
+
+def display_name_from_email(email: str) -> str | None:
+    """A human-ish name from an address, or None when the address has none.
+
+    The local part is a reasonable guess for a real mailbox (``mkumar17``) and
+    worthless for a relay (``x7k2m9p4qr``). Returning None rather than the
+    gibberish lets the caller fall back to something honest.
+    """
+    local, _, domain = email.partition("@")
+    if domain.lower() in OPAQUE_EMAIL_DOMAINS:
+        return None
+    return local or None

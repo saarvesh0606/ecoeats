@@ -15,7 +15,13 @@ from api.deps import (
 from api.errors import ConflictError
 from api.legal import CURRENT_TERMS_VERSION
 from api.models import Claim, Listing, User
-from api.models.enums import ClaimStatus, ListingStatus, UserRole
+from api.models.enums import (
+    PLACEHOLDER_NAME,
+    ClaimStatus,
+    ListingStatus,
+    UserRole,
+    display_name_from_email,
+)
 from api.schemas.user import ChangeRole, RegisterProfile, UpdateProfile, UserProfile
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -58,7 +64,12 @@ async def register_me(
     user = User(
         id=identity.uid,
         email=identity.email,  # from the token, never the body
-        name=body.name or identity.name or identity.email.split("@")[0],
+        name=(
+            body.name
+            or identity.name
+            or display_name_from_email(identity.email)
+            or PLACEHOLDER_NAME
+        ),
         avatar_url=identity.picture,
         role=body.role,
         dietary_prefs=body.dietary_prefs,

@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { useAuth } from "@/context/AuthContext";
 import { theme } from "@/hooks/useThemeColors";
@@ -42,8 +43,21 @@ export default function RoleScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
+	// Sign in with Apple sends a name on the FIRST authorisation for an Apple ID
+	// and never again — not on later sign-ins, and not after the account here is
+	// deleted and remade. So a returning Apple user arrives with nothing, and
+	// with "Hide My Email" there is not even a usable address to guess from.
+	// Asking once, here, beats showing them a name they did not choose.
+	const knownName = firebaseUser?.displayName?.trim() ?? "";
+	const [name, setName] = useState(knownName);
+	const mustAskName = knownName === "";
+
 	async function onContinue() {
 		if (!selected) return;
+		if (mustAskName && name.trim() === "") {
+			setError("Tell us what to call you.");
+			return;
+		}
 		setError(null);
 		setLoading(true);
 		try {
@@ -51,7 +65,7 @@ export default function RoleScreen() {
 			// nobody is asked for it twice.
 			const profile = await registerProfile(
 				selected,
-				firebaseUser?.displayName ?? undefined,
+				name.trim() || undefined,
 			);
 			completeProfile(profile); // flips status to "ready"; gate routes to home
 		} catch (err) {
@@ -123,6 +137,22 @@ export default function RoleScreen() {
 					);
 				})}
 			</View>
+
+			{mustAskName && (
+				<View className="mt-6">
+					<Input
+						label="Your name"
+						placeholder="What should we call you?"
+						value={name}
+						onChangeText={setName}
+						autoCapitalize="words"
+						autoComplete="name"
+					/>
+					<Text className="font-body text-gray-400 text-xs mt-1">
+						Hosts and recipients see this when you claim or post food.
+					</Text>
+				</View>
+			)}
 
 			<Text className="font-body text-gray-400 text-xs text-center mt-4">
 				EcoEats is for anyone with surplus food to share, or a meal to find.

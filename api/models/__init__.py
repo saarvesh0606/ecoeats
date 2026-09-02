@@ -10,6 +10,8 @@ from api.models.claim import Claim
 from api.models.device import DeviceToken
 from api.models.enums import (
     EXPIRY_CHOICES,
+    OPAQUE_EMAIL_DOMAINS,
+    PLACEHOLDER_NAME,
     RESERVATION_MINUTES,
     ClaimStatus,
     ListingStatus,
@@ -23,6 +25,8 @@ from api.models.user import User
 
 __all__ = [
     "EXPIRY_CHOICES",
+    "OPAQUE_EMAIL_DOMAINS",
+    "PLACEHOLDER_NAME",
     "RESERVATION_MINUTES",
     "Base",
     "Claim",

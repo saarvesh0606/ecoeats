@@ -11,6 +11,54 @@ from tests.fake_auth import FakeTokenVerifier, bearer
 from tests.test_listings import post_listing
 
 
+async def test_a_private_relay_address_does_not_become_the_name(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """Sign in with Apple's "Hide My Email" issues a random local part.
+
+    The old fallback split the address and used it, so a returning Apple user —
+    Apple sends a name on the FIRST authorisation only — got a display name of
+    random letters. Found on a real device.
+    """
+    token = auth.issue(email="x7k2m9p4qr@privaterelay.appleid.com", name=None)
+
+    response = await client.post(
+        "/users/me", headers=bearer(token), json={"role": "recipient"}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["name"] == "New member"
+    assert "x7k2m9p4qr" not in response.json()["name"]
+
+
+async def test_an_ordinary_address_still_seeds_the_name(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """The local part of a real mailbox is a fair guess and stays in use."""
+    token = auth.issue(email="mkumar17@gmail.com", name=None)
+
+    response = await client.post(
+        "/users/me", headers=bearer(token), json={"role": "recipient"}
+    )
+
+    assert response.json()["name"] == "mkumar17"
+
+
+async def test_a_name_from_the_client_beats_every_fallback(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """What the role screen asked for wins — that is the point of asking."""
+    token = auth.issue(email="x7k2m9p4qr@privaterelay.appleid.com", name=None)
+
+    response = await client.post(
+        "/users/me",
+        headers=bearer(token),
+        json={"role": "recipient", "name": "Sam Rivera"},
+    )
+
+    assert response.json()["name"] == "Sam Rivera"
+
+
 async def test_registering_creates_a_profile(
     client: AsyncClient, auth: FakeTokenVerifier
 ) -> None:
