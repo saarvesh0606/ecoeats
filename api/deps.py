@@ -1,10 +1,12 @@
 """Request-scoped dependencies: database sessions and the authenticated user."""
 
+import logging
 from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -22,6 +24,8 @@ from api.models.enums import UserRole
 # auto_error=False so a missing header raises our own UnauthorizedError with a
 # consistent body, rather than FastAPI's differently-shaped 403.
 _bearer = HTTPBearer(auto_error=False)
+
+logger = logging.getLogger(__name__)
 
 DbSession = Annotated[AsyncSession, Depends(session_dependency)]
 
@@ -128,7 +132,41 @@ async def current_user(identity: CurrentIdentity, db: DbSession) -> User:
             "No profile yet. Choose whether you are posting food or looking "
             "for it to finish setting up."
         )
+    await _resync_email(db, user, identity.email)
     return user
+
+
+async def _resync_email(db: AsyncSession, user: User, verified: str) -> None:
+    """Follow the address on the token when the provider's has changed.
+
+    The row was written once at registration and then never revisited, so an
+    address that changed at the identity provider left us serving a stale one
+    forever. The case that surfaced it: Sign in with Apple issues a private
+    relay address under "Hide My Email", and a user who later switches to
+    sharing their real one would have kept the relay address for good.
+
+    Only ever the token's value — never a request body. The uid is the identity;
+    the email is a fact about it that the provider owns.
+    """
+    verified = verified.lower()
+    if user.email == verified:
+        return
+
+    # Addresses are unique, and the new one may already belong to somebody —
+    # someone who signed up with the same address by another route. That is a
+    # real state, not an error to raise at whoever happens to be making this
+    # request, so the write is attempted inside a savepoint and simply
+    # abandoned if it collides. They keep the address they have.
+    try:
+        async with db.begin_nested():
+            user.email = verified
+            await db.flush()
+    except IntegrityError:
+        await db.refresh(user)
+        logger.info(
+            "Kept the stored address for %s: the verified one is taken",
+            user.id,
+        )
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

@@ -11,6 +11,56 @@ from tests.fake_auth import FakeTokenVerifier, bearer
 from tests.test_listings import post_listing
 
 
+async def test_a_changed_provider_address_is_followed(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """The row was written once and never revisited.
+
+    The case that surfaced it: Apple's "Hide My Email" issues a relay address,
+    and a user who later switches to sharing their real one kept the relay
+    address for good.
+    """
+    token = auth.issue(
+        uid="apple-uid", email="x7k2m9p4qr@privaterelay.appleid.com"
+    )
+    await client.post(
+        "/users/me", headers=bearer(token), json={"role": "recipient"}
+    )
+
+    # Same identity, address now shared rather than hidden.
+    moved = auth.issue(uid="apple-uid", email="sam.rivera@gmail.com")
+    response = await client.get("/users/me", headers=bearer(moved))
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "sam.rivera@gmail.com"
+
+
+async def test_an_address_already_taken_is_not_stolen(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """Two accounts cannot hold one address, and the request must not fail.
+
+    Somebody signing up by another route may already hold the address this
+    token now claims. That is a real state, not an error to raise at whoever
+    happens to be making the request — they keep what they have.
+    """
+    other = auth.issue(uid="other-uid", email="taken@gmail.com")
+    await client.post(
+        "/users/me", headers=bearer(other), json={"role": "recipient"}
+    )
+
+    mine = auth.issue(uid="my-uid", email="mine@gmail.com")
+    await client.post(
+        "/users/me", headers=bearer(mine), json={"role": "recipient"}
+    )
+
+    collided = auth.issue(uid="my-uid", email="taken@gmail.com")
+    response = await client.get("/users/me", headers=bearer(collided))
+
+    assert response.status_code == 200  # served, not 500
+    assert response.json()["email"] == "mine@gmail.com"  # unchanged
+
+
 async def test_a_private_relay_address_does_not_become_the_name(
     client: AsyncClient, auth: FakeTokenVerifier
 ) -> None:
