@@ -33,7 +33,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/context/AuthContext", () => ({
-	useAuth: () => ({ profile: { name: "Sun Devil Jones", role: "organizer" } }),
+	useAuth: () => ({ profile: { name: "Sam Rivera Jones", role: "organizer" } }),
 }));
 
 const mockListings = fetchMyListings as jest.MockedFunction<
@@ -80,9 +80,9 @@ describe("OrganizerHome", () => {
 	});
 
 	it("greets the host by first name only", async () => {
-		// The profile is "Sun Devil Jones"; a dashboard header wants "Sun".
+		// The profile is "Sam Rivera Jones"; a dashboard header wants "Sam".
 		render(<OrganizerHome />);
-		expect(await screen.findByText("Good to share, Sun.")).toBeTruthy();
+		expect(await screen.findByText("Good to share, Sam.")).toBeTruthy();
 	});
 
 	it("shows the impact figures from the server", async () => {

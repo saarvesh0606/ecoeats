@@ -193,7 +193,7 @@ class ListingOut(BaseModel):
 #: posting path would cost more than the number is worth — and would be
 #: guessed anyway. This is the sector's standard meal-to-pound conversion
 #: (Feeding America's 1.2 lb meal equivalent), so a figure derived from it is
-#: comparable with how ASU and every food bank already count.
+#: comparable with how food banks and rescue programmes already count.
 #:
 #: ⚠️ It is an ESTIMATE and every surface that shows it must say so. Do not
 #: present a derived weight as a measurement.

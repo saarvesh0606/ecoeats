@@ -1,29 +1,31 @@
-import { validateAsuEmail, validatePassword } from "./validation";
+import { validateEmail, validatePassword } from "./validation";
 
-describe("validateAsuEmail", () => {
+describe("validateEmail", () => {
 	it("requires a value", () => {
-		expect(validateAsuEmail("")).toBe("Email is required.");
-		expect(validateAsuEmail("   ")).toBe("Email is required.");
+		expect(validateEmail("")).toBe("Email is required.");
+		expect(validateEmail("   ")).toBe("Email is required.");
 	});
 
 	it("rejects a malformed address", () => {
-		expect(validateAsuEmail("not-an-email")).toMatch(/doesn't look right/);
+		expect(validateEmail("not-an-email")).toMatch(/doesn't look right/);
 	});
 
-	it("rejects a non-ASU domain", () => {
-		expect(validateAsuEmail("someone@gmail.com")).toMatch(/ASU/);
-	});
-
-	it("accepts a valid ASU address", () => {
-		expect(validateAsuEmail("sun.devil@asu.edu")).toBeNull();
+	it("accepts an ordinary address", () => {
+		expect(validateEmail("sam.rivera@gmail.com")).toBeNull();
 	});
 
 	it("normalises case and surrounding whitespace", () => {
-		expect(validateAsuEmail("  Sun@ASU.EDU ")).toBeNull();
+		expect(validateEmail("  Sam@GMAIL.COM ")).toBeNull();
 	});
 
-	it("is not fooled by a lookalike domain", () => {
-		expect(validateAsuEmail("attacker@asu.edu.evil.com")).toMatch(/ASU/);
+	it("accepts any domain, including an Apple private relay address", () => {
+		// There is deliberately no domain rule here any more. Enforcing one
+		// client-side would mean two places to change it and a client refusing
+		// addresses the server would accept — and it would reject the relay
+		// addresses Sign in with Apple hands out.
+		expect(validateEmail("someone@outlook.com")).toBeNull();
+		expect(validateEmail("a1b2c3d4@privaterelay.appleid.com")).toBeNull();
+		expect(validateEmail("student@university.edu")).toBeNull();
 	});
 });
 

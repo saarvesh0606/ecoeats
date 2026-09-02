@@ -1,6 +1,6 @@
 # EcoEats
 
-**Campus food rescue for Arizona State University.** Organizers post surplus
+**Food rescue for the people around you.** Organizers post surplus
 food with a photo, a pickup location and a countdown; recipients browse a live
 feed, claim a portion, and walk over before it expires.
 
@@ -83,12 +83,17 @@ so nothing depends on a client being open to stay correct.
 
 The API assumes every request is hostile until the token says otherwise.
 
-**Authentication.** Firebase ID tokens are verified with the Admin SDK using
-`check_revoked=True`, so signing out genuinely ends a session rather than
-leaving a stolen token valid until it expires on its own. Two rules are enforced
-in a single dependency that runs before any handler, so no route can forget one:
-the address must be **verified**, and it must be **`@asu.edu`** — the latter
-also backed by a CHECK constraint on the table.
+**Authentication.** Firebase ID tokens are verified with the Admin SDK, and
+revocation is checked on every request — signing out genuinely ends a session
+rather than leaving a stolen token valid until it expires on its own. (The
+account record behind that check is cached for a minute; asking Google inline on
+every request made a network round trip, not the CPU, the throughput ceiling.)
+The rules are enforced in a single dependency that runs before any handler, so
+no route can forget one: the address must be **verified**, always, and it must
+sit on **`ALLOWED_EMAIL_DOMAIN`** if the deployment sets one. That setting ships
+unset — any verified address is accepted — because Apple sign-in issues
+`@privaterelay.appleid.com` addresses and Google accounts arrive on whatever
+domain their owner has.
 
 **Identity is never taken from a request body.** The registration schema has no
 `email` or `id` field at all. It is read from the verified token or not at all.
@@ -99,7 +104,7 @@ listing's claims — checks the actor against the row. There is no endpoint wher
 knowing an ID is enough to act on it.
 
 **The development auth bypass cannot reach production.** `DEV_AUTH_BYPASS`
-accepts stand-in tokens so the client can be built before real ASU accounts
+accepts stand-in tokens so the client can be built before real accounts
 exist. If it is ever true while `APP_ENV=production`, **the application refuses
 to start** — a boot failure rather than a service quietly accepting forged
 identities. A test pins that behaviour.
@@ -346,10 +351,9 @@ This is proprietary source. Reading it grants no right to use it — ask first.
 
 Two things the licence deliberately does not cover:
 
-- **ASU's name, wordmark and logo are Arizona State University's trademarks.**
-  They are not the copyright holder's to license. They appear here for a student
-  project connected to the university; any public or commercial use of the marks
-  needs ASU's own permission.
+- **No university's marks are licensed by it.** EcoEats carries no university
+  branding today — it was removed pending permission — and nothing here grants
+  a right to any institution's name, wordmark or logo.
 - **Dependencies keep their own licences**, as do photographs loaded from
   third-party services at runtime.
 

@@ -25,7 +25,7 @@ class AppTheme {
   static const Color errorColor = Color(0xFFBA1A1A);
   static const Color successEmerald = Color(0xFF2D6A4F);
   static const Color statusGold = Color(0xFFD4AF37);
-  static const Color asuMaroon = Color(0xFF8C1D40);
+  static const Color accentMaroon = Color(0xFF8C1D40);
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme(

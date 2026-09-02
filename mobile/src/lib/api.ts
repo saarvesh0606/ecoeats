@@ -2,7 +2,7 @@
  * Typed client for the EcoEats API.
  *
  * Every request carries the current Firebase ID token as a bearer credential;
- * the backend verifies it and applies the ASU + verified-email rules. The
+ * the backend verifies it and applies the verified-email rule. The
  * token is fetched fresh from Firebase on each call — the SDK caches it and
  * refreshes it as needed, so this is cheap and always current.
  */

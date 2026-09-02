@@ -86,8 +86,9 @@ module.exports = {
 					600: "rgb(var(--c-red-ink) / <alpha-value>)",
 					700: "rgb(var(--c-red-ink-strong) / <alpha-value>)",
 				},
-				// ASU brand. Maroon is the primary mark colour; gold is the ASU
-				// accent, with a muted bronze for the editorial subtitle rule.
+				// Warm accents, inherited from the app's first palette. Maroon
+				// carries badges and danger rows; gold is one of the notification
+				// kinds, with a muted bronze for the editorial subtitle rule.
 				maroon: {
 					DEFAULT: "rgb(var(--c-maroon-ink) / <alpha-value>)",
 					50: "rgb(var(--c-maroon-tint) / <alpha-value>)",

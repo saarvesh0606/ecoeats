@@ -9,24 +9,28 @@ without a code change.
 
 | File | Used for | Status |
 |---|---|---|
-| `asu-logo.png` | ASU wordmark at the top of the auth screen | **wanted** — a text mark stands in for it today, see below |
 | `google-g.png` | The Google mark on "Continue with Google" | optional — currently drawn with Ionicons' `logo-google` glyph, which is monochrome |
 | `icon.png` | App icon (1024×1024, no transparency, no rounded corners) | **needed before the iOS/Android build** |
 | `splash-icon.png` | Native launch screen mark | needed before the device build |
 
-A campus photo was considered for a sign-in hero and **deliberately dropped** —
-the auth screen uses the ASU wordmark only.
+A photo was considered for a sign-in hero and **deliberately dropped** — the
+auth screen shows the app mark, the name, and one line of what it is for.
 
-## Adding `asu-logo.png`
+## The auth screen mark
 
-`src/screens/AuthScreen.tsx` currently renders a maroon "ASU / ARIZONA STATE
-UNIVERSITY" text mark above the EcoEats leaf. Once the real file is in this
-folder, replace that text block with the `<Image>` in the TODO comment directly
-above it.
+`src/screens/AuthScreen.tsx` renders `icon.png` — the same file the home screen
+icon comes from, rounded in code to match how iOS draws it there. There is no
+separate logo asset, on purpose: two files would drift, and the app someone
+tapped should look like the screen that greets them.
 
-The image can't be referenced ahead of time: Metro resolves `require()` at build
-time, so pointing at a file that doesn't exist fails the entire bundle rather
-than degrading to a placeholder.
+It replaced a university wordmark, dropped along with the rest of that
+branding pending permission to use the name.
+
+A new mark, if one is ever drawn, goes in as its own file rather than
+overwriting `icon.png`, which the build reads for the launcher icon. Note that
+Metro resolves `require()` at build time, so a file that does not exist yet
+fails the whole bundle rather than degrading to a placeholder — add the asset
+before pointing code at it.
 
 ## Sizes
 

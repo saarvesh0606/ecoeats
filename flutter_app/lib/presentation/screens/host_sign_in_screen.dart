@@ -17,7 +17,7 @@ class HostSignInScreen extends ConsumerStatefulWidget {
 }
 
 class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
-  final _emailController = TextEditingController(text: 'host@asu.edu');
+  final _emailController = TextEditingController(text: 'host@gmail.com');
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.host;
@@ -198,7 +198,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                       vertical: 14,
                     ),
                     border: InputBorder.none,
-                    hintText: 'Enter your @asu.edu email',
+                    hintText: 'Enter your email',
                     hintStyle: AppFonts.body(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -221,7 +221,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            'Use your asu.edu email to continue',
+            'Use your email address to continue',
             style: AppFonts.body(
               fontSize: 12,
               color: AppColors.onSurfaceVariant,
@@ -244,17 +244,17 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'ASU COMMUNITY ONLY',
+            'VERIFIED ACCOUNTS ONLY',
             style: AppFonts.body(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.asuMaroon,
+              color: AppColors.accentMaroon,
               letterSpacing: 0.8,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'EcoEats is for students, faculty,\nand staff at Arizona State University.',
+            'Every account is confirmed by email\nbefore it can post or claim food.',
             style: AppFonts.body(
               fontSize: 13,
               color: AppColors.onSurface,
@@ -426,7 +426,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
           TextSpan(
             children: [
               TextSpan(
-                text: 'ASU ',
+                text: 'Secure ',
                 style: AppFonts.body(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -434,7 +434,7 @@ class _HostSignInScreenState extends ConsumerState<HostSignInScreen> {
                 ),
               ),
               TextSpan(
-                text: 'Single Sign-On',
+                text: 'sign-in',
                 style: AppFonts.body(
                   fontSize: 13,
                   color: AppColors.onSurface,

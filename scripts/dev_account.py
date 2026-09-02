@@ -2,8 +2,8 @@
 
 ⚠️ DEVELOPMENT ONLY. Talks straight to Firebase with the project's service
 account, so it bypasses the verification email entirely. That is the whole
-point: the app is @asu.edu-only, and an ASU inbox is not always available to
-whoever is testing.
+point: an account can be made testable without waiting on a mail that may take
+minutes to arrive, land in spam, or never come at all.
 
 Why this exists: Firebase's built-in email sender gives you no delivery
 visibility at all. `sendEmailVerification` reporting success only means Firebase
@@ -13,11 +13,11 @@ questions, and this answers the second one without waiting on the first.
 
 Usage (from the repo root):
 
-    python scripts/dev_account.py show    someone@asu.edu
-    python scripts/dev_account.py link    someone@asu.edu
-    python scripts/dev_account.py verify  someone@asu.edu
-    python scripts/dev_account.py send    someone@asu.edu
-    python scripts/dev_account.py delete  someone@asu.edu
+    python scripts/dev_account.py show    someone@gmail.com
+    python scripts/dev_account.py link    someone@gmail.com
+    python scripts/dev_account.py verify  someone@gmail.com
+    python scripts/dev_account.py send    someone@gmail.com
+    python scripts/dev_account.py delete  someone@gmail.com
 
   show    what Firebase knows: uid, whether the email is verified, created when
   link    mint the real verification link WITHOUT sending any email — open it in
@@ -27,14 +27,14 @@ Usage (from the repo root):
           signup triggers, and time it. This is the only way to tell whether an
           SMTP change helped: run it, check the inbox AND the SMTP provider's
           own log, `delete`, change the config, run it again. It goes through
-          the REST API on purpose — the signup form blocks non-@asu.edu
-          addresses client-side, so a Gmail control cannot be sent from the UI.
+          the REST API on purpose — it walks the same path a real signup walks,
+          without needing the app in front of you.
   delete  remove the account so the address can be signed up with again
           (Firebase refuses a repeat signup with "email already in use")
 
-⚠️ The API demands BOTH a verified email AND an @asu.edu address. A Gmail
-account can be created and verified here, but the backend will still refuse it —
-useful for testing Firebase delivery, not for testing the app.
+⚠️ The API demands a VERIFIED email. It no longer demands a particular domain
+— that restriction is now the ALLOWED_EMAIL_DOMAIN setting and ships unset — so
+an account made here is one the app will actually accept.
 """
 
 from __future__ import annotations

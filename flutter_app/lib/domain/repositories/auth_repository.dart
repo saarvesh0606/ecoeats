@@ -7,7 +7,7 @@ abstract class AuthRepository {
   /// Get the currently signed-in user
   Future<UserEntity?> getCurrentUser();
 
-  /// Sign in with an ASU email, a password, and the role being used.
+  /// Sign in with an email address, a password, and the role being used.
   ///
   /// The password is required because the API only accepts a verified Firebase
   /// token — there is no way to authenticate from an email address alone.
@@ -20,6 +20,9 @@ abstract class AuthRepository {
   /// Sign out the current user
   Future<void> signOut();
 
-  /// Check if an email is a valid ASU email
-  bool isValidAsuEmail(String email);
+  /// Check that an email address is well formed.
+  ///
+  /// Shape only — no domain rule. Any restriction is the backend's
+  /// (ALLOWED_EMAIL_DOMAIN), which is the side that can enforce one.
+  bool isValidEmail(String email);
 }

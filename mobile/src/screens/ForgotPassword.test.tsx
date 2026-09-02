@@ -22,7 +22,7 @@ const mockSend = sendPasswordReset as jest.MockedFunction<
 
 /** Fill the address field and press send. */
 async function send(address: string) {
-	fireEvent.changeText(screen.getByLabelText("ASU email"), address);
+	fireEvent.changeText(screen.getByLabelText("Email"), address);
 	fireEvent.press(screen.getByText("Send reset link"));
 	await waitFor(() => expect(mockSend).toHaveBeenCalled());
 }
@@ -35,31 +35,30 @@ describe("ForgotPasswordScreen", () => {
 	});
 
 	it("starts with the address carried over from the sign-in form", () => {
-		mockParams = { email: "sun.devil@asu.edu" };
+		mockParams = { email: "sam.rivera@gmail.com" };
 		renderWithProviders(<ForgotPasswordScreen />);
 
-		expect(screen.getByLabelText("ASU email").props.value).toBe(
-			"sun.devil@asu.edu",
+		expect(screen.getByLabelText("Email").props.value).toBe(
+			"sam.rivera@gmail.com",
 		);
 	});
 
-	it("holds a reset to the same domain rule as signing up", async () => {
+	it("holds a reset to the same address rule as signing up", async () => {
+		// Shape, not domain — both screens run the same validateEmail, and
+		// neither has a domain rule to enforce any more.
 		renderWithProviders(<ForgotPasswordScreen />);
-		fireEvent.changeText(
-			screen.getByLabelText("ASU email"),
-			"someone@gmail.com",
-		);
+		fireEvent.changeText(screen.getByLabelText("Email"), "someone-at-gmail");
 		fireEvent.press(screen.getByText("Send reset link"));
 
-		expect(await screen.findByText(/use your @asu.edu email/i)).toBeTruthy();
+		expect(await screen.findByText(/doesn't look right/i)).toBeTruthy();
 		expect(mockSend).not.toHaveBeenCalled();
 	});
 
 	it("sends to the trimmed, lowercased address", async () => {
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("  Sun.Devil@ASU.edu  ");
+		await send("  Sam.Rivera@GMAIL.com  ");
 
-		expect(mockSend).toHaveBeenCalledWith("sun.devil@asu.edu");
+		expect(mockSend).toHaveBeenCalledWith("sam.rivera@gmail.com");
 	});
 
 	it("confirms without saying whether the account exists", async () => {
@@ -67,12 +66,12 @@ describe("ForgotPasswordScreen", () => {
 		// ever says "we sent a link to X" for a real address and something else
 		// for an unknown one, it becomes a way to enumerate who has an account.
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("sun.devil@asu.edu");
+		await send("sam.rivera@gmail.com");
 
 		expect(await screen.findByText(/If an account exists/)).toBeTruthy();
 		// Echoed back all the same, because the neutral wording gives no other
 		// clue that the address was mistyped.
-		expect(screen.getByText("sun.devil@asu.edu")).toBeTruthy();
+		expect(screen.getByText("sam.rivera@gmail.com")).toBeTruthy();
 	});
 
 	it("warns about the spam folder", async () => {
@@ -80,7 +79,7 @@ describe("ForgotPasswordScreen", () => {
 		// as spam and university gateways quarantine it. Pinned so it survives
 		// until custom SMTP makes it untrue.
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("sun.devil@asu.edu");
+		await send("sam.rivera@gmail.com");
 
 		expect(await screen.findByText(/spam or junk folder/)).toBeTruthy();
 	});
@@ -88,7 +87,7 @@ describe("ForgotPasswordScreen", () => {
 	it("surfaces the reason a send failed", async () => {
 		mockSend.mockRejectedValueOnce(new Error("Too many attempts."));
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("sun.devil@asu.edu");
+		await send("sam.rivera@gmail.com");
 
 		expect(await screen.findByText("Too many attempts.")).toBeTruthy();
 		expect(screen.queryByText(/If an account exists/)).toBeNull();
@@ -96,22 +95,22 @@ describe("ForgotPasswordScreen", () => {
 
 	it("can send again from the confirmation", async () => {
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("sun.devil@asu.edu");
+		await send("sam.rivera@gmail.com");
 
 		fireEvent.press(screen.getByText("Send it again"));
 
 		await waitFor(() => expect(mockSend).toHaveBeenCalledTimes(2));
-		expect(mockSend).toHaveBeenLastCalledWith("sun.devil@asu.edu");
+		expect(mockSend).toHaveBeenLastCalledWith("sam.rivera@gmail.com");
 	});
 
 	it("goes back to the form with the address kept, for a typo", async () => {
 		renderWithProviders(<ForgotPasswordScreen />);
-		await send("sun.devil@asu.edu");
+		await send("sam.rivera@gmail.com");
 
 		fireEvent.press(screen.getByText("Use a different address"));
 
-		expect(screen.getByLabelText("ASU email").props.value).toBe(
-			"sun.devil@asu.edu",
+		expect(screen.getByLabelText("Email").props.value).toBe(
+			"sam.rivera@gmail.com",
 		);
 	});
 

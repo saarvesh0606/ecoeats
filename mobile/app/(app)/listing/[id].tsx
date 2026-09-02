@@ -448,7 +448,7 @@ export default function ListingDetail() {
 						</View>
 						<View className="bg-maroon-50 rounded-full px-3 py-1">
 							<Text className="font-body-semibold text-xs text-maroon">
-								ASU Host
+								Host
 							</Text>
 						</View>
 					</View>

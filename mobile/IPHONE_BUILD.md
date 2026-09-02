@@ -101,7 +101,7 @@ speech), a new permission, or an app.json plugin change. Plain screen edits
 
 ## Turn the dev bypass off for real testing
 
-Once you're signing in with a real `@asu.edu` account on the phone, disable the
+Once you're signing in with a real account on the phone, disable the
 dev shortcuts:
 
 - `mobile/.env` → `EXPO_PUBLIC_DEV_AUTH=false`

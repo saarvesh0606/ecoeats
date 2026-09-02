@@ -73,37 +73,49 @@ describe("AuthScreen", () => {
 			// The whole point of merging the two screens: correcting a wrong guess
 			// about whether you already have an account must not cost you the form.
 			render(<AuthScreen />);
-			type("ASU email", "sun.devil@asu.edu");
+			type("Email", "sam.rivera@gmail.com");
 
 			fireEvent.press(screen.getByText("Create Account"));
 
-			expect(screen.getByLabelText("ASU email").props.value).toBe(
-				"sun.devil@asu.edu",
+			expect(screen.getByLabelText("Email").props.value).toBe(
+				"sam.rivera@gmail.com",
 			);
 		});
 
 		it("drops an error from the other form when switching", () => {
 			render(<AuthScreen />);
-			type("ASU email", "someone@gmail.com");
+			type("Email", "not-an-email");
 			fireEvent.press(screen.getByText("Sign in"));
-			expect(screen.getByText(/use your @asu.edu email/)).toBeTruthy();
+			expect(screen.getByText(/doesn't look right/)).toBeTruthy();
 
 			fireEvent.press(screen.getByText("Create Account"));
 
-			expect(screen.queryByText(/use your @asu.edu email/)).toBeNull();
+			expect(screen.queryByText(/doesn't look right/)).toBeNull();
 		});
 	});
 
 	describe("validation", () => {
-		it("refuses a non-ASU address without calling Firebase", () => {
+		it("refuses a malformed address without calling Firebase", () => {
 			render(<AuthScreen />);
-			type("ASU email", "someone@gmail.com");
+			type("Email", "someone-at-gmail.com");
 			type("Password", "hunter22");
 
 			fireEvent.press(screen.getByText("Sign in"));
 
-			expect(screen.getByText(/use your @asu.edu email/)).toBeTruthy();
+			expect(screen.getByText(/doesn't look right/)).toBeTruthy();
 			expect(mockSignIn).not.toHaveBeenCalled();
+		});
+
+		it("accepts an ordinary consumer address", () => {
+			// The domain rule is gone: a gmail account is what the app now
+			// expects, and Apple's relay addresses must get through too.
+			render(<AuthScreen />);
+			type("Email", "someone@gmail.com");
+			type("Password", "hunter22");
+
+			fireEvent.press(screen.getByText("Sign in"));
+
+			expect(mockSignIn).toHaveBeenCalled();
 		});
 
 		it("refuses an empty email", () => {
@@ -115,7 +127,7 @@ describe("AuthScreen", () => {
 
 		it("enforces a password length only when registering", () => {
 			render(<AuthScreen initialMode="register" />);
-			type("ASU email", "sun.devil@asu.edu");
+			type("Email", "sam.rivera@gmail.com");
 			type("Password", "short");
 
 			fireEvent.press(screen.getByText("Create account"));
@@ -129,7 +141,7 @@ describe("AuthScreen", () => {
 		it("does not second-guess an existing password on sign in", async () => {
 			// An account made before the rule changed still has to be able to log in.
 			render(<AuthScreen />);
-			type("ASU email", "sun.devil@asu.edu");
+			type("Email", "sam.rivera@gmail.com");
 			type("Password", "short");
 
 			fireEvent.press(screen.getByText("Sign in"));
@@ -141,14 +153,14 @@ describe("AuthScreen", () => {
 	describe("submitting", () => {
 		it("normalises the address before sending it", async () => {
 			render(<AuthScreen />);
-			type("ASU email", "  Sun.Devil@ASU.edu  ");
+			type("Email", "  Sam.Rivera@GMAIL.com  ");
 			type("Password", "hunter22");
 
 			fireEvent.press(screen.getByText("Sign in"));
 
 			await waitFor(() =>
 				expect(mockSignIn).toHaveBeenCalledWith(
-					"sun.devil@asu.edu",
+					"sam.rivera@gmail.com",
 					"hunter22",
 				),
 			);
@@ -158,31 +170,31 @@ describe("AuthScreen", () => {
 			// The name seeds the Firebase displayName, so role selection doesn't ask
 			// for it a second time — it is not a decorative field.
 			render(<AuthScreen initialMode="register" />);
-			type("Full name", "  Sun Devil  ");
-			type("ASU email", "sun.devil@asu.edu");
+			type("Full name", "  Sam Rivera  ");
+			type("Email", "sam.rivera@gmail.com");
 			type("Password", "hunter22");
 
 			fireEvent.press(screen.getByText("Create account"));
 
 			await waitFor(() =>
 				expect(mockRegister).toHaveBeenCalledWith(
-					"sun.devil@asu.edu",
+					"sam.rivera@gmail.com",
 					"hunter22",
-					"Sun Devil",
+					"Sam Rivera",
 				),
 			);
 		});
 
 		it("sends no name when the field was left blank", async () => {
 			render(<AuthScreen initialMode="register" />);
-			type("ASU email", "sun.devil@asu.edu");
+			type("Email", "sam.rivera@gmail.com");
 			type("Password", "hunter22");
 
 			fireEvent.press(screen.getByText("Create account"));
 
 			await waitFor(() =>
 				expect(mockRegister).toHaveBeenCalledWith(
-					"sun.devil@asu.edu",
+					"sam.rivera@gmail.com",
 					"hunter22",
 					undefined,
 				),
@@ -194,7 +206,7 @@ describe("AuthScreen", () => {
 			mockErrorMessage.mockReturnValue("Wrong email or password.");
 
 			render(<AuthScreen />);
-			type("ASU email", "sun.devil@asu.edu");
+			type("Email", "sam.rivera@gmail.com");
 			type("Password", "hunter22");
 			fireEvent.press(screen.getByText("Sign in"));
 
@@ -226,12 +238,12 @@ describe("AuthScreen", () => {
 
 		it("carries the typed address over, so it isn't typed twice", () => {
 			render(<AuthScreen />);
-			type("ASU email", "  Sun.Devil@asu.edu  ");
+			type("Email", "  Sam.Rivera@gmail.com  ");
 			fireEvent.press(screen.getByText("Forgot your password?"));
 
 			expect(mockPush).toHaveBeenCalledWith({
 				pathname: "/forgot-password",
-				params: { email: "Sun.Devil@asu.edu" },
+				params: { email: "Sam.Rivera@gmail.com" },
 			});
 		});
 

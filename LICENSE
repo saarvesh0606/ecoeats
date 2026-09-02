@@ -1,6 +1,6 @@
 Copyright (c) 2026 Sarvesh Sunil Jagtap. All rights reserved.
 
-EcoEats — campus food rescue for Arizona State University.
+EcoEats — food rescue for the people around you.
 
 This software and its source code are proprietary and confidential. No licence,
 express or implied, is granted to any person to use, copy, modify, merge,
@@ -14,10 +14,9 @@ the copyright holder for written permission first.
 This notice covers the code in this repository. It does not extend to:
 
   - Third-party dependencies, which remain under their own licences.
-  - Arizona State University's name, wordmark, and logo, which are ASU's
-    trademarks and are NOT licensed by this file or by the copyright holder.
-    They appear here for a student project associated with the university;
-    any public or commercial use requires ASU's own permission.
+  - Any university's name, wordmark, or logo. EcoEats carries no university
+    branding, and nothing in this file grants a right to an institution's
+    marks; using any would require that institution's own permission.
   - Photographs and other media fetched from third-party services at runtime,
     which remain subject to the terms of those services.
 

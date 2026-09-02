@@ -167,7 +167,7 @@ export function OrganizerHome() {
 		);
 	}
 
-	const firstName = profile?.name?.split(" ")[0] ?? "Sun Devil";
+	const firstName = profile?.name?.split(" ")[0] ?? "there";
 
 	const inTab = (l: Listing): boolean => {
 		if (tab === "active") return l.status === "active";

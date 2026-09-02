@@ -138,8 +138,8 @@ describe("Button haptics", () => {
 
 describe("Input", () => {
 	it("labels the field for assistive tech", () => {
-		render(<Input label="ASU email" value="" onChangeText={() => {}} />);
-		expect(screen.getByLabelText("ASU email")).toBeTruthy();
+		render(<Input label="Email" value="" onChangeText={() => {}} />);
+		expect(screen.getByLabelText("Email")).toBeTruthy();
 	});
 
 	it("masks a password by default", () => {
@@ -202,7 +202,7 @@ describe("Avatar", () => {
 	});
 
 	it("ignores the middle of a longer name", () => {
-		render(<Avatar name="Sun Devil Jones" />);
+		render(<Avatar name="Sam Rivera Jones" />);
 		expect(screen.getByText("SJ")).toBeTruthy();
 	});
 

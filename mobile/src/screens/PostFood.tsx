@@ -261,7 +261,7 @@ export function PostFood() {
 							Create a Post
 						</Text>
 						<Text className="font-body text-gray-500 mt-0.5">
-							Share surplus food with the ASU community.
+							Share surplus food with your community.
 						</Text>
 					</View>
 					{/* Only once there is something to lose — on an empty form this

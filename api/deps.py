@@ -6,6 +6,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from api.auth.tokens import InvalidTokenError, TokenVerifier, VerifiedIdentity
 from api.db import session_dependency
@@ -16,7 +17,7 @@ from api.errors import (
     UnauthorizedError,
 )
 from api.models import User
-from api.models.enums import ALLOWED_EMAIL_DOMAIN, UserRole
+from api.models.enums import UserRole
 
 # auto_error=False so a missing header raises our own UnauthorizedError with a
 # consistent body, rather than FastAPI's differently-shaped 403.
@@ -29,29 +30,46 @@ def get_verifier(request: Request) -> TokenVerifier:
     return request.app.state.token_verifier
 
 
+def get_allowed_domain(request: Request) -> str | None:
+    """The email domain accounts are restricted to, if any.
+
+    ``None`` — the default — means any verified address may hold an account.
+    See Settings.allowed_email_domain for why this is configuration.
+    """
+    return request.app.state.settings.allowed_email_domain
+
+
 async def current_identity(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     verifier: Annotated[TokenVerifier, Depends(get_verifier)],
+    allowed_domain: Annotated[str | None, Depends(get_allowed_domain)],
 ) -> VerifiedIdentity:
-    """Verify the bearer token and apply the two rules every account must pass.
+    """Verify the bearer token and apply the rules every account must pass.
 
-    Both checks happen here, before any handler runs, so no route can forget
-    them.
+    They happen here, before any handler runs, so no route can forget them.
     """
     if credentials is None or not credentials.credentials:
         raise UnauthorizedError("Sign in to continue")
-    return verify_token(credentials.credentials, verifier)
+    return await verify_token(credentials.credentials, verifier, allowed_domain)
 
 
-def verify_token(token: str, verifier: TokenVerifier) -> VerifiedIdentity:
-    """Verify a token and apply the two rules every account must pass.
+async def verify_token(
+    token: str, verifier: TokenVerifier, allowed_domain: str | None = None
+) -> VerifiedIdentity:
+    """Verify a token and apply the rules every account must pass.
 
     Shared by the header-based dependency and the stream endpoint (which reads
     its token from a query parameter, since EventSource can't send headers), so
     both enforce the rules identically.
+
+    ``verify`` is synchronous and can reach the network — for Google's signing
+    keys, and for the account record behind a revocation check. Awaiting it in
+    a worker thread keeps that off the event loop: this service runs a single
+    worker, so a blocking call here stalls every other request, the SSE
+    heartbeats and the sweeper along with it.
     """
     try:
-        identity = verifier.verify(token)
+        identity = await run_in_threadpool(verifier.verify, token)
     except InvalidTokenError as exc:
         raise UnauthorizedError(str(exc)) from exc
 
@@ -63,16 +81,18 @@ def verify_token(token: str, verifier: TokenVerifier) -> VerifiedIdentity:
             "Check your inbox for the verification link."
         )
 
-    if not identity.email.endswith(f"@{ALLOWED_EMAIL_DOMAIN}"):
+    # Off by default: EcoEats accepts any verified address, and it has to, or
+    # the Apple and Google buttons would reject most of the people using them.
+    # Set ALLOWED_EMAIL_DOMAIN to bring a restriction back.
+    if allowed_domain and not identity.email.endswith(f"@{allowed_domain}"):
         raise ForbiddenError(
-            f"EcoEats is for ASU only. Sign in with an @{ALLOWED_EMAIL_DOMAIN} "
-            "address."
+            f"EcoEats is currently open to @{allowed_domain} addresses only."
         )
 
     return identity
 
 
-def identity_from_request(request: Request) -> VerifiedIdentity:
+async def identity_from_request(request: Request) -> VerifiedIdentity:
     """Resolve an identity from an Authorization header or a `token` query param.
 
     For the SSE stream: browser EventSource can't set headers, so the web client
@@ -85,7 +105,11 @@ def identity_from_request(request: Request) -> VerifiedIdentity:
         token = request.query_params.get("token", "")
     if not token:
         raise UnauthorizedError("Sign in to continue")
-    return verify_token(token, request.app.state.token_verifier)
+    return await verify_token(
+        token,
+        request.app.state.token_verifier,
+        request.app.state.settings.allowed_email_domain,
+    )
 
 
 CurrentIdentity = Annotated[VerifiedIdentity, Depends(current_identity)]

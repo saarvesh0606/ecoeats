@@ -66,6 +66,3 @@ EXPIRY_CHOICES: tuple[int, ...] = (15, 20, 30, 45, 60)
 
 #: How long a claimed portion stays reserved before it returns to the pool.
 RESERVATION_MINUTES = 20
-
-#: Only ASU addresses may hold an account.
-ALLOWED_EMAIL_DOMAIN = "asu.edu"

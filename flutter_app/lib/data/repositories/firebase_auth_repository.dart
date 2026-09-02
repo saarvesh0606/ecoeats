@@ -4,10 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 /// Real sign-in, against the same Firebase project the API verifies against.
 ///
-/// The API will only accept a token whose email is verified *and* ends in
-/// `@asu.edu`. Both rules are enforced here as well — not because the client is
-/// trusted, but so a rejected account is told why at sign-in instead of
-/// appearing to work and then failing on every request with an opaque 401.
+/// The API will only accept a token whose email is verified. That rule is
+/// mirrored here — not because the client is trusted, but so a rejected account
+/// is told why at sign-in instead of appearing to work and then failing on
+/// every request with an opaque 401.
 class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository(this._auth);
 
@@ -29,8 +29,8 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  bool isValidAsuEmail(String email) =>
-      email.toLowerCase().trim().endsWith('@asu.edu');
+  bool isValidEmail(String email) =>
+      RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email.trim());
 
   @override
   Future<UserEntity> signIn({
@@ -39,8 +39,8 @@ class FirebaseAuthRepository implements AuthRepository {
     required UserRole role,
   }) async {
     final trimmed = email.trim();
-    if (!isValidAsuEmail(trimmed)) {
-      throw AuthFailure('EcoEats is for @asu.edu accounts.');
+    if (!isValidEmail(trimmed)) {
+      throw AuthFailure("That email address doesn't look right.");
     }
 
     final UserCredential credential;
@@ -61,7 +61,7 @@ class FirebaseAuthRepository implements AuthRepository {
     if (!user.emailVerified) {
       await _auth.signOut();
       throw AuthFailure(
-        'Please confirm your ASU email address, then sign in again.',
+        'Please confirm your email address, then sign in again.',
       );
     }
 

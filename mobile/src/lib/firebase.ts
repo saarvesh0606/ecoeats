@@ -27,7 +27,7 @@ import {
 	updateProfile,
 } from "firebase/auth";
 import { Platform } from "react-native";
-import { ALLOWED_EMAIL_DOMAIN, config } from "@/config";
+import { config } from "@/config";
 
 const app = getApps().length ? getApp() : initializeApp(config.firebase);
 
@@ -122,20 +122,17 @@ export const googleSignInSupported =
 	Boolean(config.google.iosClientId && config.google.webClientId);
 
 /**
- * Sign in with Google, then hold the result to the same rule as email sign-up.
+ * Sign in with Google.
  *
- * The API only accepts @asu.edu identities, so a personal Google account would
- * authenticate here and then be refused by every request. Catching it now — and
- * signing the account back out — gives one clear message instead of an app that
- * looks logged in but can't load anything.
+ * No domain filtering here, deliberately. There used to be: the account was
+ * held to one university domain and signed back out if it did not match. The
+ * app accepts any verified address now, and an `hd` hint would hide most
+ * people's own account from Google's picker. Any restriction is the backend's
+ * to apply (ALLOWED_EMAIL_DOMAIN), because only the backend can enforce one.
  */
 export async function signInWithGoogle(): Promise<void> {
 	const provider = new GoogleAuthProvider();
-	// Nudge Google's own picker toward the right account.
-	provider.setCustomParameters({ hd: ALLOWED_EMAIL_DOMAIN });
-
-	const credential = await signInWithPopup(auth, provider);
-	await enforceAllowedDomain(credential.user.email ?? "");
+	await signInWithPopup(auth, provider);
 }
 
 /**
@@ -144,65 +141,10 @@ export async function signInWithGoogle(): Promise<void> {
  * Split from signInWithGoogle rather than folded into it because the two halves
  * differ: the web popup both authenticates and returns a credential, while on
  * native the browser hands back an id token that still has to be exchanged with
- * Firebase. What must not differ is the domain rule, so both funnel through the
- * same check — a personal Google account authenticates perfectly well and is
- * then refused by every API call, which looks like the app being broken.
+ * Firebase.
  */
 export async function completeGoogleSignIn(idToken: string): Promise<void> {
-	// Checked BEFORE the exchange, not after.
-	//
-	// Signing in first and correcting afterwards means Firebase has already
-	// created the account and already told the app someone is signed in — the
-	// router moves to role selection, and the sign-out lands a beat later, so a
-	// rejected account still gets a look at the inside of the app and leaves a
-	// real account behind. Reading the claim first means none of that happens.
-	//
-	// The token is not trusted here — it is only being asked whether it is worth
-	// presenting to Firebase, which verifies it properly. A forged claim can
-	// only get itself refused twice.
-	const claimed = emailFromIdToken(idToken);
-	if (claimed !== null) rejectForeignDomain(claimed);
-
-	const credential = await signInWithCredential(
-		auth,
-		GoogleAuthProvider.credential(idToken),
-	);
-	// Still checked afterwards, for a token that carried no email claim at all.
-	await enforceAllowedDomain(credential.user.email ?? "");
-}
-
-/** The email claim from a Google id token, or null if it can't be read. */
-function emailFromIdToken(idToken: string): string | null {
-	try {
-		const payload = idToken.split(".")[1];
-		if (!payload) return null;
-		const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-		const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-		const decode = (globalThis as { atob?: (s: string) => string }).atob;
-		if (!decode) return null;
-		const claims = JSON.parse(decode(padded)) as { email?: string };
-		return claims.email ?? null;
-	} catch {
-		// Unreadable is not the same as wrong. Fall through to the check that
-		// runs against what Firebase itself reports.
-		return null;
-	}
-}
-
-/** Throws for anything outside the allowed domain. Signs nothing out. */
-function rejectForeignDomain(email: string): void {
-	if (email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return;
-	throw new Error(
-		`That Google account isn't an @${ALLOWED_EMAIL_DOMAIN} address. ` +
-			"Use your ASU account.",
-	);
-}
-
-/** Signs the account back out and explains, rather than leaving it half in. */
-async function enforceAllowedDomain(email: string): Promise<void> {
-	if (email.toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return;
-	await fbSignOut(auth);
-	rejectForeignDomain(email);
+	await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
 }
 
 export async function registerWithEmail(

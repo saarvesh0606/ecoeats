@@ -4,7 +4,7 @@ Real ID tokens are signed by Google, expire, and need network access to
 validate — none of which belongs in a unit test. This issues opaque tokens and
 resolves them from an in-memory registry, so tests can express exactly the
 identity they need, including ones Firebase would rarely produce (unverified
-address, wrong domain).
+address, a domain a restricted deployment would refuse).
 
 What it deliberately does *not* do is reimplement the domain and verification
 rules. Those live in api.deps and are what the tests exercise.
@@ -31,11 +31,11 @@ class FakeTokenVerifier:
         name: str | None = None,
         picture: str | None = None,
     ) -> str:
-        """Mint a token and return it. Defaults describe a valid ASU account."""
+        """Mint a token and return it. Defaults describe a valid account."""
         uid = uid or uuid.uuid4().hex[:28]
         identity = VerifiedIdentity(
             uid=uid,
-            email=(email if email is not None else f"{uid}@asu.edu").lower(),
+            email=(email if email is not None else f"{uid}@example.com").lower(),
             email_verified=email_verified,
             name=name,
             picture=picture,

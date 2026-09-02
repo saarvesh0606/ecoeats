@@ -99,14 +99,17 @@ def _build_verifier(settings: Settings) -> TokenVerifier | None:
     if settings.dev_auth_bypass:
         import logging
 
-        from api.auth.dev import DevTokenVerifier
+        from api.auth.dev import DEFAULT_DEV_DOMAIN, DevTokenVerifier
 
         logging.getLogger(__name__).warning(
             "DEV_AUTH_BYPASS is ON — dev:<slug> tokens are accepted. "
             "This must never run in production."
         )
         # Real Firebase tokens still work through the fallback.
-        return DevTokenVerifier(fallback=firebase)
+        return DevTokenVerifier(
+            fallback=firebase,
+            domain=settings.allowed_email_domain or DEFAULT_DEV_DOMAIN,
+        )
 
     return firebase
 

@@ -36,7 +36,7 @@ LAN address (e.g. `http://192.168.1.20:8000`) — the phone can't reach
 
 Firebase handles sign-in; our backend is the authority on everything else.
 
-1. Register or sign in with an `@asu.edu` email (email + password).
+1. Register or sign in with any email address (email + password).
 2. Firebase sends a verification link — the backend refuses any unverified
    token, so this step is mandatory.
 3. First verified sign-in has no profile yet, so the app asks the user to pick

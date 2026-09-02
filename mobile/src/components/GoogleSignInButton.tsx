@@ -3,7 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Image, Platform } from "react-native";
 import { Button } from "@/components/ui/Button";
-import { ALLOWED_EMAIL_DOMAIN, config } from "@/config";
+import { config } from "@/config";
 import {
 	authErrorMessage,
 	completeGoogleSignIn,
@@ -40,11 +40,8 @@ export function GoogleSignInButton({
 	const [, response, prompt] = Google.useIdTokenAuthRequest({
 		iosClientId: config.google.iosClientId,
 		clientId: config.google.webClientId,
-		// Points Google's own picker at ASU accounts. A hint, not a guarantee —
-		// it can be bypassed, which is why the domain is still checked on the way
-		// back — but it stops most people picking the wrong account in the first
-		// place, which is a nicer failure than being refused afterwards.
-		extraParams: { hd: ALLOWED_EMAIL_DOMAIN },
+		// No `hd` hint: it filters Google's own picker to one domain, which would
+		// now hide the very accounts people are meant to sign in with.
 	});
 
 	useEffect(() => {
@@ -86,8 +83,9 @@ export function GoogleSignInButton({
 		}
 
 		// signInWithPopup does not reliably reject when the window is dismissed:
-		// closing it mid-redirect (ASU's SSO lives on its own domain) can leave
-		// the promise pending forever, and the button spins with no way back.
+		// closing it mid-redirect (sign-in happens on Google's own domain) can
+		// leave the promise pending forever, and the button spins with no way
+		// back.
 		// Focus returning to the app means the popup is gone, so treat that as the
 		// cancel signal — after a beat, in case it closed *because* sign-in
 		// succeeded and the SDK is still resolving.

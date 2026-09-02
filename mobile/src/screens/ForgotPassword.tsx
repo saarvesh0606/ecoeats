@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { authErrorMessage, sendPasswordReset } from "@/lib/firebase";
-import { validateAsuEmail } from "@/lib/validation";
+import { validateEmail } from "@/lib/validation";
 
 /**
  * Ask Firebase for a password-reset link.
@@ -34,7 +34,7 @@ export function ForgotPasswordScreen() {
 
 	async function onSend() {
 		const address = email.trim().toLowerCase();
-		const emailError = validateAsuEmail(address);
+		const emailError = validateEmail(address);
 		if (emailError) return setError(emailError);
 
 		setError(null);
@@ -71,7 +71,7 @@ export function ForgotPasswordScreen() {
 				{/* "If an account exists" is not hedging, and must not be tightened to
             "We sent a link to X". Firebase distinguishes a known address from an
             unknown one; repeating that distinction here would let anyone with
-            the app test @asu.edu addresses and learn which ones have accounts.
+            the app test addresses and learn which ones have accounts.
             The address is echoed back because that wording alone gives no
             feedback on a typo — seeing what was actually sent to does. */}
 				<Text className="font-body text-gray-500 text-center mt-3 mb-2">
@@ -128,12 +128,12 @@ export function ForgotPasswordScreen() {
 						Reset your password
 					</Text>
 					<Text className="font-body text-gray-500 text-center mt-3 mb-8">
-						Enter your ASU email and we'll send you a link to set a new one.
+						Enter your email and we'll send you a link to set a new one.
 					</Text>
 
 					<Input
-						label="ASU email"
-						placeholder="you@asu.edu"
+						label="Email"
+						placeholder="you@gmail.com"
 						autoCapitalize="none"
 						autoComplete="email"
 						keyboardType="email-address"

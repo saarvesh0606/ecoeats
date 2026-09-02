@@ -21,15 +21,15 @@ import {
 	registerWithEmail,
 	signInWithEmail,
 } from "@/lib/firebase";
-import { validateAsuEmail, validatePassword } from "@/lib/validation";
+import { validateEmail, validatePassword } from "@/lib/validation";
 
 type Mode = "signin" | "register";
 
 /** Where the form fades in from. Deliberately not 0 — see switchTo. */
 const FADE_FROM = 0.25;
 
-/** Displayed width of the ASU lockup; its 540x414 ratio sets the height. */
-const ASU_LOGO_WIDTH = 104;
+/** Displayed size of the app mark. Square — the icon asset is 1024x1024. */
+const LOGO_SIZE = 76;
 
 /**
  * One screen for both signing in and signing up, switched by a segmented
@@ -88,7 +88,7 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 	}
 
 	async function onSubmit() {
-		const emailError = validateAsuEmail(email);
+		const emailError = validateEmail(email);
 		if (emailError) return setError(emailError);
 		if (registering) {
 			const passwordError = validatePassword(password);
@@ -123,20 +123,25 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="px-6 py-10">
-					{/* Brand: the ASU lockup carries the identity on its own. It already
-					    reads "Arizona State University", so there is no separate wordmark
-					    line, and the height comes from the asset's own 540x414 ratio so
-					    the mark can't stretch. */}
+					{/* Brand: the app's own mark, then the name, then what it is for.
+					    The icon is the same one on the home screen, so the app someone
+					    tapped and the screen that greets them are visibly the same
+					    thing. Rounded to match how iOS renders it there — squared off,
+					    it reads as a stray image rather than the app's identity. */}
 					<View className="items-center mb-7">
 						<Image
-							source={require("../../assets/asu-logo.png")}
-							style={{ width: ASU_LOGO_WIDTH, height: ASU_LOGO_WIDTH / 1.304 }}
+							source={require("../../assets/icon.png")}
+							style={{
+								width: LOGO_SIZE,
+								height: LOGO_SIZE,
+								borderRadius: LOGO_SIZE * 0.22,
+							}}
 							resizeMode="contain"
-							accessibilityLabel="Arizona State University"
+							accessibilityLabel="EcoEats"
 							className="mb-5"
 						/>
 						<Text className="font-display-bold text-3xl text-brand text-center">
-							Welcome to EcoEats
+							EcoEats
 						</Text>
 						<Text className="font-body text-gray-500 text-sm mt-2 text-center">
 							Share more. Waste less. Impact together.
@@ -197,8 +202,8 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 						)}
 
 						<Input
-							label="ASU email"
-							placeholder="you@asu.edu"
+							label="Email"
+							placeholder="you@gmail.com"
 							autoCapitalize="none"
 							autoComplete="email"
 							keyboardType="email-address"
@@ -254,13 +259,18 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 						</>
 					)}
 
+					{/* This was a university-community notice. That rule is gone —
+					    pending permission to use the name — but the reassurance the
+					    line carried is worth keeping, and the promise still enforced on
+					    every request is the verified address (the backend's identity
+					    gate). */}
 					<View className="items-center mt-6">
-						<Text className="font-body-semibold text-[11px] text-maroon tracking-widest">
-							ASU COMMUNITY ONLY
+						<Text className="font-body-semibold text-[11px] text-brand tracking-widest">
+							VERIFIED ACCOUNTS ONLY
 						</Text>
 						<Text className="font-body text-gray-500 text-xs mt-1 text-center">
-							EcoEats is for students, staff and community members with an
-							asu.edu address.
+							Every account is confirmed by email before it can post or claim
+							food.
 						</Text>
 					</View>
 

@@ -12,7 +12,7 @@ from api.models import Listing
 from api.models.enums import ListingStatus
 from tests.conftest import Account
 
-# Wrigley Hall, ASU Tempe.
+# A campus building, used as a fixed reference point.
 WRIGLEY = (33.4225, -111.9330)
 # Memorial Union, about 0.3 miles away.
 MEMORIAL_UNION = (33.4185, -111.9345)

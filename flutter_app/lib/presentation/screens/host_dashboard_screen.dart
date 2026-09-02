@@ -31,7 +31,7 @@ class HostDashboardScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context, ref, user?.displayName ?? 'Sun Devil'),
+            _buildHeader(context, ref, user?.displayName ?? 'there'),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -106,7 +106,7 @@ class HostDashboardScreen extends ConsumerWidget {
           style: AppFonts.display(fontWeight: FontWeight.w600),
         ),
         content: Text(
-          "You'll need your ASU email and password to get back in.",
+          "You'll need your email and password to get back in.",
           style: AppFonts.body(fontSize: 14),
         ),
         actions: [
@@ -151,7 +151,7 @@ class HostDashboardScreen extends ConsumerWidget {
                 ),
                 Text(
                   // The name was passed in and then ignored, so every host was
-                  // greeted as "Sun Devil".
+                  // greeted as "there".
                   'Good to share, $name.',
                   style: AppFonts.body(
                     fontSize: 13,

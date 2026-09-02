@@ -11,8 +11,8 @@ class SignInUseCase {
     required String password,
     required UserRole role,
   }) async {
-    if (!_repository.isValidAsuEmail(email)) {
-      throw Exception('Please use a valid @asu.edu email address.');
+    if (!_repository.isValidEmail(email)) {
+      throw Exception("That email address doesn't look right.");
     }
     return _repository.signIn(
       email: email,

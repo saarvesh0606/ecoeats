@@ -9,7 +9,6 @@ from api.db import Base
 from api.models.claim import Claim
 from api.models.device import DeviceToken
 from api.models.enums import (
-    ALLOWED_EMAIL_DOMAIN,
     EXPIRY_CHOICES,
     RESERVATION_MINUTES,
     ClaimStatus,
@@ -23,7 +22,6 @@ from api.models.saved import SavedListing
 from api.models.user import User
 
 __all__ = [
-    "ALLOWED_EMAIL_DOMAIN",
     "EXPIRY_CHOICES",
     "RESERVATION_MINUTES",
     "Base",

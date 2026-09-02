@@ -53,7 +53,7 @@ class MockClaimRepository implements ClaimRepository {
       postId: postId,
       userId: userId,
       postTitle: 'Food Item',
-      locationName: 'ASU Campus',
+      locationName: 'Campus',
       locationAddress: 'Tempe, AZ 85281',
       status: ClaimStatus.reserved,
       claimedAt: now,

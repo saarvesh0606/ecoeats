@@ -71,7 +71,7 @@
 		--c-surface-high: 234 232 227;
 		--c-outline: 113 121 116;
 
-		/* Tinted panels: the allergen warning, danger rows, the ASU badge. Their
+		/* Tinted panels: the allergen warning, danger rows, the host badge. Their
 		   text moves with them, or a dark panel keeps unreadable dark text. */
 		--c-amber-tint: 255 251 235;
 		--c-amber-edge: 253 230 138;

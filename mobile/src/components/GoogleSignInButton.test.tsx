@@ -74,16 +74,19 @@ describe("GoogleSignInButton", () => {
 			expect(onError).not.toHaveBeenCalledWith(expect.any(String));
 		});
 
-		it("passes the domain rejection through unflattened", async () => {
-			// That message already reads well; the translator must not replace it.
-			mockPopup.mockRejectedValue(new Error("EcoEats is for ASU accounts."));
+		it("passes a readable rejection through unflattened", async () => {
+			// A message that already reads well must survive the translator
+			// rather than being replaced with a generic one.
+			mockPopup.mockRejectedValue(
+				new Error("That account has been disabled."),
+			);
 			const onError = jest.fn();
 			render(<GoogleSignInButton onError={onError} />);
 
 			fireEvent.press(screen.getByText("Continue with Google"));
 
 			await waitFor(() =>
-				expect(onError).toHaveBeenCalledWith("EcoEats is for ASU accounts."),
+				expect(onError).toHaveBeenCalledWith("That account has been disabled."),
 			);
 		});
 	});
@@ -120,11 +123,12 @@ describe("GoogleSignInButton", () => {
 			expect(mockComplete).not.toHaveBeenCalled();
 		});
 
-		it("refuses a foreign account without ever signing it in", async () => {
-			// The rejection has to happen before the exchange: signing in first
-			// creates a real Firebase account and lets the router move on, so a
-			// refused account still gets a look inside and leaves an account
-			// behind. A token whose email claim is not ASU must not reach Firebase.
+		it("surfaces a failure from the token exchange", async () => {
+			// This used to assert a domain rejection: the token's email claim was
+			// read and refused before it ever reached Firebase. That rule is gone
+			// — any verified address is accepted — but the path it rode still
+			// matters, because an exchange can fail for other reasons and the
+			// button must not swallow it and sit there looking successful.
 			const payload = Buffer.from(
 				JSON.stringify({ email: "someone@gmail.com" }),
 			).toString("base64url");
@@ -133,15 +137,13 @@ describe("GoogleSignInButton", () => {
 				params: { id_token: `header.${payload}.signature` },
 			};
 			mockComplete.mockRejectedValue(
-				new Error("That Google account isn't an @asu.edu address."),
+				new Error("That account has been disabled."),
 			);
 			const onError = jest.fn();
 			render(<GoogleSignInButton onError={onError} />);
 
 			await waitFor(() =>
-				expect(onError).toHaveBeenCalledWith(
-					"That Google account isn't an @asu.edu address.",
-				),
+				expect(onError).toHaveBeenCalledWith("That account has been disabled."),
 			);
 		});
 

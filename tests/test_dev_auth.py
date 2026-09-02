@@ -13,11 +13,11 @@ from api.config import Settings
 from api.main import _build_verifier
 
 
-def test_dev_token_becomes_a_verified_asu_identity() -> None:
+def test_dev_token_becomes_a_verified_identity() -> None:
     identity = DevTokenVerifier().verify("dev:organizer")
 
     assert identity.uid == "dev-organizer"
-    assert identity.email == "organizer@asu.edu"
+    assert identity.email == "organizer@example.com"
     assert identity.email_verified is True  # so it passes the normal gate
     assert identity.name == "Organizer"
 
@@ -26,7 +26,7 @@ def test_dev_verifier_delegates_real_tokens_to_the_fallback() -> None:
     class StubFallback:
         def verify(self, token: str) -> VerifiedIdentity:
             return VerifiedIdentity(
-                uid="real", email="real@asu.edu", email_verified=True
+                uid="real", email="real@example.com", email_verified=True
             )
 
     identity = DevTokenVerifier(fallback=StubFallback()).verify("a-real-token")
@@ -98,7 +98,7 @@ async def test_dev_login_reaches_a_real_profile_end_to_end() -> None:
                 "/users/me", headers=headers, json={"role": "organizer"}
             )
             assert created.status_code == 201
-            assert created.json()["email"] == "e2e-organizer@asu.edu"
+            assert created.json()["email"] == "e2e-organizer@example.com"
             assert created.json()["role"] == "organizer"
 
             # Clean up so the shared dev database doesn't accumulate the row.

@@ -324,8 +324,8 @@ export function Settings() {
 				)}
 
 				<Text className="font-body text-gray-400 text-xs text-center mt-2 leading-5">
-					EcoEats is a student project and is not an official Arizona State
-					University service.
+					EcoEats is a student project. It is not an official service of any
+					university.
 				</Text>
 			</ScrollView>
 		</SafeAreaView>

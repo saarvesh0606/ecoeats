@@ -125,7 +125,7 @@ export default function RoleScreen() {
 			</View>
 
 			<Text className="font-body text-gray-400 text-xs text-center mt-4">
-				EcoEats is for ASU students, staff, and community members.
+				EcoEats is for anyone with surplus food to share, or a meal to find.
 			</Text>
 
 			{error && (

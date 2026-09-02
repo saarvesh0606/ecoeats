@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base
-from api.models.enums import ALLOWED_EMAIL_DOMAIN, UserRole
+from api.models.enums import UserRole
 from api.models.types import enum_column
 
 
@@ -65,15 +65,15 @@ class User(Base):
     )
 
     __table_args__ = (
-        # Defence in depth. The API rejects non-ASU addresses during token
-        # verification; this makes it impossible to persist one even if that
-        # check is ever bypassed or regressed.
-        CheckConstraint(
-            f"email LIKE '%%@{ALLOWED_EMAIL_DOMAIN}'",
-            name="ck_users_asu_email",
-        ),
         # Stored lowercase so the UNIQUE constraint actually prevents
-        # duplicates — otherwise Sun@asu.edu and sun@asu.edu are two accounts.
+        # duplicates — otherwise Sam@gmail.com and sam@gmail.com are two
+        # accounts.
+        #
+        # There is deliberately no domain constraint here. There was one, for
+        # asu.edu, and it had to be dropped: a CHECK cannot follow a setting,
+        # so it would have pinned the schema to a rule the app no longer makes.
+        # Domain restriction now lives in Settings.allowed_email_domain, which
+        # is checked during token verification.
         CheckConstraint("email = lower(email)", name="ck_users_email_lowercase"),
     )
 

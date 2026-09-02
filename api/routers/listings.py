@@ -369,7 +369,7 @@ async def stream(request: Request) -> StreamingResponse:
     can't send headers). Each connected client gets a subscription to the event
     bus; a heartbeat keeps idle connections open through proxies.
     """
-    identity_from_request(request)  # authorise; the id itself isn't needed here
+    await identity_from_request(request)  # authorise; the id isn't needed here
     bus = request.app.state.event_bus
 
     async def events() -> "asyncio.AsyncIterator[str]":

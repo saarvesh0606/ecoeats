@@ -46,7 +46,7 @@ export function initMonitoring(): void {
 			// are the thing that has been invisible.
 			tracesSampleRate: 0,
 			// Breadcrumbs can carry whatever was typed into a field, and the fields
-			// here are an ASU email and a password.
+			// here are an email address and a password.
 			sendDefaultPii: false,
 		});
 	} catch {

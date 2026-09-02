@@ -32,8 +32,8 @@ const mockChangeRole = changeRole as jest.MockedFunction<typeof changeRole>;
 function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 	return {
 		id: "u1",
-		email: "sun.devil@asu.edu",
-		name: "Sun Devil",
+		email: "sam.rivera@gmail.com",
+		name: "Sam Rivera",
 		avatar_url: null,
 		role: "recipient",
 		dietary_prefs: [],
@@ -61,14 +61,14 @@ describe("Profile", () => {
 
 	it("shows who you are signed in as", () => {
 		renderProfile();
-		expect(screen.getByText("Sun Devil")).toBeTruthy();
-		expect(screen.getByText("sun.devil@asu.edu")).toBeTruthy();
+		expect(screen.getByText("Sam Rivera")).toBeTruthy();
+		expect(screen.getByText("sam.rivera@gmail.com")).toBeTruthy();
 		expect(screen.getByText("Recipient")).toBeTruthy();
 	});
 
 	it("labels a host differently", () => {
 		renderProfile(profile({ role: "organizer" }));
-		expect(screen.getByText("ASU Host")).toBeTruthy();
+		expect(screen.getByText("Host")).toBeTruthy();
 	});
 
 	describe("saving", () => {
@@ -147,7 +147,7 @@ describe("Profile", () => {
 
 			await waitFor(() =>
 				expect(mockUpdate).toHaveBeenCalledWith({
-					name: "Sun Devil",
+					name: "Sam Rivera",
 					dietary_prefs: ["vegetarian"],
 				}),
 			);

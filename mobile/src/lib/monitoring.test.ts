@@ -39,7 +39,7 @@ describe("initMonitoring", () => {
 		expect(options.release).toBe("1.2.3");
 		expect(options.dist).toBe("42");
 		// Breadcrumbs would otherwise carry whatever was typed, and the fields on
-		// the first screen are an ASU email and a password.
+		// the first screen are an email address and a password.
 		expect(options.sendDefaultPii).toBe(false);
 		// Traces cost quota answering questions nobody is asking yet.
 		expect(options.tracesSampleRate).toBe(0);

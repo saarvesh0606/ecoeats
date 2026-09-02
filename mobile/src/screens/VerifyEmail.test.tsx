@@ -13,7 +13,7 @@ const mockRefresh = jest.fn();
 const mockSignOut = jest.fn();
 jest.mock("@/context/AuthContext", () => ({
 	useAuth: () => ({
-		firebaseUser: { email: "sun.devil@asu.edu" },
+		firebaseUser: { email: "sam.rivera@gmail.com" },
 		refresh: mockRefresh,
 		signOut: mockSignOut,
 	}),
@@ -31,7 +31,7 @@ describe("VerifyEmailScreen", () => {
 
 	it("says which address it wrote to", () => {
 		renderWithProviders(<VerifyEmailScreen />);
-		expect(screen.getByText("sun.devil@asu.edu")).toBeTruthy();
+		expect(screen.getByText("sam.rivera@gmail.com")).toBeTruthy();
 	});
 
 	it("warns about the spam folder before anything has gone wrong", () => {

@@ -49,8 +49,8 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  bool isValidAsuEmail(String email) {
-    return email.toLowerCase().trim().endsWith('@asu.edu');
+  bool isValidEmail(String email) {
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email.trim());
   }
 
   String _nameFromEmail(String email) {

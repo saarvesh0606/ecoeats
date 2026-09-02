@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from api.models import Claim, Listing, ListingPhoto, User
 from api.models.enums import RESERVATION_MINUTES, ClaimStatus, ListingStatus, UserRole
 
-# Wrigley Hall, ASU Tempe.
+# A fixed campus building, used as a reference point.
 TEMPE_LAT = 33.4225
 TEMPE_LNG = -111.9330
 
@@ -26,7 +26,7 @@ def make_user(
     uid = uuid.uuid4().hex[:28]
     return User(
         id=uid,
-        email=email if email is not None else f"{uid}@asu.edu",
+        email=email if email is not None else f"{uid}@example.com",
         name=name,
         role=role,
     )

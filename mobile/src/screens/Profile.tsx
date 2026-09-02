@@ -158,7 +158,7 @@ export function Profile() {
 					</View>
 					<View className="bg-maroon-50 rounded-full px-3 py-1">
 						<Text className="font-body-semibold text-xs text-maroon">
-							{isRecipient ? "Recipient" : "ASU Host"}
+							{isRecipient ? "Recipient" : "Host"}
 						</Text>
 					</View>
 				</View>

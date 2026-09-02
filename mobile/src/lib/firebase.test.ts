@@ -109,11 +109,11 @@ describe("sending a password reset", () => {
 	it("asks Firebase for a link", async () => {
 		const { mod, mocks } = loadAuth("ios");
 
-		await mod.sendPasswordReset("sun.devil@asu.edu");
+		await mod.sendPasswordReset("sam.rivera@gmail.com");
 
 		expect(mocks.sendPasswordResetEmail).toHaveBeenCalledWith(
 			"auth-from-initializeAuth",
-			"sun.devil@asu.edu",
+			"sam.rivera@gmail.com",
 		);
 	});
 
@@ -126,7 +126,7 @@ describe("sending a password reset", () => {
 		// Resolving is the assertion: an unknown address has to be
 		// indistinguishable from a known one all the way up to the screen.
 		await expect(
-			mod.sendPasswordReset("nobody@asu.edu"),
+			mod.sendPasswordReset("nobody@gmail.com"),
 		).resolves.toBeUndefined();
 	});
 
@@ -138,7 +138,7 @@ describe("sending a password reset", () => {
 
 		// A rate limit is not a secret, and swallowing it would leave someone
 		// pressing a button that silently does nothing.
-		await expect(mod.sendPasswordReset("sun.devil@asu.edu")).rejects.toThrow(
+		await expect(mod.sendPasswordReset("sam.rivera@gmail.com")).rejects.toThrow(
 			"slow down",
 		);
 	});

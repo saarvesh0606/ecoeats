@@ -376,7 +376,7 @@ class ClaimScreen extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'ASU Student',
+                  'Student',
                   style: AppFonts.body(
                     fontSize: 11,
                     color: AppColors.onSurfaceVariant,

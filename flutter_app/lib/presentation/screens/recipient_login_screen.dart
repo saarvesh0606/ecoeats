@@ -16,7 +16,7 @@ class RecipientLoginScreen extends ConsumerStatefulWidget {
 }
 
 class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
-  final _emailController = TextEditingController(text: 'sun.devils@asu.edu');
+  final _emailController = TextEditingController(text: 'sam.rivera@gmail.com');
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.recipient;
@@ -151,7 +151,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
     return Column(
       children: [
         Text(
-          'ASU COMMUNITY ONLY',
+          'VERIFIED ACCOUNTS ONLY',
           style: AppFonts.body(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -161,7 +161,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Use your asu.edu email to continue.',
+          'Use your email address to continue.',
           style: AppFonts.body(
             fontSize: 16,
             color: AppColors.onSurfaceVariant,
@@ -214,7 +214,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
             const Icon(Icons.check_circle, size: 16, color: AppColors.successEmerald),
             const SizedBox(width: 4),
             Text(
-              'Verified ASU email',
+              'Verified email address',
               style: AppFonts.body(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -324,7 +324,7 @@ class _RecipientLoginScreenState extends ConsumerState<RecipientLoginScreen> {
 
   Widget _buildFooterText() {
     return Text(
-      'EcoEats is for ASU students, staff, and community members.',
+      'EcoEats is for anyone with surplus food to share, or a meal to find.',
       style: AppFonts.display(
         fontSize: 16,
         color: AppColors.onSurfaceVariant,

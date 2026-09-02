@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 ///     flutter run --dart-define-from-file=dart_define.json
 ///
-/// Off by default. The API only accepts a verified `@asu.edu` Firebase token,
+/// Off by default. The API only accepts a verified Firebase token,
 /// so this needs the Firebase config supplied in the same file — turning it on
 /// without that gets a wall of 401s rather than data.
 const bool kUseApi = bool.fromEnvironment('ECOEATS_USE_API');

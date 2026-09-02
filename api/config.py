@@ -131,10 +131,27 @@ class Settings(BaseSettings):
     rate_limit_ip_requests: int = 600
     rate_limit_ip_window_seconds: int = 60
 
+    # --- who may hold an account -----------------------------------------
+    # Restrict sign-in to one email domain, e.g. "asu.edu". Unset means any
+    # verified address is accepted, which is the default and what the app
+    # currently ships as.
+    #
+    # This is configuration rather than a constant because the restriction is
+    # expected to come back: EcoEats was built for ASU and will be ASU-only
+    # again once the university approves the use of its name. Setting
+    # ALLOWED_EMAIL_DOMAIN=asu.edu restores the gate with no code change and no
+    # migration.
+    #
+    # ⚠ It cannot be narrowed casually. Sign in with Apple issues
+    # @privaterelay.appleid.com addresses when the user hides their real one,
+    # and Google accounts arrive on whatever domain the person actually has —
+    # so any value here turns off both social buttons for most people.
+    allowed_email_domain: str | None = None
+
     # --- development only ------------------------------------------------
     # Accept `dev:<slug>` stand-in tokens so the client can be built and tested
-    # before real ASU accounts exist. Off by default; the app refuses to start
-    # if this is true while APP_ENV is production. See api.auth.dev.
+    # without real accounts. Off by default; the app refuses to start if this
+    # is true while APP_ENV is production. See api.auth.dev.
     dev_auth_bypass: bool = False
 
     # Exact-match allowlist. v1 matched by string prefix, which meant
@@ -146,6 +163,19 @@ class Settings(BaseSettings):
         "http://localhost:8081",
         "http://localhost:19006",
     ]
+
+    @field_validator("allowed_email_domain", mode="before")
+    @classmethod
+    def _normalise_domain(cls, value: object) -> object:
+        """Empty or whitespace means unset, not a domain nothing can match.
+
+        An env var that is present but blank is how a host expresses "no
+        value"; read literally it would reject every address in existence.
+        """
+        if isinstance(value, str):
+            cleaned = value.strip().lstrip("@").lower()
+            return cleaned or None
+        return value
 
     @field_validator("database_url")
     @classmethod

@@ -154,17 +154,25 @@ async def test_a_pending_claim_cannot_be_marked_resolved(db: AsyncSession) -> No
 # --------------------------------------------------------------------------
 
 
-async def test_non_asu_addresses_are_rejected(db: AsyncSession) -> None:
-    """Defence in depth behind the token check — the spec allows @asu.edu only."""
-    db.add(make_user(email="someone@gmail.com"))
+async def test_any_domain_may_be_stored(db: AsyncSession) -> None:
+    """There is deliberately no domain CHECK any more.
 
-    with pytest.raises(IntegrityError, match="ck_users_asu_email"):
-        await db.flush()
+    There was one, for asu.edu. It had to go: a CHECK cannot follow a setting,
+    so it would have pinned the schema to a rule the app no longer makes, and
+    it would have rejected the @privaterelay.appleid.com addresses Apple
+    sign-in produces. Domain restriction lives in Settings now, applied during
+    token verification — see tests/test_auth.py.
+    """
+    db.add(make_user(email="someone@gmail.com"))
+    db.add(make_user(email="a1b2c3d4@privaterelay.appleid.com"))
+
+    await db.flush()  # must not raise
 
 
 async def test_addresses_are_stored_lowercase(db: AsyncSession) -> None:
-    """Otherwise Sun@asu.edu and sun@asu.edu are two accounts for one person."""
-    db.add(make_user(email="Sun@asu.edu"))
+    """Otherwise Sam@gmail.com and sam@gmail.com are two accounts for one
+    person."""
+    db.add(make_user(email="Sam@gmail.com"))
 
     with pytest.raises(IntegrityError, match="ck_users_email_lowercase"):
         await db.flush()

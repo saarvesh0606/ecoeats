@@ -9,7 +9,7 @@ import { colorScheme, useColorScheme } from "nativewind";
  * disappearing into a near-black page, which is the kind of half-flip that
  * reads as broken rather than unfinished.
  *
- * Only the roles that actually move live here. ASU maroon and gold, the reds,
+ * Only the roles that actually move live here. The maroon and gold, the reds,
  * and white-on-green stay literal at their call sites: they sit on backgrounds
  * that don't change, and importing them through here would suggest they might.
  *

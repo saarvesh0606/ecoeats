@@ -14,7 +14,7 @@ from tests.test_listings import post_listing
 async def test_registering_creates_a_profile(
     client: AsyncClient, auth: FakeTokenVerifier
 ) -> None:
-    token = auth.issue(email="sun.devil@asu.edu", name="Sun Devil")
+    token = auth.issue(email="sam.rivera@gmail.com", name="Sam Rivera")
 
     response = await client.post(
         "/users/me", headers=bearer(token), json={"role": "organizer"}
@@ -22,9 +22,9 @@ async def test_registering_creates_a_profile(
 
     assert response.status_code == 201
     body = response.json()
-    assert body["email"] == "sun.devil@asu.edu"
+    assert body["email"] == "sam.rivera@gmail.com"
     assert body["role"] == "organizer"
-    assert body["name"] == "Sun Devil"
+    assert body["name"] == "Sam Rivera"
 
 
 async def test_registered_profile_is_then_readable(
@@ -65,7 +65,7 @@ async def test_identity_comes_from_the_token_not_the_body(
     could post as somebody else. Here the body cannot influence identity at
     all: extra fields are ignored and email comes from the verified token.
     """
-    token = auth.issue(uid="realuid123", email="real.person@asu.edu")
+    token = auth.issue(uid="realuid123", email="real.person@gmail.com")
 
     response = await client.post(
         "/users/me",
@@ -73,13 +73,13 @@ async def test_identity_comes_from_the_token_not_the_body(
         json={
             "role": "organizer",
             "id": "someone-elses-uid",
-            "email": "victim@asu.edu",
+            "email": "victim@gmail.com",
         },
     )
 
     assert response.status_code == 201
     assert response.json()["id"] == "realuid123"
-    assert response.json()["email"] == "real.person@asu.edu"
+    assert response.json()["email"] == "real.person@gmail.com"
 
     impersonated = await db.get(User, "someone-elses-uid")
     assert impersonated is None
@@ -89,7 +89,7 @@ async def test_name_falls_back_to_the_email_local_part(
     client: AsyncClient, auth: FakeTokenVerifier
 ) -> None:
     """Firebase email/password signups carry no display name."""
-    token = auth.issue(email="mkumar17@asu.edu", name=None)
+    token = auth.issue(email="mkumar17@gmail.com", name=None)
 
     response = await client.post(
         "/users/me", headers=bearer(token), json={"role": "recipient"}

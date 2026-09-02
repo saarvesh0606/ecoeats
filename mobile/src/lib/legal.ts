@@ -17,7 +17,7 @@
  * points at a document nobody saw — bump both instead.
  */
 
-export const TERMS_VERSION = "2026-08-21";
+export const TERMS_VERSION = "2026-09-02";
 
 export interface LegalDocument {
 	title: string;
@@ -63,7 +63,7 @@ export const TERMS: LegalDocument = {
 	sections: [
 		{
 			heading: "Who can use EcoEats",
-			body: "EcoEats is for members of the Arizona State University community with a valid asu.edu email address. You must be able to form a binding agreement to use it. Accounts are personal — do not share yours or use anyone else's.",
+			body: "EcoEats is open to anyone with a valid email address you can confirm — we send a verification link and the account does nothing until you click it. You must be able to form a binding agreement to use it. Accounts are personal — do not share yours or use anyone else's.",
 		},
 		{
 			heading: "If you post food",
@@ -90,8 +90,8 @@ export const TERMS: LegalDocument = {
 			body: "EcoEats is a student project offered free of charge. It may change, break, or stop entirely, and we do not promise it will be available at any particular time.",
 		},
 		{
-			heading: "Not affiliated with ASU",
-			body: "EcoEats is not an official Arizona State University service and is not endorsed by the university.",
+			heading: "Not affiliated with any university",
+			body: "EcoEats is an independent service. It is not operated, sponsored or endorsed by any university, college or other institution.",
 		},
 		{
 			heading: "Changes to these terms",
@@ -107,7 +107,7 @@ export const PRIVACY: LegalDocument = {
 	sections: [
 		{
 			heading: "What we collect",
-			body: "Your asu.edu email address and display name, so accounts are real and hosts and recipients can recognise one another. The posts, claims and ratings you create. Photos you attach to a post. A push notification token for the device you sign in on, so we can tell you when your food is claimed or your pickup is confirmed.",
+			body: "Your email address and display name, so accounts are real and hosts and recipients can recognise one another. The posts, claims and ratings you create. Photos you attach to a post. A push notification token for the device you sign in on, so we can tell you when your food is claimed or your pickup is confirmed.",
 		},
 		{
 			heading: "Location",
