@@ -154,14 +154,14 @@ export default function RoleScreen() {
 						autoCapitalize="words"
 						autoComplete="name"
 					/>
-					<Text className="font-body text-gray-400 text-xs mt-1">
+					<Text className="font-body text-gray-400 text-xs text-center mt-1">
 						Hosts and recipients see this when you claim or post food.
 					</Text>
 				</View>
 			)}
 
-			<Text className="font-body text-gray-400 text-xs text-center mt-4">
-				EcoEats is for anyone with surplus food to share, or a meal to find.
+			<Text className="font-body-semibold text-gray-500 text-sm text-center mt-6">
+				For anyone with food to share, or a meal to find.
 			</Text>
 
 			{error && (

@@ -489,19 +489,19 @@ export function PostFood() {
 
 					<Input
 						label="Building"
-						placeholder="e.g. Wrigley Hall"
+						placeholder="e.g. WCHP"
 						value={building}
 						onChangeText={setBuilding}
 					/>
 					<Input
 						label="Room (optional)"
-						placeholder="e.g. 205"
+						placeholder="e.g. 160"
 						value={room}
 						onChangeText={setRoom}
 					/>
 					<Input
 						label="Where exactly (optional)"
-						placeholder="e.g. On the table by the window"
+						placeholder="e.g. By the door"
 						value={placement}
 						onChangeText={setPlacement}
 					/>
