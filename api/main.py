@@ -20,6 +20,7 @@ from api.routers import (
     claims_router,
     devices_router,
     listings_router,
+    moderation_router,
     notifications_router,
     uploads_router,
     users_router,
@@ -231,6 +232,7 @@ def create_app(
     v1.include_router(uploads_router)
     v1.include_router(notifications_router)
     v1.include_router(devices_router)
+    v1.include_router(moderation_router)
     app.include_router(v1)
 
     return app

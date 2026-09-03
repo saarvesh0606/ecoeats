@@ -34,6 +34,7 @@ from api.schemas.listing import (
     UpdateListing,
 )
 from api.services import listings as rules
+from api.services.moderation import blocked_user_ids
 
 router = APIRouter(prefix="/listings", tags=["listings"])
 
@@ -205,6 +206,13 @@ async def browse(
             Listing.quantity_remaining > 0,
         )
     )
+
+    # Blocking has to reach the feed or it is decoration: the whole point is
+    # not seeing that person's food, and not having them turn up for yours.
+    # Filtered here rather than after paging, so a page of ten stays ten.
+    hidden = await blocked_user_ids(db, user.id)
+    if hidden:
+        stmt = stmt.where(Listing.organizer_id.not_in(hidden))
 
     if dietary:
         # ARRAY containment: the listing must carry every requested tag.

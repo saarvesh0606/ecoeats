@@ -14,6 +14,7 @@ from api.models.enums import ClaimStatus, UserRole
 from api.schemas.claim import ClaimedListing, ClaimList, ClaimOut, CreateClaim
 from api.schemas.rating import CreateRating
 from api.services import claims as service
+from api.services.moderation import is_blocked_pair
 from api.services.notify import notify
 
 router = APIRouter(tags=["claims"])
@@ -89,6 +90,24 @@ async def claim_food(
         listing_id = uuid.UUID(body.listing_id)
     except ValueError as exc:
         raise ValidationError("That is not a valid listing id") from exc
+
+    # The feed already hides blocked people's food, but a listing id is
+    # guessable and a link is shareable — so the refusal belongs here too,
+    # where the claim actually happens. Reported as not-found rather than
+    # forbidden: confirming the listing exists would tell someone they have
+    # been blocked, which is not theirs to learn.
+    #
+    # ⚠️ Selects the column, NOT the Listing. Loading the ORM object here puts
+    # it in the session's identity map, and `create_claim`'s
+    # `SELECT ... FOR UPDATE` then returns that already-loaded instance rather
+    # than the freshly locked row — so the quantity it reads is stale and
+    # concurrent claims stop being serialised. The invariant "remaining + held
+    # == total" breaks, and only the concurrency tests catch it.
+    organizer_id = await db.scalar(
+        select(Listing.organizer_id).where(Listing.id == listing_id)
+    )
+    if organizer_id is not None and await is_blocked_pair(db, user.id, organizer_id):
+        raise NotFoundError("That listing is not available")
 
     claim = await service.create_claim(
         db, listing_id=listing_id, recipient_id=user.id, quantity=body.quantity

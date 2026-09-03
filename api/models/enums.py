@@ -60,6 +60,33 @@ class ClaimStatus(StrEnum):
     """Recipient released it themselves. Terminal."""
 
 
+class ReportReason(StrEnum):
+    """Why something was reported.
+
+    A fixed vocabulary rather than free text alone, so reports can be triaged
+    by severity without reading every one. ``detail`` carries the words.
+    """
+
+    UNSAFE_FOOD = "unsafe_food"
+    """Food that looks unsafe to eat, or wrongly described allergens. Read
+    these first — this is the one that can hurt somebody."""
+
+    OFFENSIVE = "offensive"
+    """Abusive, obscene, hateful or threatening content."""
+
+    HARASSMENT = "harassment"
+    """Directed at a person rather than posted at large."""
+
+    MISLEADING = "misleading"
+    """Food that is not there, not surplus, or not the poster's to give."""
+
+    SPAM = "spam"
+    """Advertising, selling, or repetition."""
+
+    OTHER = "other"
+    """Anything the list above does not cover. ``detail`` is required."""
+
+
 #: Expiry windows an organizer may choose, in minutes. Fixed by the product
 #: spec — not a free-form integer as it was in v1.
 EXPIRY_CHOICES: tuple[int, ...] = (15, 20, 30, 45, 60)

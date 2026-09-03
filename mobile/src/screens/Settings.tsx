@@ -5,8 +5,8 @@ import * as Updates from "expo-updates";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { SignInMethods } from "@/components/SignInMethods";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { SettingsGroup, SettingsRow } from "@/components/ui/SettingsList";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -18,8 +18,8 @@ import {
 	areHapticsMuted,
 	arePushNotificationsMuted,
 	getThemeChoice,
-	setHapticsMuted,
 	setThemeChoice as saveThemeChoice,
+	setHapticsMuted,
 	type ThemeChoice,
 } from "@/lib/preferences";
 
@@ -248,6 +248,14 @@ export function Settings() {
 							}
 						/>
 					))}
+				</SettingsGroup>
+
+				<SettingsGroup title="Safety">
+					<SettingsRow
+						icon="person-remove-outline"
+						label="Blocked accounts"
+						onPress={() => router.push("/settings/blocked")}
+					/>
 				</SettingsGroup>
 
 				<SettingsGroup title="Legal">

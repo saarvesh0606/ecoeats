@@ -6,7 +6,9 @@ import {
 	SafeAreaView,
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { ReportSheet } from "@/components/ReportSheet";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useNow } from "@/hooks/useNow";
@@ -18,6 +20,7 @@ import { formatDuration, formatLocation, formatTimeLeft } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { fetchListing, type Listing } from "@/lib/listings";
 import { openDirections } from "@/lib/maps";
+import { blockUser, type ReportReason, reportListing } from "@/lib/moderation";
 
 /** Hero photo height; the parallax range is derived from it. */
 const HERO_HEIGHT = 288;
@@ -102,12 +105,16 @@ export default function ListingDetail() {
 		return () => clearTimeout(id);
 	}, [hintLife]);
 	const toast = useToast();
+	const confirm = useConfirm();
 
 	const [listing, setListing] = useState<Listing | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
 
 	const [claiming, setClaiming] = useState(false);
+
+	const [reporting, setReporting] = useState(false);
+	const [sendingReport, setSendingReport] = useState(false);
 
 	const [claimError, setClaimError] = useState<string | null>(null);
 	const [claimed, setClaimed] = useState(false);
@@ -206,6 +213,46 @@ export default function ListingDetail() {
 		}
 		haptics.select();
 		setQty(next);
+	}
+
+	async function onReport(reason: ReportReason, detail: string) {
+		if (!listing) return;
+		setSendingReport(true);
+		try {
+			await reportListing(listing.id, reason, detail);
+			haptics.success();
+			setReporting(false);
+			// Says received and nothing more. What happens to the listing is not
+			// the reporter's to know.
+			toast.show("Thanks — we'll take a look at this.");
+		} catch {
+			haptics.error();
+			toast.show("Couldn't send that report. Check your connection.");
+		} finally {
+			setSendingReport(false);
+		}
+	}
+
+	async function onBlockHost() {
+		if (!listing) return;
+		const ok = await confirm({
+			title: `Block ${listing.organizer.name}?`,
+			message:
+				"You won't see their food and they won't see yours. Neither of you can claim the other's. You can undo this in Settings.",
+			confirmLabel: "Block",
+		});
+		if (!ok) return;
+		try {
+			await blockUser(listing.organizer.id);
+			haptics.success();
+			toast.show("Blocked. You won't see their listings.");
+			// The listing is now hidden from this account, so staying on a page
+			// that no longer exists for them would be a dead end.
+			router.back();
+		} catch {
+			haptics.error();
+			toast.show("Couldn't block that account. Try again.");
+		}
 	}
 
 	async function onShare() {
@@ -452,8 +499,42 @@ export default function ListingDetail() {
 							</Text>
 						</View>
 					</View>
+
+					{/* Reporting and blocking. Required of any app carrying other
+					    people's content (App Store Guideline 1.2), and kept quiet
+					    on purpose: these are for when something has gone wrong, so
+					    they should be findable without competing with the claim. */}
+					<View className="flex-row items-center gap-5 mt-1 mb-2">
+						<Pressable
+							onPress={() => setReporting(true)}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel="Report this listing"
+						>
+							<Text className="font-body text-gray-500 text-xs underline">
+								Report this listing
+							</Text>
+						</Pressable>
+						<Pressable
+							onPress={() => void onBlockHost()}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel={`Block ${listing.organizer.name}`}
+						>
+							<Text className="font-body text-gray-500 text-xs underline">
+								Block this host
+							</Text>
+						</Pressable>
+					</View>
 				</View>
 			</Animated.ScrollView>
+
+			<ReportSheet
+				visible={reporting}
+				submitting={sendingReport}
+				onClose={() => setReporting(false)}
+				onSubmit={(reason, detail) => void onReport(reason, detail)}
+			/>
 
 			{/* Sticky claim bar. Rises into place once, so the primary action
 			    arrives rather than appearing to have always been there. The styled
