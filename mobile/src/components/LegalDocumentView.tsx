@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import type { LegalDocument } from "@/lib/legal";
 
@@ -19,6 +20,11 @@ export function LegalDocumentView({
 	/** Fires once the reader reaches the bottom. */
 	onScrolledToEnd?: () => void;
 }) {
+	// Measured, not rendered — comparing them is how a document too short to
+	// scroll is recognised as already read.
+	const viewportRef = useRef(0);
+	const contentRef = useRef(0);
+
 	const body = (
 		<View>
 			<Text className="font-display-bold text-2xl text-brand">
@@ -56,6 +62,22 @@ export function LegalDocumentView({
 					e.layoutMeasurement.height + e.contentOffset.y >=
 					e.contentSize.height - 24;
 				if (atEnd) onScrolledToEnd?.();
+			}}
+			// A document short enough to fit never fires onScroll, so without this
+			// the reader is asked to scroll to the end of something that has no
+			// end to scroll to — and the button never unlocks. Rare with the real
+			// documents, certain on a tall screen at the smallest text size.
+			onContentSizeChange={(_w, contentHeight) => {
+				contentRef.current = contentHeight;
+				if (viewportRef.current > 0 && contentHeight <= viewportRef.current) {
+					onScrolledToEnd?.();
+				}
+			}}
+			onLayout={({ nativeEvent: e }) => {
+				viewportRef.current = e.layout.height;
+				if (contentRef.current > 0 && contentRef.current <= e.layout.height) {
+					onScrolledToEnd?.();
+				}
 			}}
 			scrollEventThrottle={16}
 		>

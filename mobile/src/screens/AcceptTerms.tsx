@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegalDocumentView } from "@/components/LegalDocumentView";
 import { Button } from "@/components/ui/Button";
@@ -8,28 +8,45 @@ import { ApiError, acceptTerms } from "@/lib/api";
 import { haptics } from "@/lib/haptics";
 import { FOOD_SAFETY_DISCLAIMER, TERMS } from "@/lib/legal";
 
-type Tab = "terms" | "safety";
+/** The documents in the order they must be read. */
+const STEPS = [TERMS, FOOD_SAFETY_DISCLAIMER] as const;
 
 /**
  * The one screen nobody gets past without agreeing.
  *
  * Shown after the profile exists — so acceptance is recorded against a real
- * account — and before the app proper. There is deliberately no skip and no
- * back: the router sends anyone in `needs-terms` straight back here, so a
- * dismiss button would only ever loop.
+ * account — and before the app proper. There is deliberately no skip: the
+ * router sends anyone in `needs-terms` straight back here, so a dismiss button
+ * would only ever loop.
  *
- * The food safety disclaimer sits alongside the terms rather than buried in a
- * link. It is the part that actually matters for a food app, and a link is a
- * thing people do not open.
+ * Sequential rather than tabbed. Tabs let someone agree having opened one
+ * document, and — because both tabs shared a single scroll container — carried
+ * the first document's scroll offset onto the second, so the reader arrived
+ * halfway down a page they had never seen and the "read to the end" gate had
+ * already been satisfied by the wrong content. Each step now owns its own
+ * scroll position (the `key` below remounts the view) and its own gate.
+ *
+ * The food safety disclaimer is a step rather than a link. It is the part that
+ * actually matters for a food app, and a link is a thing people do not open.
  */
 export function AcceptTerms() {
 	const { completeTerms, signOut } = useAuth();
-	const [tab, setTab] = useState<Tab>("terms");
-	const [readSafety, setReadSafety] = useState(false);
+	const [step, setStep] = useState(0);
+	const [readSteps, setReadSteps] = useState<boolean[]>(() =>
+		STEPS.map(() => false),
+	);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const document = tab === "terms" ? TERMS : FOOD_SAFETY_DISCLAIMER;
+	const document = STEPS[step];
+	const isLast = step === STEPS.length - 1;
+	const readThis = readSteps[step];
+
+	function markRead() {
+		setReadSteps((prev) =>
+			prev[step] ? prev : prev.map((v, i) => (i === step ? true : v)),
+		);
+	}
 
 	async function accept() {
 		setSubmitting(true);
@@ -61,47 +78,29 @@ export function AcceptTerms() {
 				</Text>
 			</View>
 
-			<View className="flex-row gap-2 px-5 pb-3">
-				{(
-					[
-						["terms", "Terms of use"],
-						["safety", "Food safety"],
-					] as const
-				).map(([key, label]) => {
-					const on = tab === key;
-					return (
-						<Pressable
-							key={key}
-							onPress={() => {
-								haptics.select();
-								setTab(key);
-							}}
-							accessibilityRole="tab"
-							accessibilityState={{ selected: on }}
-							className={`rounded-full px-4 py-2 border ${
-								on
-									? "bg-forest-800 border-forest-800"
-									: "bg-card border-gray-200"
-							}`}
-						>
-							<Text
-								className={`font-body-medium text-sm ${
-									on ? "text-white" : "text-gray-600"
-								}`}
-							>
-								{label}
-							</Text>
-						</Pressable>
-					);
-				})}
+			{/* Which of the two you are on, and how far in. Dots rather than tabs:
+			    they report position without offering a jump the flow does not allow. */}
+			<View className="flex-row items-center gap-2 px-5 pb-3">
+				{STEPS.map((doc, i) => (
+					<View
+						key={doc.title}
+						className={`h-1 flex-1 rounded-full ${
+							i <= step ? "bg-forest-800" : "bg-gray-200"
+						}`}
+					/>
+				))}
+				<Text className="font-body text-gray-500 text-xs ml-1">
+					{step + 1} of {STEPS.length}
+				</Text>
 			</View>
 
 			<View className="flex-1 mx-5 rounded-card bg-card border border-gray-100 overflow-hidden">
 				<LegalDocumentView
+					// Remounts on every step, which is what resets the scroll offset.
+					// Without it the second document opens wherever the first was left.
+					key={document.title}
 					document={document}
-					onScrolledToEnd={() => {
-						if (tab === "safety") setReadSafety(true);
-					}}
+					onScrolledToEnd={markRead}
 				/>
 			</View>
 
@@ -110,29 +109,39 @@ export function AcceptTerms() {
 					<Text className="font-body text-red-500 text-sm mb-2">{error}</Text>
 				)}
 
-				{!readSafety && (
-					// The gate is the safety document specifically. Agreeing to terms
-					// you have not opened is normal; not opening the page about
-					// allergens, in a food app, is the one worth insisting on.
+				{!readThis && (
 					<Text className="font-body text-gray-500 text-xs mb-2">
-						Open the Food safety tab and read to the end to continue.
+						Scroll to the end of {document.title.toLowerCase()} to continue.
 					</Text>
 				)}
 
 				<Button
-					onPress={() => void accept()}
+					onPress={() => {
+						if (isLast) {
+							void accept();
+							return;
+						}
+						haptics.select();
+						setStep((s) => s + 1);
+					}}
 					loading={submitting}
-					disabled={!readSafety}
+					disabled={!readThis}
 					size="lg"
 				>
-					I agree
+					{isLast ? "Accept and continue" : "Next"}
 				</Button>
 
 				<View className="h-2" />
 
-				<Button variant="outline" onPress={() => void signOut()}>
-					Sign out
-				</Button>
+				{step > 0 ? (
+					<Button variant="outline" onPress={() => setStep((s) => s - 1)}>
+						Back
+					</Button>
+				) : (
+					<Button variant="outline" onPress={() => void signOut()}>
+						Sign out
+					</Button>
+				)}
 			</View>
 		</SafeAreaView>
 	);

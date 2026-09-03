@@ -15,7 +15,7 @@ describe("LegalScreen", () => {
 	});
 
 	it.each([
-		["terms", "Who can use EcoEats"],
+		["terms", "Who can use this app"],
 		["safety", "Allergies and dietary needs"],
 		["privacy", "What we collect"],
 	])("renders the %s document", (doc, heading) => {

@@ -23,22 +23,23 @@ jest.mock("@/context/AuthContext", () => ({
 
 const mockAccept = acceptTerms as jest.MockedFunction<typeof acceptTerms>;
 
-/** The safety tab, by role — "Food safety" is also a heading inside the terms,
- *  so matching on text alone finds two nodes. */
-function safetyTab() {
-	return screen.getAllByRole("tab")[1];
-}
-
-/** Scrolling the safety document to the bottom, which is what unlocks it. */
-function readSafetyToEnd() {
-	fireEvent.press(safetyTab());
-	fireEvent.scroll(screen.getByText("You decide what is safe to eat"), {
+/** Scrolling whichever document is on screen to its bottom, which unlocks the
+ *  button for that step. Anchored on a heading unique to each document. */
+function scrollToEnd(anchor: string) {
+	fireEvent.scroll(screen.getByText(anchor), {
 		nativeEvent: {
 			contentOffset: { y: 2000 },
 			contentSize: { height: 2000, width: 400 },
 			layoutMeasurement: { height: 600, width: 400 },
 		},
 	});
+}
+
+/** Walk the whole gate: read the terms, advance, read the safety document. */
+function readBothDocuments() {
+	scrollToEnd("Who can use this app");
+	fireEvent.press(screen.getByText("Next"));
+	scrollToEnd("You decide what is safe to eat");
 }
 
 describe("AcceptTerms", () => {
@@ -49,34 +50,70 @@ describe("AcceptTerms", () => {
 
 	it("opens on the terms", () => {
 		render(<AcceptTerms />);
-		expect(screen.getByText("Who can use EcoEats")).toBeTruthy();
+		expect(screen.getByText("Who can use this app")).toBeTruthy();
 	});
 
-	it("shows the food safety document too", () => {
-		// The part that actually matters for a food app, and a link is a thing
-		// people don't open — so it's a tab, not a footnote.
+	it("won't advance past the terms until they've been read to the end", () => {
 		render(<AcceptTerms />);
-		fireEvent.press(safetyTab());
+
+		fireEvent.press(screen.getByText("Next"));
+
+		// Still on the first document.
+		expect(screen.getByText("Who can use this app")).toBeTruthy();
+		expect(screen.queryByText("You decide what is safe to eat")).toBeNull();
+	});
+
+	it("shows the food safety document as the second step", () => {
+		// The part that actually matters for a food app, and a link is a thing
+		// people don't open — so it's a required step, not a footnote.
+		render(<AcceptTerms />);
+		scrollToEnd("Who can use this app");
+		fireEvent.press(screen.getByText("Next"));
+
 		expect(screen.getByText("Allergies and dietary needs")).toBeTruthy();
 	});
 
 	it("won't let anyone agree before reading the safety document", () => {
 		render(<AcceptTerms />);
+		scrollToEnd("Who can use this app");
+		fireEvent.press(screen.getByText("Next"));
 
-		fireEvent.press(screen.getByText("I agree"));
+		fireEvent.press(screen.getByText("Accept and continue"));
 
 		expect(mockAccept).not.toHaveBeenCalled();
-		expect(screen.getByText(/read to the end to continue/)).toBeTruthy();
+		expect(screen.getByText(/Scroll to the end of/)).toBeTruthy();
 	});
 
-	it("records acceptance once the safety document has been read", async () => {
+	it("does not carry one document's scroll gate onto the next", () => {
+		// The bug this flow replaced: both documents shared a scroll container,
+		// so reaching the end of the terms satisfied the safety gate too.
 		render(<AcceptTerms />);
-		readSafetyToEnd();
+		scrollToEnd("Who can use this app");
+		fireEvent.press(screen.getByText("Next"));
 
-		fireEvent.press(screen.getByText("I agree"));
+		expect(screen.getByText(/Scroll to the end of/)).toBeTruthy();
+	});
+
+	it("records acceptance once both documents have been read", async () => {
+		render(<AcceptTerms />);
+		readBothDocuments();
+
+		fireEvent.press(screen.getByText("Accept and continue"));
 
 		await waitFor(() => expect(mockAccept).toHaveBeenCalledTimes(1));
 		await waitFor(() => expect(mockCompleteTerms).toHaveBeenCalled());
+	});
+
+	it("lets the reader go back without losing what they've read", () => {
+		render(<AcceptTerms />);
+		readBothDocuments();
+
+		fireEvent.press(screen.getByText("Back"));
+		expect(screen.getByText("Who can use this app")).toBeTruthy();
+
+		// Already read, so it advances again without re-scrolling.
+		fireEvent.press(screen.getByText("Next"));
+		expect(screen.getByText("You decide what is safe to eat")).toBeTruthy();
 	});
 
 	it("keeps the user here when the server rejects it", async () => {
@@ -84,9 +121,9 @@ describe("AcceptTerms", () => {
 		// nothing, which is the one outcome this screen exists to prevent.
 		mockAccept.mockRejectedValue(new Error("offline"));
 		render(<AcceptTerms />);
-		readSafetyToEnd();
+		readBothDocuments();
 
-		fireEvent.press(screen.getByText("I agree"));
+		fireEvent.press(screen.getByText("Accept and continue"));
 
 		expect(await screen.findByText(/Couldn't record that/)).toBeTruthy();
 		expect(mockCompleteTerms).not.toHaveBeenCalled();
