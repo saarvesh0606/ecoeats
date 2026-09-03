@@ -343,6 +343,13 @@ only needed when a native module is added.
 
 ---
 
+## Contributors
+
+- [@saarvesh0606](https://github.com/saarvesh0606) — creator and maintainer
+- [@nishantdesai922](https://github.com/nishantdesai922)
+
+---
+
 ## Licence and ownership
 
 Copyright © 2026 Sarvesh Sunil Jagtap. All rights reserved. See [LICENSE](LICENSE).
