@@ -16,7 +16,7 @@
       "backgroundColor": "#163827"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.saarvesh.ecoeats",
       "usesAppleSignIn": true,
       "infoPlist": {
