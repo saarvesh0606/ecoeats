@@ -117,8 +117,39 @@ describe("the device recogniser", () => {
 		expect(result.current.listening).toBe(false);
 	});
 
-	it("says something useful when permission is refused", async () => {
+	it("offers Settings when the mic is refused for good", async () => {
+		// iOS asks once, ever. Reporting the refusal without a route out leaves
+		// someone tapping a button that can never work.
+		speech.requestPermissionsAsync.mockResolvedValue({
+			granted: false,
+			canAskAgain: false,
+		});
+		const { result } = renderHook(() => useNativeSpeech(jest.fn()));
+
+		act(() => result.current.start());
+
+		await waitFor(() => expect(result.current.blocked).toBe(true));
+		expect(result.current.error).toContain("Settings");
+		expect(speech.start).not.toHaveBeenCalled();
+		expect(result.current.listening).toBe(false);
+	});
+
+	it("treats an unknown refusal as final, which is the safer mistake", async () => {
+		// Being sent to Settings when asking again would have done is a small
+		// detour; being told to type when nothing can ever ask again is a wall.
 		speech.requestPermissionsAsync.mockResolvedValue({ granted: false });
+		const { result } = renderHook(() => useNativeSpeech(jest.fn()));
+
+		act(() => result.current.start());
+
+		await waitFor(() => expect(result.current.blocked).toBe(true));
+	});
+
+	it("does not offer Settings while the OS will still ask", async () => {
+		speech.requestPermissionsAsync.mockResolvedValue({
+			granted: false,
+			canAskAgain: true,
+		});
 		const { result } = renderHook(() => useNativeSpeech(jest.fn()));
 
 		act(() => result.current.start());
@@ -128,8 +159,46 @@ describe("the device recogniser", () => {
 				"Microphone access is off — type instead.",
 			),
 		);
-		expect(speech.start).not.toHaveBeenCalled();
-		expect(result.current.listening).toBe(false);
+		expect(result.current.blocked).toBe(false);
+	});
+
+	it("does not send you to Settings for a Screen Time restriction", async () => {
+		// The app's own Settings page carries no switch for this, so pointing at
+		// it would be a dead end of its own.
+		speech.requestPermissionsAsync.mockResolvedValue({
+			granted: false,
+			canAskAgain: false,
+			restricted: true,
+		});
+		const { result } = renderHook(() => useNativeSpeech(jest.fn()));
+
+		act(() => result.current.start());
+
+		await waitFor(() =>
+			expect(result.current.error).toBe(
+				"Speech recognition is turned off by Screen Time.",
+			),
+		);
+		expect(result.current.blocked).toBe(false);
+	});
+
+	it("clears a past refusal once permission is granted", async () => {
+		speech.requestPermissionsAsync.mockResolvedValue({
+			granted: false,
+			canAskAgain: false,
+		});
+		const { result } = renderHook(() => useNativeSpeech(jest.fn()));
+
+		act(() => result.current.start());
+		await waitFor(() => expect(result.current.blocked).toBe(true));
+
+		// Turned on in Settings and come back — the panel must not keep telling
+		// them to go there.
+		speech.requestPermissionsAsync.mockResolvedValue({ granted: true });
+		act(() => result.current.start());
+
+		await waitFor(() => expect(result.current.blocked).toBe(false));
+		expect(result.current.error).toBeNull();
 	});
 
 	it("reports a recogniser error without stranding the panel", async () => {

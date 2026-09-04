@@ -370,6 +370,7 @@ export function PostFood() {
 										speech.listening ? speech.stop() : speech.start()
 									}
 									error={speech.error}
+									blocked={speech.blocked}
 								/>
 							</View>
 						)}

@@ -25,6 +25,15 @@ export interface UseSpeech {
 	start: () => void;
 	stop: () => void;
 	error: string | null;
+	/**
+	 * The microphone is off and the OS will not offer to turn it on again.
+	 *
+	 * iOS asks once, ever. After a "Don't Allow" the request resolves denied
+	 * without showing anything, so a screen that only reports the refusal leaves
+	 * someone tapping a button that can never work. Callers should offer a route
+	 * to the Settings app when this is set.
+	 */
+	blocked: boolean;
 }
 
 /** Shown for anything the recogniser refuses; the cause is rarely actionable. */
@@ -108,7 +117,9 @@ export function useWebSpeech(onText: (text: string) => void): UseSpeech {
 
 	useEffect(() => () => recognitionRef.current?.stop(), []);
 
-	return { supported, listening, start, stop, error };
+	// The browser prompts again on its own, and a page cannot open the site's
+	// permission panel, so there is nothing useful to offer here.
+	return { supported, listening, start, stop, error, blocked: false };
 }
 
 // --- native --------------------------------------------------------------
@@ -117,6 +128,7 @@ export function useWebSpeech(onText: (text: string) => void): UseSpeech {
 export function useNativeSpeech(onText: (text: string) => void): UseSpeech {
 	const [listening, setListening] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [blocked, setBlocked] = useState(false);
 	const onTextRef = useRef(onText);
 	onTextRef.current = onText;
 
@@ -161,13 +173,30 @@ export function useNativeSpeech(onText: (text: string) => void): UseSpeech {
 	const start = useCallback(() => {
 		void (async () => {
 			try {
-				const { granted } =
+				const { granted, canAskAgain, restricted } =
 					await ExpoSpeechRecognitionModule.requestPermissionsAsync();
 				if (!granted) {
-					setError("Microphone access is off — type instead.");
+					// Three refusals that look identical from here and are not the
+					// same problem at all. Sending someone to Settings for the two
+					// that Settings cannot fix is worse than saying nothing.
+					if (restricted) {
+						// Screen Time. The app's own Settings page has no switch for
+						// this, so pointing at it would be a dead end of its own.
+						setBlocked(false);
+						setError("Speech recognition is turned off by Screen Time.");
+					} else if (canAskAgain) {
+						setBlocked(false);
+						setError("Microphone access is off — type instead.");
+					} else {
+						setBlocked(true);
+						setError(
+							"Microphone access is off. Turn on Microphone and Speech Recognition in Settings.",
+						);
+					}
 					return;
 				}
 
+				setBlocked(false);
 				setError(null);
 				setListening(true);
 				ExpoSpeechRecognitionModule.start({
@@ -196,7 +225,7 @@ export function useNativeSpeech(onText: (text: string) => void): UseSpeech {
 		[],
 	);
 
-	return { supported, listening, start, stop, error };
+	return { supported, listening, start, stop, error, blocked };
 }
 
 export const useSpeech = Platform.OS === "web" ? useWebSpeech : useNativeSpeech;

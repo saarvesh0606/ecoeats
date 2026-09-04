@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { Waveform } from "@/components/ui/Waveform";
 import { useAudioLevels } from "@/hooks/useAudioLevels";
@@ -22,10 +22,13 @@ export function VoicePanel({
 	listening,
 	onToggle,
 	error,
+	blocked = false,
 }: {
 	listening: boolean;
 	onToggle: () => void;
 	error?: string | null;
+	/** Mic refused for good — show the way to the Settings app. */
+	blocked?: boolean;
 }) {
 	const { levels, available } = useAudioLevels(listening);
 	const [seconds, setSeconds] = useState(0);
@@ -100,6 +103,23 @@ export function VoicePanel({
 				<Text className="font-body text-xs text-red-500 mt-3 text-center">
 					{error}
 				</Text>
+			)}
+
+			{/* Without this the panel is a dead end: iOS asks for the microphone
+			    once and never again, so "access is off" is a fact the person
+			    cannot act on from inside the app. */}
+			{blocked && (
+				<Pressable
+					onPress={() => void Linking.openSettings()}
+					hitSlop={8}
+					className="mt-2"
+					accessibilityRole="button"
+					accessibilityLabel="Open Settings to turn on the microphone"
+				>
+					<Text className="font-body-semibold text-brand text-sm underline">
+						Open Settings
+					</Text>
+				</Pressable>
 			)}
 		</View>
 	);
