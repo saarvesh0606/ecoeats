@@ -12,6 +12,7 @@
     "android": "expo start --android",
     "test": "jest",
     "test:watch": "jest --watch",
+    "build:legal": "node scripts/build-legal-site.mjs",
     "lint": "biome lint",
     "format": "biome format --write"
   },
