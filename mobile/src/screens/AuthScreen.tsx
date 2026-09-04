@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
 	Animated,
-	Image,
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
@@ -11,6 +10,7 @@ import {
 	View,
 } from "react-native";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
+import { AuthBrand } from "@/components/AuthBrand";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -28,9 +28,6 @@ type Mode = "signin" | "register";
 
 /** Where the form fades in from. Deliberately not 0 — see switchTo. */
 const FADE_FROM = 0.25;
-
-/** Displayed size of the app mark. Square — the icon asset is 1024x1024. */
-const LOGO_SIZE = 76;
 
 /**
  * One screen for both signing in and signing up, switched by a segmented
@@ -124,30 +121,10 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="px-6 py-10">
-					{/* Brand: the app's own mark, then the name, then what it is for.
-					    The icon is the same one on the home screen, so the app someone
-					    tapped and the screen that greets them are visibly the same
-					    thing. Rounded to match how iOS renders it there — squared off,
-					    it reads as a stray image rather than the app's identity. */}
-					<View className="items-center mb-7">
-						<Image
-							source={require("../../assets/icon.png")}
-							style={{
-								width: LOGO_SIZE,
-								height: LOGO_SIZE,
-								borderRadius: LOGO_SIZE * 0.22,
-							}}
-							resizeMode="contain"
-							accessibilityLabel="EcoEats"
-							className="mb-5"
-						/>
-						<Text className="font-display-bold text-3xl text-brand text-center">
-							EcoEats
-						</Text>
-						<Text className="font-body text-gray-500 text-sm mt-2 text-center">
-							Share more. Waste less. Impact together.
-						</Text>
-					</View>
+					{/* The full mark: the icon someone just tapped, the name, and what
+					    the app is for. Shared with the reset and confirmation screens,
+					    which show the same thing without the wordmark. */}
+					<AuthBrand wordmark />
 
 					{/* Mode toggle */}
 					<View className="flex-row bg-card border border-gray-200 rounded-btn p-1 mb-6">

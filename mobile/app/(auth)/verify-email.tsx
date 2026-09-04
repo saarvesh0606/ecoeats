@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Text, View } from "react-native";
+import { AuthBrand } from "@/components/AuthBrand";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { authErrorMessage, resendVerification } from "@/lib/firebase";
@@ -37,6 +38,7 @@ export default function VerifyEmailScreen() {
 
 	return (
 		<View className="flex-1 bg-page justify-center px-6">
+			<AuthBrand />
 			<Text className="font-display-bold text-3xl text-brand text-center">
 				Confirm your email
 			</Text>

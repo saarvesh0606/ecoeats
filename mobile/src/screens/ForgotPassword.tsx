@@ -7,6 +7,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { AuthBrand } from "@/components/AuthBrand";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { authErrorMessage, sendPasswordReset } from "@/lib/firebase";
@@ -64,6 +65,7 @@ export function ForgotPasswordScreen() {
 	if (sentTo) {
 		return (
 			<View className="flex-1 bg-page justify-center px-6">
+				<AuthBrand />
 				<Text className="font-display-bold text-3xl text-brand text-center">
 					Check your email
 				</Text>
@@ -124,6 +126,7 @@ export function ForgotPasswordScreen() {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="px-6 py-10">
+					<AuthBrand />
 					<Text className="font-display-bold text-3xl text-brand text-center">
 						Reset your password
 					</Text>
