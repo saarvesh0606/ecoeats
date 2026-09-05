@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -139,10 +139,36 @@ export function RecipientFeed() {
 		void load();
 	}, [load]);
 
-	// Live updates over SSE, replacing polling. Refs let the mount-only
-	// subscription always see the current listings and the latest `load`
-	// (which closes over the active filters) without reconnecting on every
-	// filter change.
+	// Live updates over SSE, replacing polling. Refs let the subscription
+	// always see the current listings and the latest `load` (which closes over
+	// the active filters) without reconnecting on every filter change.
+	//
+	// Only the SCOPE reconnects it, because only the scope is sent to the
+	// server. Coordinates are rounded to ~0.01 degrees so ordinary GPS drift
+	// doesn't tear the connection down and rebuild it every few seconds, and the
+	// radius is padded to cover the error that rounding introduces: the circle
+	// the server filters on must be a SUPERSET of the real one. Sending a little
+	// too much costs some traffic; sending too little hides food, and a missing
+	// listing is indistinguishable from an empty feed.
+	const canScope = coords != null && radiusMiles !== undefined;
+	const scopeLat =
+		coords != null && canScope ? Math.round(coords.lat * 100) / 100 : undefined;
+	const scopeLng =
+		coords != null && canScope ? Math.round(coords.lng * 100) / 100 : undefined;
+	// Clamped because the server rejects anything over 50 outright, and a
+	// rejected stream means no live updates at all.
+	const scopeRadius =
+		radiusMiles !== undefined && canScope
+			? Math.min(50, radiusMiles + 1)
+			: undefined;
+
+	// Memoised: a fresh object literal every render would reconnect the stream
+	// on every render, which is the opposite of the point.
+	const scope = useMemo(
+		() => ({ lat: scopeLat, lng: scopeLng, radiusMiles: scopeRadius }),
+		[scopeLat, scopeLng, scopeRadius],
+	);
+
 	const listingsRef = useRef(listings);
 	listingsRef.current = listings;
 	const loadRef = useRef(load);
@@ -175,7 +201,7 @@ export function RecipientFeed() {
 						)
 					: prev.filter((l) => l.id !== event.listing_id),
 			);
-		}).then((fn) => {
+		}, scope).then((fn) => {
 			if (cancelled) fn();
 			else close = fn;
 		});
@@ -184,7 +210,7 @@ export function RecipientFeed() {
 			cancelled = true;
 			close();
 		};
-	}, []);
+	}, [scope]);
 
 	// Retry on a timer while offline. Without a connectivity library there is
 	// nothing to be told that the network returned, so the only way to find out

@@ -105,11 +105,11 @@ export function OrganizerHome() {
 		let cancelled = false;
 
 		void subscribeToListings((event) => {
-			// The stream carries every host's listings. The recipient feed
-			// refetches on an unfamiliar id because a stranger's new post may
-			// belong in it; this dashboard only ever shows our own, so anything
-			// we don't already hold belongs to someone else and refetching on it
-			// would fire constantly for nothing.
+			// `mine` narrows this to our own listings server-side, so most of
+			// what used to arrive here never leaves the server now. The guard
+			// stays for a client running against an older API: an id we don't
+			// hold is one this dashboard never shows, and reacting to it would
+			// fire constantly for nothing.
 			if (!listingsRef.current.some((l) => l.id === event.listing_id)) return;
 
 			// Patch in place rather than dropping the row: the tabs are derived
@@ -126,7 +126,7 @@ export function OrganizerHome() {
 						: l,
 				),
 			);
-		}).then((fn) => {
+		}, { mine: true }).then((fn) => {
 			if (cancelled) fn();
 			else close = fn;
 		});
