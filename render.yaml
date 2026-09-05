@@ -1,14 +1,16 @@
 # Render Blueprint for the EcoEats API.
 #
-# Deploys the Docker image (see Dockerfile) as a single free web service.
-# Postgres (Neon) and Redis (Upstash) are external — their URLs, plus the
-# Firebase and Cloudinary secrets, are set in the Render dashboard, never here
-# (every secret below is `sync: false`, so Render prompts for it and keeps it
-# out of git).
+# Deploys the Docker image (see Dockerfile) as a single web service on the
+# Starter plan. Postgres (Neon) and Redis (Upstash) are external — their URLs,
+# plus the Firebase and Cloudinary secrets, are set in the Render dashboard,
+# never here (every secret below is `sync: false`, so Render prompts for it and
+# keeps it out of git).
 #
-# Render's free tier has no pre-deploy hook, so migrations run at container
-# start (see scripts/start.sh, the image's CMD). The free service is a single
-# instance, so the usual "don't migrate in every replica" caveat doesn't apply.
+# Migrations run at container start (see scripts/start.sh, the image's CMD).
+# The service is a single instance, so the usual "don't migrate in every
+# replica" caveat doesn't apply. Starter does support a pre-deploy hook, which
+# would fail a bad migration before it can take the running API down; moving
+# them there is a deliberate, separate change, not something to do in passing.
 #
 # There is deliberately no dockerCommand here: Render re-parses that field, and
 # an inline "sh -c '... && ...'" comes back as a single argv element, which the
@@ -20,7 +22,7 @@ services:
     runtime: docker
     branch: main
     region: oregon
-    plan: free
+    plan: starter
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
@@ -35,7 +37,7 @@ services:
       - key: APP_ENV
         value: production
       - key: WEB_CONCURRENCY
-        value: "1" # 512MB free instance — one worker keeps memory in budget
+        value: "1" # 512MB instance — Starter buys CPU, not RAM; one worker
       - key: DB_STATEMENT_CACHE
         value: "false" # Neon's pooler is transaction-mode
       - key: DB_SSL
