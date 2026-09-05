@@ -57,6 +57,13 @@ export function AuthScreen({ initialMode = "signin" }: { initialMode?: Mode }) {
 		if (next === mode) return;
 		setMode(next);
 		setError(null); // an error about the other form is just noise here
+		// The email carries over on purpose; the password does not. On the
+		// register tab the field means "choose a password", not "prove who you
+		// are", and silently reusing something typed to sign in makes the new
+		// account's password a value nobody chose. autoComplete flips to
+		// new-password across this switch too, so a password manager would
+		// offer to save it.
+		setPassword("");
 
 		formFade.setValue(FADE_FROM);
 		Animated.timing(formFade, {

@@ -82,6 +82,21 @@ describe("AuthScreen", () => {
 			);
 		});
 
+		it("clears a typed password across the switch", () => {
+			// The email survives, the password does not: on the register tab that
+			// field is choosing a password rather than proving an identity.
+			render(<AuthScreen />);
+			type("Email", "sam.rivera@gmail.com");
+			type("Password", "hunter2-old");
+			
+			fireEvent.press(screen.getByText("Create Account"));
+			
+			expect(screen.getByLabelText("Email").props.value).toBe(
+				"sam.rivera@gmail.com",
+			);
+			expect(screen.getByLabelText("Password").props.value).toBe("");
+		});
+
 		it("drops an error from the other form when switching", () => {
 			render(<AuthScreen />);
 			type("Email", "not-an-email");
