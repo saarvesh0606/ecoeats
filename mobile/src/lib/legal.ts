@@ -17,7 +17,7 @@
  * points at a document nobody saw — bump both instead.
  */
 
-export const TERMS_VERSION = "2026-09-03";
+export const TERMS_VERSION = "2026-09-05";
 
 export interface LegalDocument {
 	title: string;
@@ -63,7 +63,7 @@ export const TERMS: LegalDocument = {
 	sections: [
 		{
 			heading: "Who can use this app",
-			body: "This app is open to anyone with a valid email address you can confirm — we send a verification link and the account does nothing until you click it. Sign in with Apple's private relay addresses are accepted.\n\nYou must be at least 18 years old, and able to form a binding agreement, to use this app. It is not directed at children. Accounts are personal — do not share yours or use anyone else's.",
+			body: "This app is open to anyone with a valid email address you can confirm — we send a verification link and the account does nothing until you click it. Sign in with Apple's private relay addresses are accepted.\n\nYou must be at least 13 years old to use this app. If you are under 18, you may use it only with the permission and supervision of a parent or guardian, who accepts these terms on your behalf and is responsible for your use of it. It is not directed at children under 13. Accounts are personal — do not share yours or use anyone else's.\n\nCollecting food means meeting someone you have never met, in person, somewhere you may not know. If you are under 18, tell an adult where you are going and do not go alone.",
 		},
 		{
 			heading: "If you post food",
@@ -115,7 +115,7 @@ export const PRIVACY: LegalDocument = {
 	sections: [
 		{
 			heading: "What we collect",
-			body: "Your email address and display name, so accounts are real and hosts and recipients can recognise one another. The posts, claims and ratings you create. Photos you attach to a post. A push notification token for the device you sign in on, so we can tell you when your food is claimed or your pickup is confirmed.",
+			body: "Your email address and display name, so accounts are real and hosts and recipients can recognise one another. Your dietary preferences, if you choose to set any, so the feed can be filtered to food you actually eat. The posts, claims and ratings you create. Photos you attach to a post. A push notification token for the device you sign in on, so we can tell you when your food is claimed or your pickup is confirmed.",
 		},
 		{
 			heading: "Location",
@@ -147,7 +147,7 @@ export const PRIVACY: LegalDocument = {
 		},
 		{
 			heading: "Children",
-			body: "This app is intended for adults and is not directed at children. We do not knowingly collect personal information from anyone under 13. If you believe a child has created an account, email hello@ecoeatsapp.com and we will remove it.",
+			body: "You must be at least 13 years old to use this app, and anyone under 18 needs a parent or guardian's permission. We do not knowingly collect personal information from anyone under 13. If you believe a child under 13 has created an account, email hello@ecoeatsapp.com and we will remove it.",
 		},
 		{
 			heading: "Changes to this policy",
