@@ -5,15 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support &middot; EcoEats</title>
 <meta name="description" content="EcoEats is a free app for sharing surplus food before it goes to waste. This page is how to reach us, and where the terms and privacy policy live.">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header>
-	<a class="wordmark" href="index.html">EcoEats</a>
+	<a class="wordmark" href="index.html"><img src="icon.png" alt="" width="26" height="26">EcoEats</a>
 	<nav><span aria-current="page">Support</span><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="safety.html">Food safety</a></nav>
 </header>
 <main>
-	<h1>Support</h1>
+	<div class="hero">
+		<img src="icon.png" alt="" width="76" height="76">
+		<h1>EcoEats</h1>
+		<p class="tagline">Share more. Waste less. Impact together.</p>
+	</div>
 	<p class="lead">EcoEats is a free app for sharing surplus food before it goes to waste. This page is how to reach us, and where the terms and privacy policy live.</p>
 	<section>
 		<h2>What EcoEats is</h2>
@@ -21,23 +27,55 @@
 	</section>
 	<section>
 		<h2>Getting help</h2>
-		<p>Email <a href="mailto:hello@ecoeatsapp.com">hello@ecoeatsapp.com</a>. It is read by a person, and it is the right address for a bug, a question, a report about someone's behaviour, a request for a copy of your data, or anything about the documents on this site.</p>
+		<div class="contact">
+			<p class="addr"><a href="mailto:hello@ecoeatsapp.com">hello@ecoeatsapp.com</a></p>
+			<p>Read by a person. It is the right address for a bug, a question, a report about someone's behaviour, a request for a copy of your data, or anything about the documents on this site.</p>
+		</div>
 	</section>
 	<section>
 		<h2>Questions that come up often</h2>
-		<h3>The feed is empty. Is it broken?</h3>
-		<p>Probably not. Food posts expire within an hour of being posted, because surplus food does not stay good, or stay available, for longer than that. An empty feed means nobody nearby has posted in the last hour.</p>
-		<h3>How do I report a listing, or block someone?</h3>
-		<p>Open the listing and scroll to the bottom: <strong>Report this listing</strong> and <strong>Block this host</strong> are there. Blocking hides that person's food from you and yours from them. Undo it in Settings, under Blocked accounts.</p>
-		<h3>How do I delete my account?</h3>
-		<p>Settings has a Delete account option. It happens immediately, in the app &mdash; no email and no waiting. It removes your profile, posts, claims, ratings and notifications.</p>
-		<h3>Why does it ask for my location?</h3>
-		<p>Only to sort food by how far away it is, and to attach a pin to food you post so people can find it. You can decline and still use the app. It is never read in the background.</p>
+		<div class="card">
+			<h3>The feed is empty. Is it broken?</h3>
+			<p>Probably not. Food posts expire within an hour of being posted, because surplus food does not stay good, or stay available, for longer than that. An empty feed means nobody nearby has posted in the last hour.</p>
+		</div>
+		<div class="card">
+			<h3>How do I report a listing, or block someone?</h3>
+			<p>Open the listing and scroll to the bottom: <strong>Report this listing</strong> and <strong>Block this host</strong> are there. Blocking hides that person's food from you and yours from them. Undo it in Settings, under Blocked accounts.</p>
+		</div>
+		<div class="card">
+			<h3>How do I delete my account?</h3>
+			<p>Settings has a Delete account option. It happens immediately, in the app &mdash; no email and no waiting. It removes your profile, posts, claims, ratings and notifications.</p>
+		</div>
+		<div class="card">
+			<h3>Why does it ask for my location?</h3>
+			<p>Only to sort food by how far away it is, and to attach a pin to food you post so people can find it. You can decline and still use the app. It is never read in the background.</p>
+		</div>
 	</section>
 </main>
 <footer>
 	<p>EcoEats is an independent student project. It is not operated, sponsored or endorsed by any university, college or commercial food vendor.</p>
 	<p>Questions, reports and data requests: <a href="mailto:hello@ecoeatsapp.com">hello@ecoeatsapp.com</a></p>
 </footer>
+<script>
+/* Adds the class first, then observes: nothing is dimmed unless this runs. */
+(function () {
+	if (!window.IntersectionObserver) return;
+	if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+	/* Top-level blocks only. Observing .card as well would nest a dimmed
+	   element inside a dimmed one, and opacity multiplies — 0.3 inside 0.3 is
+	   0.09, which is genuinely unreadable rather than merely quiet. */
+	var els = document.querySelectorAll("main > *");
+	for (var i = 0; i < els.length; i++) els[i].classList.add("reveal");
+	var io = new IntersectionObserver(
+		function (entries) {
+			for (var j = 0; j < entries.length; j++) {
+				entries[j].target.classList.toggle("is-in", entries[j].isIntersecting);
+			}
+		},
+		{ threshold: 0.08, rootMargin: "0px 0px -8% 0px" }
+	);
+	for (var k = 0; k < els.length; k++) io.observe(els[k]);
+})();
+</script>
 </body>
 </html>

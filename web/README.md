@@ -1,7 +1,11 @@
 # The public site
 
 Four static pages: a support page, and the three legal documents the app
-shows. App Store Connect requires a **privacy policy URL** and a **support
+shows. Plus `icon.png`, which is **copied from `mobile/assets/icon.png`** by the
+same build — it is the app's real mark rather than a redrawn copy, so the page
+someone reaches from the App Store listing shows the icon they are about to
+install. It is a build output like everything else here: replace the app icon
+and rebuild, never swap this file. App Store Connect requires a **privacy policy URL** and a **support
 URL**, and neither may sit behind a login or an install.
 
 ## These files are generated. Do not edit them.
@@ -22,7 +26,9 @@ version bump.
 
 ## Deploying it
 
-Any static host works; there is no build step and no JavaScript. Two that cost
+Any static host works; there is no build step. There is one small inline
+script (a scroll reveal) — it needs no host support, and the pages are written
+so that if it never runs, everything renders fully visible and readable. Two that cost
 nothing:
 
 - **Netlify Drop** — drag this folder onto <https://app.netlify.com/drop>, then

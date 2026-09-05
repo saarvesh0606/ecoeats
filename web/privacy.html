@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy policy &middot; EcoEats</title>
 <meta name="description" content="What this app collects, why, and what it never does with it. Short, because the app collects very little.">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header>
-	<a class="wordmark" href="index.html">EcoEats</a>
+	<a class="wordmark" href="index.html"><img src="icon.png" alt="" width="26" height="26">EcoEats</a>
 	<nav><a href="index.html">Support</a><span aria-current="page">Privacy</span><a href="terms.html">Terms</a><a href="safety.html">Food safety</a></nav>
 </header>
 <main>
@@ -69,5 +71,26 @@
 	<p>EcoEats is an independent student project. It is not operated, sponsored or endorsed by any university, college or commercial food vendor.</p>
 	<p>Questions, reports and data requests: <a href="mailto:hello@ecoeatsapp.com">hello@ecoeatsapp.com</a></p>
 </footer>
+<script>
+/* Adds the class first, then observes: nothing is dimmed unless this runs. */
+(function () {
+	if (!window.IntersectionObserver) return;
+	if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+	/* Top-level blocks only. Observing .card as well would nest a dimmed
+	   element inside a dimmed one, and opacity multiplies — 0.3 inside 0.3 is
+	   0.09, which is genuinely unreadable rather than merely quiet. */
+	var els = document.querySelectorAll("main > *");
+	for (var i = 0; i < els.length; i++) els[i].classList.add("reveal");
+	var io = new IntersectionObserver(
+		function (entries) {
+			for (var j = 0; j < entries.length; j++) {
+				entries[j].target.classList.toggle("is-in", entries[j].isIntersecting);
+			}
+		},
+		{ threshold: 0.08, rootMargin: "0px 0px -8% 0px" }
+	);
+	for (var k = 0; k < els.length; k++) io.observe(els[k]);
+})();
+</script>
 </body>
 </html>
