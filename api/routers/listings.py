@@ -20,7 +20,7 @@ from api.deps import (
     rate_limited,
 )
 from api.errors import ForbiddenError, NotFoundError, ValidationError
-from api.events import listing_event
+from api.events import ListingEvent, listing_event
 from api.geo import bounding_box, haversine_miles
 from api.models import Claim, Listing, ListingPhoto, Rating, SavedListing
 from api.models.enums import ClaimStatus, ListingStatus
@@ -370,18 +370,67 @@ async def host_impact(db: DbSession, organizer: CurrentOrganizer) -> HostImpact:
 
 
 @router.get("/stream")
-async def stream(request: Request) -> StreamingResponse:
+async def stream(
+    request: Request,
+    lat: Annotated[float | None, Query(ge=-90, le=90)] = None,
+    lng: Annotated[float | None, Query(ge=-180, le=180)] = None,
+    radius_miles: Annotated[float | None, Query(gt=0, le=50)] = None,
+    mine: Annotated[
+        bool,
+        Query(description="Only listings you posted. For a host's dashboard."),
+    ] = False,
+) -> StreamingResponse:
     """Server-Sent Events: live listing changes, so the feed never polls.
 
     Auth is resolved from a header or a `token` query parameter (EventSource
     can't send headers). Each connected client gets a subscription to the event
     bus; a heartbeat keeps idle connections open through proxies.
+
+    Pass the same `lat`/`lng`/`radius_miles` the feed is being browsed with and
+    the stream carries only listings inside that circle. `mine=true` narrows it
+    to your own posts instead, which is what a host's dashboard wants — it shows
+    only its own listings, so every other host's event is work it will discard.
+
+    Without any of them every subscriber receives every event, which is what
+    clients built before this existed still expect — so omitting them is
+    supported, not a mistake.
     """
-    await identity_from_request(request)  # authorise; the id isn't needed here
+    identity = await identity_from_request(request)
     bus = request.app.state.event_bus
 
+    # Deliberately lenient where the feed raises: a partial filter here is
+    # ignored rather than rejected. Refusing the request would leave the client
+    # with no live updates at all, which is a worse outcome than a filter that
+    # did not narrow anything.
+    match = None
+    if mine:
+        # Scoped to the caller's own uid, never to an id from the query string:
+        # that would let anyone watch another host's listings change in real
+        # time. The identity is the one thing the client cannot forge.
+        owner = identity.uid
+
+        def match(event: ListingEvent) -> bool:
+            # Unknown owner means an older instance published it; deliver, on
+            # the same reasoning as an unknown location.
+            return event.organizer_id is None or event.organizer_id == owner
+
+    elif lat is not None and lng is not None and radius_miles is not None:
+        origin_lat, origin_lng, radius = lat, lng, radius_miles
+
+        def match(event: ListingEvent) -> bool:
+            # An event whose location is unknown is delivered rather than
+            # dropped. Those come from an instance running older code during a
+            # deploy, and hiding food is worse than sending a little too much:
+            # a missing listing is indistinguishable from an empty feed.
+            if event.lat is None or event.lng is None:
+                return True
+            return (
+                haversine_miles(origin_lat, origin_lng, event.lat, event.lng)
+                <= radius
+            )
+
     async def events() -> "asyncio.AsyncIterator[str]":
-        async with bus.subscribe() as queue:
+        async with bus.subscribe(match) as queue:
             # An initial comment opens the stream and defeats proxy buffering.
             yield ": connected\n\n"
             while True:

@@ -58,6 +58,101 @@ def test_event_round_trips_through_json() -> None:
     assert ListingEvent.from_json(SAMPLE.to_json()) == SAMPLE
 
 
+def test_an_event_without_coordinates_still_decodes() -> None:
+    """A rolling deploy puts both versions on the bus at once.
+
+    An instance on older code publishes four fields. If the coordinates were
+    required, those messages would fail to decode and every client on the new
+    instance would silently stop receiving updates mid-deploy.
+    """
+    older = '{"listing_id": "abc", "quantity_remaining": 4, '
+    older += '"status": "active", "expires_at": "2026-01-01T00:00:00+00:00"}'
+    event = ListingEvent.from_json(older)
+    assert event.listing_id == "abc"
+    assert event.lat is None and event.lng is None
+
+
+# --------------------------------------------------------------------------
+# Scoping: a subscriber is sent only what it asked for
+# --------------------------------------------------------------------------
+
+NEAR = ListingEvent(
+    listing_id="near", quantity_remaining=1, status="active",
+    expires_at="2026-01-01T00:00:00+00:00", lat=33.4200, lng=-111.9300,
+)
+FAR = ListingEvent(
+    listing_id="far", quantity_remaining=1, status="active",
+    expires_at="2026-01-01T00:00:00+00:00", lat=40.7128, lng=-74.0060,
+)
+
+
+def _within(origin_lat: float, origin_lng: float, miles: float):
+    from api.geo import haversine_miles
+
+    def match(event: ListingEvent) -> bool:
+        if event.lat is None or event.lng is None:
+            return True
+        return haversine_miles(origin_lat, origin_lng, event.lat, event.lng) <= miles
+
+    return match
+
+
+async def test_a_filter_drops_events_outside_it() -> None:
+    bus = InMemoryEventBus()
+    async with bus.subscribe(_within(33.42, -111.93, 10)) as events:
+        await bus.publish(FAR)
+        await bus.publish(NEAR)
+        got = await asyncio.wait_for(events.get(), timeout=1)
+    # The far one was never queued, so the near one arrives first and alone.
+    assert got == NEAR
+    assert events.empty()
+
+
+async def test_a_filter_narrows_only_its_own_subscriber() -> None:
+    """The point of filtering per subscriber rather than per event."""
+    bus = InMemoryEventBus()
+    async with (
+        bus.subscribe(_within(33.42, -111.93, 10)) as scoped,
+        bus.subscribe() as everything,
+    ):
+        await bus.publish(FAR)
+        got = await asyncio.wait_for(everything.get(), timeout=1)
+    assert got == FAR
+    assert scoped.empty()
+
+
+async def test_an_event_with_no_location_reaches_a_filtered_subscriber() -> None:
+    """Fail open. A dropped listing is indistinguishable from an empty feed."""
+    bus = InMemoryEventBus()
+    async with bus.subscribe(_within(33.42, -111.93, 1)) as events:
+        await bus.publish(SAMPLE)  # no coordinates
+        got = await asyncio.wait_for(events.get(), timeout=1)
+    assert got == SAMPLE
+
+
+async def test_a_broken_filter_delivers_rather_than_silently_dropping() -> None:
+    """A predicate that raises must not cost that client its updates."""
+    def explode(event: ListingEvent) -> bool:
+        raise RuntimeError("bad filter")
+
+    bus = InMemoryEventBus()
+    async with bus.subscribe(explode) as events:
+        await bus.publish(NEAR)
+        got = await asyncio.wait_for(events.get(), timeout=1)
+    assert got == NEAR
+
+
+async def test_one_broken_filter_does_not_stop_other_subscribers() -> None:
+    def explode(event: ListingEvent) -> bool:
+        raise RuntimeError("bad filter")
+
+    bus = InMemoryEventBus()
+    async with bus.subscribe(explode) as broken, bus.subscribe() as healthy:
+        await bus.publish(NEAR)
+        assert await asyncio.wait_for(healthy.get(), timeout=1) == NEAR
+        assert await asyncio.wait_for(broken.get(), timeout=1) == NEAR
+
+
 # --------------------------------------------------------------------------
 # Redis bus (real Redis, own DB)
 # --------------------------------------------------------------------------
@@ -132,6 +227,40 @@ async def test_posting_a_listing_broadcasts_it(
 
     assert event.listing_id == created["id"]
     assert event.quantity_remaining == 8
+
+
+async def test_a_broadcast_carries_where_and_whose_it_is(
+    app, client: AsyncClient, organizer: Account
+) -> None:
+    """Scoping is only possible if the publisher actually fills these in.
+
+    The filters themselves are unit-tested against hand-built events, which
+    proves the matching but not that a real post carries what the matching
+    needs. Without this, dropping a field on the publish path would leave every
+    scoped subscriber silently receiving nothing.
+    """
+    bus = app.state.event_bus
+    async with bus.subscribe() as events:
+        created = await post_listing(client, organizer)
+        event = await asyncio.wait_for(events.get(), timeout=2)
+
+    assert event.lat is not None
+    assert event.lng is not None
+    assert event.organizer_id is not None
+    if "lat" in created:
+        assert event.lat == pytest.approx(created["lat"])
+        assert event.lng == pytest.approx(created["lng"])
+
+
+def test_the_stream_advertises_its_scoping_parameters(app) -> None:
+    """A typo in the wiring would leave the params silently ignored."""
+    params = {
+        p["name"]
+        for p in app.openapi()["paths"]["/api/v1/listings/stream"]["get"].get(
+            "parameters", []
+        )
+    }
+    assert {"lat", "lng", "radius_miles", "mine"} <= params
 
 
 # --------------------------------------------------------------------------

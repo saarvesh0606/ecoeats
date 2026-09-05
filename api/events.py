@@ -15,7 +15,7 @@ bus is the single-instance fallback for dev and tests.
 import asyncio
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from typing import Protocol
@@ -39,6 +39,15 @@ class ListingEvent:
     quantity_remaining: int
     status: str
     expires_at: str
+    #: Where the listing is, so a subscriber can be sent only what is near it.
+    #: Optional with a default because an instance running older code publishes
+    #: without them, and a rolling deploy has both versions on the bus at once —
+    #: a required field here would make those messages undecodable.
+    lat: float | None = None
+    lng: float | None = None
+    #: Who posted it, so a host's dashboard can be sent only its own listings
+    #: instead of every host's. Optional for the same reason as the coordinates.
+    organizer_id: str | None = None
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -51,8 +60,12 @@ class ListingEvent:
 class EventBus(Protocol):
     async def publish(self, event: ListingEvent) -> None: ...
 
-    def subscribe(self):
-        """An async context manager yielding a queue of incoming events."""
+    def subscribe(self, match: "EventMatch | None" = None):
+        """An async context manager yielding a queue of incoming events.
+
+        ``match`` filters at dispatch, so an event a subscriber does not want
+        never occupies a slot in its queue.
+        """
         ...
 
     async def start(self) -> None: ...
@@ -60,14 +73,29 @@ class EventBus(Protocol):
     async def close(self) -> None: ...
 
 
+#: Decides whether one subscriber wants one event. Returning False drops it for
+#: that subscriber only.
+EventMatch = Callable[[ListingEvent], bool]
+
+
 class _LocalFanout:
-    """Shared machinery: a set of per-subscriber queues to fan out to."""
+    """Shared machinery: per-subscriber queues, each with an optional filter."""
 
     def __init__(self) -> None:
-        self._subscribers: set[asyncio.Queue[ListingEvent]] = set()
+        self._subscribers: dict[asyncio.Queue[ListingEvent], EventMatch | None] = {}
 
     def _dispatch(self, event: ListingEvent) -> None:
-        for queue in self._subscribers:
+        for queue, match in self._subscribers.items():
+            if match is not None:
+                try:
+                    if not match(event):
+                        continue
+                except Exception:
+                    # A broken predicate must not cost everyone else their
+                    # events, and silence is the wrong failure here: too little
+                    # food shown looks like an empty feed, which looks like a
+                    # broken app. Deliver, and leave a trace.
+                    logger.exception("Subscriber filter failed; delivering anyway")
             # Bounded so one slow/stuck client can't grow memory without limit;
             # if it can't keep up we drop for that client rather than everyone.
             if queue.full():
@@ -76,7 +104,7 @@ class _LocalFanout:
 
     @asynccontextmanager
     async def _subscription(
-        self,
+        self, match: EventMatch | None = None
     ) -> "AsyncIterator[asyncio.Queue[ListingEvent]]":
         # Hands back the queue itself, not a wrapping async generator. Consumers
         # call ``queue.get()`` (often inside asyncio.wait_for for a heartbeat) —
@@ -84,11 +112,11 @@ class _LocalFanout:
         # generator's anext exhausts it and the next call raises inside the
         # caller's async generator (PEP 479).
         queue: asyncio.Queue[ListingEvent] = asyncio.Queue(maxsize=100)
-        self._subscribers.add(queue)
+        self._subscribers[queue] = match
         try:
             yield queue
         finally:
-            self._subscribers.discard(queue)
+            self._subscribers.pop(queue, None)
 
 
 class InMemoryEventBus(_LocalFanout):
@@ -97,8 +125,8 @@ class InMemoryEventBus(_LocalFanout):
     async def publish(self, event: ListingEvent) -> None:
         self._dispatch(event)
 
-    def subscribe(self):
-        return self._subscription()
+    def subscribe(self, match: EventMatch | None = None):
+        return self._subscription(match)
 
     async def start(self) -> None:
         return None
@@ -144,8 +172,8 @@ class RedisEventBus(_LocalFanout):
     async def publish(self, event: ListingEvent) -> None:
         await self._redis.publish(CHANNEL, event.to_json())
 
-    def subscribe(self):
-        return self._subscription()
+    def subscribe(self, match: EventMatch | None = None):
+        return self._subscription(match)
 
     async def close(self) -> None:
         if self._reader is not None:
@@ -167,6 +195,13 @@ def listing_event(listing) -> ListingEvent:
         quantity_remaining=listing.quantity_remaining,
         status=status.value if hasattr(status, "value") else str(status),
         expires_at=listing.expires_at.isoformat(),
+        lat=getattr(listing, "lat", None),
+        lng=getattr(listing, "lng", None),
+        organizer_id=(
+            str(listing.organizer_id)
+            if getattr(listing, "organizer_id", None) is not None
+            else None
+        ),
     )
 
 
