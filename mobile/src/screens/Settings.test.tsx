@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { Linking } from "react-native";
 import { deleteAccount } from "@/lib/api";
 import { renderWithProviders } from "@/test-utils/render";
 import { Settings } from "./Settings";
@@ -43,6 +44,11 @@ jest.mock("@/lib/preferences", () => ({
 	setThemeChoice: (c: string) => mockSaveTheme(c),
 }));
 
+const mockPushBlocked = jest.fn();
+jest.mock("@/lib/push", () => ({
+	isPushBlockedByOS: () => mockPushBlocked(),
+}));
+
 // Stubbed out: these tests are about the settings screen, and the real one
 // reaches Firebase (and through it AsyncStorage) on import. Linking has its own
 // suite in SignInMethods.test.tsx.
@@ -70,6 +76,38 @@ describe("Settings", () => {
 		mockMuted.mockResolvedValue(false);
 		mockHapticsMuted.mockResolvedValue(false);
 		mockDelete.mockResolvedValue(undefined);
+		mockPushBlocked.mockResolvedValue(false);
+	});
+
+	describe("notifications blocked by iOS", () => {
+		it("says nothing when the OS is allowing them", async () => {
+			renderWithProviders(<Settings />);
+			expect(await screen.findByText("Mute notifications")).toBeTruthy();
+			expect(screen.queryByText("Notifications are off in iOS")).toBeNull();
+		});
+
+		it("warns when the OS is blocking them", async () => {
+			// Otherwise the mute switch below reads as the only thing between you
+			// and a notification, while iOS drops every one of them.
+			mockPushBlocked.mockResolvedValue(true);
+			renderWithProviders(<Settings />);
+			expect(
+				await screen.findByText("Notifications are off in iOS"),
+			).toBeTruthy();
+		});
+
+		it("offers the only place the refusal can be undone", async () => {
+			// iOS asks once per install, so there is nothing the app can do about
+			// it from here — the row has to be a way out, not just a statement.
+			mockPushBlocked.mockResolvedValue(true);
+			const openSettings = jest
+				.spyOn(Linking, "openSettings")
+				.mockResolvedValue();
+			renderWithProviders(<Settings />);
+			fireEvent.press(await screen.findByText("Notifications are off in iOS"));
+			expect(openSettings).toHaveBeenCalled();
+			openSettings.mockRestore();
+		});
 	});
 
 	it("shows which build this is", async () => {

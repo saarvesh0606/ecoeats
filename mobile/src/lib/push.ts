@@ -23,6 +23,28 @@ function unsupported(): string | null {
 }
 
 /**
+ * Whether the OS itself is refusing notifications for this device.
+ *
+ * Different from the app's own mute switch, and not fixable from inside the
+ * app: iOS asks about notifications once per install and never again, so a
+ * refusal made months ago silently outlives every later sign-in. Somewhere has
+ * to say so, or the mute switch reads as the only thing standing between the
+ * user and a notification while the OS quietly drops them all.
+ *
+ * False wherever the answer isn't meaningful — web, a simulator, or a call
+ * that throws — because a warning nobody can act on is worse than none.
+ */
+export async function isPushBlockedByOS(): Promise<boolean> {
+	if (unsupported()) return false;
+	try {
+		const { granted } = await Notifications.getPermissionsAsync();
+		return !granted;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * Ask for permission and hand the resulting token to the API.
  *
  * Called after sign-in rather than at launch: the token belongs to an account,

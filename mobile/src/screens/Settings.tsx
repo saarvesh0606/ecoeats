@@ -3,7 +3,15 @@ import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import {
+	AppState,
+	Linking,
+	Pressable,
+	ScrollView,
+	Switch,
+	Text,
+	View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SignInMethods } from "@/components/SignInMethods";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -14,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { applyColorScheme, theme } from "@/hooks/useThemeColors";
 import { ApiError, deleteAccount } from "@/lib/api";
 import { applyHapticPreference, haptics } from "@/lib/haptics";
+import { isPushBlockedByOS } from "@/lib/push";
 import {
 	areHapticsMuted,
 	arePushNotificationsMuted,
@@ -62,6 +71,7 @@ export function Settings() {
 	const confirm = useConfirm();
 	const toast = useToast();
 	const { signOut, profile, setPushMuted } = useAuth();
+	const [pushBlocked, setPushBlocked] = useState(false);
 
 	const [muted, setMuted] = useState(false);
 	const [hapticsOff, setHapticsOff] = useState(false);
@@ -74,6 +84,26 @@ export function Settings() {
 		void getThemeChoice().then(setAppearance);
 	}, []);
 
+
+	// Re-checked whenever the app comes back to the front, because the only way
+	// to fix this is in iOS Settings — so the moment it changes is precisely the
+	// moment this screen is not running.
+	useEffect(() => {
+		let alive = true;
+		const check = () => {
+			void isPushBlockedByOS().then((blocked) => {
+				if (alive) setPushBlocked(blocked);
+			});
+		};
+		check();
+		const sub = AppState.addEventListener("change", (state) => {
+			if (state === "active") check();
+		});
+		return () => {
+			alive = false;
+			sub.remove();
+		};
+	}, []);
 	const version = Constants.expoConfig?.version ?? "unknown";
 	// The build number changes on every EAS build even when the version doesn't,
 	// so it's what actually identifies which binary someone is running.
@@ -197,6 +227,17 @@ export function Settings() {
 				showsVerticalScrollIndicator={false}
 			>
 				<SettingsGroup title="Feedback">
+					{/* Without this the switch below is a lie: it reads as the only
+					    thing between you and a notification, while iOS is dropping
+					    every one of them. */}
+					{pushBlocked && (
+						<SettingsRow
+							icon="alert-circle-outline"
+							label="Notifications are off in iOS"
+							subtitle="You won't hear when your food is claimed. Tap to open Settings."
+							onPress={() => void Linking.openSettings()}
+						/>
+					)}
 					<SettingsRow
 						icon="notifications-outline"
 						label="Mute notifications"
