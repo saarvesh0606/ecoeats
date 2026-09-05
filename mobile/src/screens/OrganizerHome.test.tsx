@@ -101,6 +101,25 @@ describe("OrganizerHome", () => {
 		expect(screen.getByText("3")).toBeTruthy();
 	});
 
+	it("says Person Fed, not People Fed, when the count is one", async () => {
+		// A host's first share is the most likely moment for anyone to read
+		// this card, and "1 People Fed" is what it used to say. "People" has
+		// no suffix rule that reaches "Person", so each label carries its own
+		// singular.
+		mockImpact.mockResolvedValue({
+			meals_shared: 1,
+			people_fed: 1,
+			active_posts: 1,
+			pounds_saved: 1.2,
+		});
+		render(<OrganizerHome />);
+
+		expect(await screen.findByText("Person Fed")).toBeTruthy();
+		expect(screen.getByText("Meal Shared")).toBeTruthy();
+		expect(screen.getByText("Active Post")).toBeTruthy();
+		expect(screen.queryByText("People Fed")).toBeNull();
+	});
+
 	it("marks the poundage an estimate, and keeps one decimal", async () => {
 		// The number is derived from portions, never weighed. Shipping it
 		// unqualified would be a claim the backend cannot support, so the

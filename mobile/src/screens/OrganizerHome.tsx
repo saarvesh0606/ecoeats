@@ -29,7 +29,23 @@ const TABS: { key: Tab; label: string }[] = [
 	{ key: "past", label: "Past" },
 ];
 
-function Stat({ n, label }: { n: number; label: string }) {
+/**
+ * One impact figure and its label.
+ *
+ * The singular is passed in rather than derived: the first host to feed one
+ * person would otherwise read "1 People Fed", and no suffix rule turns
+ * "People" into "Person". A host's very first share is exactly when this card
+ * is most likely to be read, so the count of one is the case that matters.
+ */
+function Stat({
+	n,
+	label,
+	one,
+}: {
+	n: number;
+	label: string;
+	one: string;
+}) {
 	return (
 		<View className="items-center flex-1">
 			<AnimatedNumber
@@ -37,7 +53,7 @@ function Stat({ n, label }: { n: number; label: string }) {
 				className="font-display-bold text-2xl text-white"
 			/>
 			<Text className="font-body text-forest-100 text-xs mt-0.5 text-center">
-				{label}
+				{n === 1 ? one : label}
 			</Text>
 		</View>
 	);
@@ -199,9 +215,21 @@ export function OrganizerHome() {
 					Impact So Far
 				</Text>
 				<View className="flex-row justify-between">
-					<Stat n={impact?.meals_shared ?? 0} label="Meals Shared" />
-					<Stat n={impact?.people_fed ?? 0} label="People Fed" />
-					<Stat n={impact?.active_posts ?? 0} label="Active Posts" />
+					<Stat
+						n={impact?.meals_shared ?? 0}
+						label="Meals Shared"
+						one="Meal Shared"
+					/>
+					<Stat
+						n={impact?.people_fed ?? 0}
+						label="People Fed"
+						one="Person Fed"
+					/>
+					<Stat
+						n={impact?.active_posts ?? 0}
+						label="Active Posts"
+						one="Active Post"
+					/>
 				</View>
 
 				{/* Pounds diverted is the unit food-recovery reporting speaks in, so
