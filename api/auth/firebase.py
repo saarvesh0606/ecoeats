@@ -204,6 +204,24 @@ class FirebaseTokenVerifier:
             tokens_valid_after_ms=int(record.tokens_valid_after_timestamp or 0),
         )
 
+    def identity_exists(self, uid: str) -> bool:
+        """Whether Google still has a sign-in identity for this uid.
+
+        Deliberately uncached and unguarded. The cache above exists for the
+        per-request revocation check, which runs on every call; this runs only
+        when registration has already found the address taken, which is rare —
+        and it decides whether a profile row is deleted, so it reads through to
+        Google every time.
+
+        Anything other than a definite "no such user" propagates: an unreachable
+        Firebase must not be read as "the account is gone".
+        """
+        try:
+            firebase_auth.get_user(uid, app=self._app)
+        except firebase_auth.UserNotFoundError:
+            return False
+        return True
+
     def delete(self, uid: str) -> None:
         """Remove the Firebase account behind a deleted profile.
 

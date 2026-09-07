@@ -56,6 +56,20 @@ class DevTokenVerifier:
 
         raise InvalidTokenError("Invalid or expired token")
 
+    def identity_exists(self, uid: str) -> bool:
+        """A dev identity is minted on demand, so it can always sign in again.
+
+        True for every ``dev-`` uid, which is the honest answer: the token that
+        made it can be typed again at any time. Real uids go to the fallback,
+        and without one there is nothing that could know — so this says the
+        identity stands rather than inviting a caller to delete its row.
+        """
+        if uid.startswith("dev-"):
+            return True
+        if self._fallback is not None:
+            return self._fallback.identity_exists(uid)
+        return True
+
     def _synthesise(self, slug: str) -> VerifiedIdentity:
         if not _SLUG_RE.match(slug):
             raise InvalidTokenError("Malformed dev token")

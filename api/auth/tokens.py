@@ -35,6 +35,20 @@ class TokenVerifier(Protocol):
         """Return the identity, or raise InvalidTokenError."""
         ...
 
+    def identity_exists(self, uid: str) -> bool:
+        """Whether this uid can still sign in.
+
+        False means the identity is gone for good: nobody will ever hold a
+        token for it again, so anything the database still keys to it is
+        stranded. Registration uses that to tell a genuine duplicate account
+        apart from an abandoned row holding an address hostage.
+
+        Only ever answers from knowledge. An implementation that cannot reach
+        its provider raises rather than returning False — a wrong False deletes
+        a live person's profile.
+        """
+        ...
+
     def delete(self, uid: str) -> None:
         """Remove the identity entirely, so the account cannot sign in again.
 

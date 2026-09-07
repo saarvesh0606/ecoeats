@@ -11,6 +11,12 @@ Rows go orphaned when a Firebase identity is deleted without its profile —
 `scripts/dev_account.py delete`, or a deletion in the Firebase console. The
 app's own `DELETE /users/me` removes both, so it never causes this.
 
+Registration now clears these on its own: someone signing up with a stranded
+address takes it back automatically. This stays useful for the two cases that
+cannot self-heal — an orphan with listings or claims attached, which
+registration deliberately refuses to touch, and cleaning up rows nobody is
+waiting to sign up with.
+
 Usage, from the repo root:
 
     python scripts/orphaned_profiles.py                      # list every orphan

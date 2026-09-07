@@ -3,12 +3,13 @@
 import asyncio
 
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.legal import CURRENT_TERMS_VERSION
 from api.models import User
 from api.models.enums import UserRole
-from tests.conftest import Account
+from tests.conftest import Account, register_account
 from tests.fake_auth import FakeTokenVerifier, bearer
 from tests.test_listings import post_listing
 
@@ -181,6 +182,86 @@ async def test_registering_an_address_someone_else_holds_is_a_conflict(
     assert response.status_code == 409, response.text
     # Actionable, not "Internal server error" — the way out is to sign in.
     assert "sign in" in response.json()["message"].lower()
+
+
+async def test_an_address_stranded_by_a_deleted_identity_is_reclaimed(
+    client: AsyncClient, auth: FakeTokenVerifier, db: AsyncSession
+) -> None:
+    """Deleting an account in the Firebase console reads like a clean reset
+    and is the opposite: the login goes, the profile row stays holding the
+    address, and every retry mints a new uid that collides with it forever.
+
+    Nobody can sign in as that row again, and the caller has proved they
+    control the mailbox, so registration takes the address back.
+    """
+    stranded = auth.issue(uid="old-uid", email="sam.rivera@gmail.com")
+    await client.post(
+        "/users/me", headers=bearer(stranded), json={"role": "recipient"}
+    )
+    auth.delete("old-uid")  # what the Firebase console does, and only that
+
+    returning = auth.issue(uid="new-uid", email="sam.rivera@gmail.com")
+    response = await client.post(
+        "/users/me", headers=bearer(returning), json={"role": "organizer"}
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["role"] == "organizer"  # a fresh start, not the old row
+
+    # The stranded row is gone rather than merely bypassed — one account holds
+    # the address, which is what the unique constraint says too.
+    rows = await db.scalars(
+        select(User).where(User.email == "sam.rivera@gmail.com")
+    )
+    assert [u.id for u in rows] == ["new-uid"]
+
+
+async def test_a_stranded_account_with_food_history_is_never_reclaimed(
+    client: AsyncClient, auth: FakeTokenVerifier, db: AsyncSession
+) -> None:
+    """The limit on reclaiming, and the reason for it.
+
+    Addresses get reassigned — university ones especially — so a verified
+    token is proof of today's mailbox, not proof of being the person who used
+    it last year. Handing someone a stranger's listings and claims would be
+    worse than the lockout. This one goes to a human.
+    """
+    host = await register_account(client, auth, "organizer", "Wrigley Hall")
+    await post_listing(client, host)
+    auth.delete(host.id)
+
+    returning = auth.issue(uid="brand-new-uid", email=host.email)
+    response = await client.post(
+        "/users/me", headers=bearer(returning), json={"role": "recipient"}
+    )
+
+    assert response.status_code == 409, response.text
+    assert "hello@ecoeatsapp.com" in response.json()["message"]
+    assert await db.get(User, host.id) is not None  # untouched
+
+
+async def test_an_unreachable_firebase_refuses_rather_than_deleting(
+    client: AsyncClient, auth: FakeTokenVerifier, db: AsyncSession
+) -> None:
+    """"Don't know" is not "gone".
+
+    Reclaiming deletes a profile row, so it may only ever act on a definite
+    answer. If Firebase cannot be reached the registration is refused — the
+    cost is one person waiting, against deleting a live account.
+    """
+    holder = auth.issue(uid="live-uid", email="sam.rivera@gmail.com")
+    await client.post(
+        "/users/me", headers=bearer(holder), json={"role": "recipient"}
+    )
+    auth.unreachable.add("live-uid")
+
+    other = auth.issue(uid="another-uid", email="sam.rivera@gmail.com")
+    response = await client.post(
+        "/users/me", headers=bearer(other), json={"role": "recipient"}
+    )
+
+    assert response.status_code == 409, response.text
+    assert await db.get(User, "live-uid") is not None  # not deleted on a guess
 
 
 async def test_two_registrations_of_one_address_race_cleanly(

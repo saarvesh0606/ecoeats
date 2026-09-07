@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from api.deps import (
     CurrentIdentity,
@@ -61,17 +62,99 @@ async def read_me(user: CurrentUser) -> User:
 #: actionable — the way out is to sign in, not to try again.
 EMAIL_TAKEN_MESSAGE = "That email address already has an account. Sign in instead."
 
+#: Said when the address is held by a row nobody can sign into any more, but
+#: which has a history worth keeping. Recovering it means deciding what happens
+#: to that history, which is a person's judgement, not a route's.
+STRANDED_ACCOUNT_MESSAGE = (
+    "That email address belongs to an older account that can no longer sign "
+    "in, and it still has food history attached. Email hello@ecoeatsapp.com "
+    "and we'll move it across."
+)
+
+
+async def _has_history(db: AsyncSession, user_id: str) -> bool:
+    """Whether this profile has ever given or taken food.
+
+    Only listings and claims count. Everything else that hangs off a user —
+    devices, saved items, notifications, a role — describes the account rather
+    than anything it did, and none of it is worth a person's time to recover.
+    """
+    listings = await db.scalar(
+        select(func.count(Listing.id)).where(Listing.organizer_id == user_id)
+    )
+    claims = await db.scalar(
+        select(func.count(Claim.id)).where(Claim.recipient_id == user_id)
+    )
+    return bool(listings or claims)
+
+
+async def _release_if_stranded(
+    request: Request, db: AsyncSession, holder: User
+) -> None:
+    """Free an address whose account can never be signed into again.
+
+    An identity deleted from the Firebase console — which reads like a clean
+    reset and is the opposite — leaves its profile row behind. The row still
+    owns the address, so signing up again mints a new uid and collides forever:
+    the person is locked out of their own address by a row nobody can reach.
+
+    Reclaiming it is safe because of what the caller has already proved. Every
+    request past `current_identity` carries a *verified* address, so whoever is
+    asking demonstrably controls that mailbox — and the row they would displace
+    belongs to an identity that no longer exists and cannot be signed into by
+    anyone, ever. Nothing is taken from anybody.
+
+    Two things it refuses to do. It will not touch a row with listings or
+    claims behind it — addresses get reassigned, university ones especially,
+    and handing one person another's food history is worse than a lockout. And
+    it will not act on a Firebase it could not reach: "don't know" is not
+    "gone", so an outage refuses the registration instead of deleting a live
+    profile.
+    """
+    verifier = request.app.state.token_verifier
+    try:
+        # Blocking network call, so off the event loop — this service runs one
+        # worker and a stall here stalls every other request. Same reasoning as
+        # token verification in api.deps.
+        signs_in = await run_in_threadpool(verifier.identity_exists, holder.id)
+    except Exception as exc:
+        logger.warning(
+            "Could not establish whether identity %s still exists: %s",
+            holder.id,
+            type(exc).__name__,
+        )
+        raise ConflictError(EMAIL_TAKEN_MESSAGE) from exc
+
+    if signs_in:
+        raise ConflictError(EMAIL_TAKEN_MESSAGE)
+
+    if await _has_history(db, holder.id):
+        raise ConflictError(STRANDED_ACCOUNT_MESSAGE)
+
+    await db.delete(holder)
+    await db.flush()
+    logger.info(
+        "Released %s from stranded profile %s: the identity no longer exists "
+        "and nothing was attached to it",
+        holder.email,
+        holder.id,
+    )
+
 
 @router.post(
     "/me",
     response_model=UserProfile,
     status_code=status.HTTP_201_CREATED,
+    responses={409: {"description": "The uid or the address already has one"}},
     dependencies=[
         Depends(rate_limited_by_identity("register", limit=10, window_seconds=60))
     ],
 )
 async def register_me(
-    body: RegisterProfile, identity: CurrentIdentity, db: DbSession
+    body: RegisterProfile,
+    request: Request,
+    identity: CurrentIdentity,
+    db: DbSession,
 ) -> User:
     """Finish registration by choosing a role.
 
@@ -88,9 +171,10 @@ async def register_me(
     # INSERT then broke the unique constraint and the unhandled IntegrityError
     # surfaced as a 500, which told the person nothing and left the address
     # looking permanently broken.
-    taken = await db.scalar(select(User.id).where(User.email == identity.email))
-    if taken is not None:
-        raise ConflictError(EMAIL_TAKEN_MESSAGE)
+    holder = await db.scalar(select(User).where(User.email == identity.email))
+    if holder is not None:
+        # Either refuses, or clears the way and lets registration continue.
+        await _release_if_stranded(request, db, holder)
 
     user = User(
         id=identity.uid,

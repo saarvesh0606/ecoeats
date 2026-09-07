@@ -21,6 +21,10 @@ class FakeTokenVerifier:
         #: uids passed to delete(), so a test can assert the identity was
         #: removed and not merely the database row.
         self.deleted: list[str] = []
+        #: uids whose existence cannot be established — the network half of
+        #: Firebase being down. Lets a test prove the caller fails closed
+        #: rather than treating "don't know" as "gone".
+        self.unreachable: set[str] = set()
 
     def issue(
         self,
@@ -49,6 +53,17 @@ class FakeTokenVerifier:
             return self._identities[token]
         except KeyError:
             raise InvalidTokenError("Invalid or expired token") from None
+
+    def identity_exists(self, uid: str) -> bool:
+        """Whether any token for this uid is still live.
+
+        ``delete`` forgets every token for a uid, so a test can strand a
+        profile row exactly the way deleting an account in the Firebase console
+        strands one, and then assert what registration does about it.
+        """
+        if uid in self.unreachable:
+            raise RuntimeError("Firebase is unreachable")
+        return any(i.uid == uid for i in self._identities.values())
 
     def delete(self, uid: str) -> None:
         """Forget every token for this uid, the way deleting the real identity
