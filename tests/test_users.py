@@ -1,5 +1,7 @@
 """Profile registration and updates."""
 
+import asyncio
+
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -152,6 +154,58 @@ async def test_registering_twice_is_a_conflict(
     )
 
     assert response.status_code == 409
+
+
+async def test_registering_an_address_someone_else_holds_is_a_conflict(
+    client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """The 500 of 2026-09-07.
+
+    Registration only ever checked the uid, but the address is unique too. A
+    row holding it under a different uid — what a deleted sign-in identity
+    leaves behind — sailed past that check and broke the constraint on INSERT,
+    and the unhandled IntegrityError became "Internal server error". The
+    address then looked permanently unusable and nothing said why.
+    """
+    first = auth.issue(uid="first-uid", email="sam.rivera@gmail.com")
+    await client.post(
+        "/users/me", headers=bearer(first), json={"role": "recipient"}
+    )
+
+    # Same person, same address, a new sign-in identity behind it.
+    again = auth.issue(uid="second-uid", email="sam.rivera@gmail.com")
+    response = await client.post(
+        "/users/me", headers=bearer(again), json={"role": "recipient"}
+    )
+
+    assert response.status_code == 409, response.text
+    # Actionable, not "Internal server error" — the way out is to sign in.
+    assert "sign in" in response.json()["message"].lower()
+
+
+async def test_two_registrations_of_one_address_race_cleanly(
+    live_client: AsyncClient, auth: FakeTokenVerifier
+) -> None:
+    """Real connections, so the pre-check can lose its race and the constraint
+    is left to arbitrate. Either way one wins and the loser gets a 409 — never
+    the 500 the unhandled IntegrityError produced.
+    """
+    tokens = [
+        auth.issue(uid="race-uid-1", email="one.address@gmail.com"),
+        auth.issue(uid="race-uid-2", email="one.address@gmail.com"),
+    ]
+
+    responses = await asyncio.gather(
+        *(
+            live_client.post(
+                "/users/me", headers=bearer(token), json={"role": "recipient"}
+            )
+            for token in tokens
+        )
+    )
+
+    statuses = sorted(r.status_code for r in responses)
+    assert statuses == [201, 409], [r.text for r in responses]
 
 
 async def test_identity_comes_from_the_token_not_the_body(

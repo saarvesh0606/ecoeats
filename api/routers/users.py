@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import (
@@ -56,6 +57,11 @@ async def read_me(user: CurrentUser) -> User:
     return user
 
 
+#: Said to whoever finds their address already spoken for. Deliberately
+#: actionable — the way out is to sign in, not to try again.
+EMAIL_TAKEN_MESSAGE = "That email address already has an account. Sign in instead."
+
+
 @router.post(
     "/me",
     response_model=UserProfile,
@@ -76,6 +82,16 @@ async def register_me(
     if existing is not None:
         raise ConflictError("This account already has a profile")
 
+    # The uid above is not the only way an account can already exist: the
+    # address is unique too, and a row holds one under a *different* uid
+    # whenever a sign-in identity was deleted while its profile stayed. The
+    # INSERT then broke the unique constraint and the unhandled IntegrityError
+    # surfaced as a 500, which told the person nothing and left the address
+    # looking permanently broken.
+    taken = await db.scalar(select(User.id).where(User.email == identity.email))
+    if taken is not None:
+        raise ConflictError(EMAIL_TAKEN_MESSAGE)
+
     user = User(
         id=identity.uid,
         email=identity.email,  # from the token, never the body
@@ -90,7 +106,16 @@ async def register_me(
         dietary_prefs=body.dietary_prefs,
     )
     db.add(user)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        # The check above races — two registrations of one address can both
+        # read it as free — so the constraint is what actually arbitrates. The
+        # pre-check only saves the common case a rollback.
+        await db.rollback()
+        if "users_email_key" in str(exc.orig):
+            raise ConflictError(EMAIL_TAKEN_MESSAGE) from exc
+        raise
     return user
 
 
