@@ -14,6 +14,7 @@ from httpx import ASGITransport, AsyncClient
 from api.config import Settings
 from api.ratelimit import (
     InMemoryRateLimiter,
+    RateLimitMiddleware,
     RedisRateLimiter,
     build_limiter,
 )
@@ -225,3 +226,74 @@ async def test_per_user_limit_on_claiming() -> None:
     assert statuses[-1] == 429
     # Everything before the limit was the ordinary 404 (listing not found).
     assert statuses[0] == 404
+
+
+# --------------------------------------------------------------------------
+# Redis unavailable — the limiter must fail OPEN
+# --------------------------------------------------------------------------
+#
+# Upstash closes idle connections, so a pooled socket can already be dead when
+# we write to it. That surfaced in production as a 500 on GET /api/v1/users/me
+# (`ConnectionError: Error UNKNOWN while writing to socket. Connection lost.`,
+# duration 0.44ms — no round trip, straight onto a closed socket). The limiter
+# is protection, not part of answering the request: losing it must cost the
+# throttle, never the response.
+
+
+class _DeadRedis:
+    """A client whose script calls fail exactly like a dropped connection."""
+
+    def register_script(self, _source):
+        async def _fail(*_args, **_kwargs):
+            from redis.exceptions import ConnectionError as RedisConnectionError
+
+            raise RedisConnectionError(
+                "Error UNKNOWN while writing to socket. Connection lost."
+            )
+
+        return _fail
+
+    async def aclose(self) -> None:
+        return None
+
+
+async def test_redis_failure_allows_the_request() -> None:
+    """An unreachable counter allows, rather than raising."""
+    limiter = RedisRateLimiter(_DeadRedis())
+
+    result = await limiter.check("ip:1.2.3.4", limit=5, window_seconds=60)
+
+    assert result.allowed is True
+    assert result.retry_after == 0
+
+
+async def test_middleware_serves_requests_while_redis_is_down() -> None:
+    """The regression: a dead Redis used to 500 every endpoint behind it."""
+
+    async def ok_app(scope, receive, send) -> None:
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"content-type", b"application/json")],
+            }
+        )
+        await send({"type": "http.response.body", "body": b"{}"})
+
+    app = RateLimitMiddleware(
+        ok_app,
+        limiter=RedisRateLimiter(_DeadRedis()),
+        # A limit of 1 would block the second request if the failure were
+        # somehow counted as a hit; it must not be.
+        limit=1,
+        window_seconds=60,
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        statuses = [
+            (await client.get("/api/v1/users/me")).status_code for _ in range(3)
+        ]
+
+    assert statuses == [200, 200, 200]

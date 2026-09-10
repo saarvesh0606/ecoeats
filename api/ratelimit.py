@@ -10,12 +10,15 @@ control (a burst at a window boundary is acceptable here; we're stopping
 hammering, not metering billing).
 """
 
+import logging
 import time
 from dataclasses import dataclass
 from typing import Protocol
 
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Core
@@ -90,8 +93,14 @@ class RedisRateLimiter:
     """Shared limiter for multi-instance production."""
 
     def __init__(self, redis) -> None:  # redis.asyncio.Redis
+        from redis.exceptions import RedisError
+
         self._redis = redis
         self._script = redis.register_script(_REDIS_SCRIPT)
+        # Imported here, not at module scope, so redis stays an optional
+        # dependency for the in-memory path. OSError covers the socket-level
+        # failures redis-py lets through unwrapped.
+        self._unavailable = (RedisError, OSError)
 
     async def check(
         self, key: str, *, limit: int, window_seconds: int
@@ -99,7 +108,25 @@ class RedisRateLimiter:
         window_id = int(time.time() // window_seconds)
         redis_key = f"rl:{key}:{window_id}"
 
-        count, ttl = await self._script(keys=[redis_key], args=[window_seconds])
+        try:
+            count, ttl = await self._script(
+                keys=[redis_key], args=[window_seconds]
+            )
+        except self._unavailable as exc:
+            # FAIL OPEN. The limiter is a protective mechanism, not part of
+            # answering the request: if the shared counter is unreachable we
+            # let the caller through rather than turning a Redis blip into a
+            # 500 on every endpoint. Upstash closes idle connections, so a
+            # pooled socket can be dead before we write to it — that is a
+            # routine event here, not an emergency.
+            logger.warning(
+                "Rate limiter unavailable; allowing request",
+                extra={"key": key, "error": str(exc)},
+            )
+            return RateLimitResult(
+                allowed=True, remaining=limit, retry_after=0
+            )
+
         retry_after = ttl if ttl and ttl > 0 else window_seconds
 
         return RateLimitResult(
@@ -116,8 +143,22 @@ def build_limiter(redis_url: str | None) -> RateLimiter:
     """Redis when a URL is configured, in-memory otherwise."""
     if redis_url:
         import redis.asyncio as redis_async
+        from redis.backoff import ExponentialBackoff
+        from redis.exceptions import ConnectionError as RedisConnectionError
+        from redis.exceptions import TimeoutError as RedisTimeoutError
+        from redis.retry import Retry
 
-        client = redis_async.from_url(redis_url, decode_responses=True)
+        client = redis_async.from_url(
+            redis_url,
+            decode_responses=True,
+            # Upstash drops idle connections. Without a health check a pooled
+            # socket is only discovered dead when we write to it, which surfaces
+            # as ConnectionError on the first request after a quiet spell.
+            health_check_interval=30,
+            socket_keepalive=True,
+            retry=Retry(ExponentialBackoff(base=0.05, cap=0.5), retries=2),
+            retry_on_error=[RedisConnectionError, RedisTimeoutError],
+        )
         return RedisRateLimiter(client)
     return InMemoryRateLimiter()
 
