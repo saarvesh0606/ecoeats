@@ -55,6 +55,13 @@ function Gate() {
 			router.replace("/verify-email");
 		} else if (status === "needs-profile" && current !== "role") {
 			router.replace("/role");
+		} else if (
+			status === "profile-unavailable" &&
+			current !== "connection-problem"
+		) {
+			// The account exists and could not be read. Anywhere else — role
+			// selection especially — would misrepresent that.
+			router.replace("/connection-problem");
 		} else if (status === "needs-terms" && current !== "terms") {
 			// After the profile exists, so acceptance is recorded against a real
 			// account, and before the app proper — there is no route into the

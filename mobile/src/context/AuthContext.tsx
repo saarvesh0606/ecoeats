@@ -17,7 +17,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { fetchProfile, type UserProfile } from "@/lib/api";
+import {
+	fetchProfile,
+	ProfileNotFoundError,
+	type UserProfile,
+} from "@/lib/api";
 import {
 	type FirebaseUser,
 	signOut as fbSignOut,
@@ -39,6 +43,7 @@ export type AuthStatus =
 	| "unverified" // signed in, email not confirmed
 	| "needs-profile" // verified, but hasn't chosen a role
 	| "needs-terms" // has a profile, hasn't accepted the terms in force
+	| "profile-unavailable" // has an account; we just couldn't load it
 	| "ready"; // verified, has a profile, terms accepted
 
 interface AuthValue {
@@ -61,6 +66,13 @@ interface AuthValue {
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+
+/** Backoff between profile attempts. Short deliberately: the failure this
+ * exists for is a dropped connection, which the very next request usually
+ * survives, and the user is staring at a splash screen throughout. */
+const PROFILE_RETRY_DELAYS_MS = [300, 900, 2000];
+
+const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -85,19 +97,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// takes — and on a sleeping free-tier API that is 30–60s, which reads
 		// as a sign-in button that did nothing rather than one still working.
 		setStatus("loading");
-		try {
-			const loaded = await fetchProfile();
-			setProfile(loaded);
-			// Terms come after the profile exists, so acceptance can be recorded
-			// against a real account. `terms_current` is the server's judgement,
-			// which is what lets updated terms re-prompt without a new release.
-			setStatus(loaded.terms_current ? "ready" : "needs-terms");
-		} catch {
-			// 404 means no profile yet; any other error shouldn't strand a
-			// verified user on a blank screen. Both send them to role selection,
-			// which retries.
-			setProfile(null);
-			setStatus("needs-profile");
+
+		for (let attempt = 0; ; attempt++) {
+			try {
+				const loaded = await fetchProfile();
+				setProfile(loaded);
+				// Terms come after the profile exists, so acceptance can be
+				// recorded against a real account. `terms_current` is the
+				// server's judgement, which is what lets updated terms
+				// re-prompt without a new release.
+				setStatus(loaded.terms_current ? "ready" : "needs-terms");
+				return;
+			} catch (err) {
+				// Only a 404 means "no profile yet". Everything else — a 5xx, a
+				// dropped connection, no network — says the profile could not
+				// be READ, which is not the same thing. Treating them alike
+				// sent an established user to role selection, where creating
+				// the profile they already have answers 409 and leaves them
+				// stuck until they force-quit.
+				if (err instanceof ProfileNotFoundError) {
+					setProfile(null);
+					setStatus("needs-profile");
+					return;
+				}
+
+				const delay = PROFILE_RETRY_DELAYS_MS[attempt];
+				if (delay === undefined) {
+					// Out of attempts: say so honestly and offer a retry rather
+					// than guessing at a state. The account is intact; we just
+					// cannot see it right now.
+					setProfile(null);
+					setStatus("profile-unavailable");
+					return;
+				}
+				await sleep(delay);
+			}
 		}
 	}, []);
 
