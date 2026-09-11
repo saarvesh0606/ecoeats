@@ -2,9 +2,9 @@
 
 The API ships as a Docker image (see `Dockerfile`). It needs **Postgres** and
 **Redis**; we use **Neon** and **Upstash** (both free, no card). For hosting,
-**Render** (free, no card, `render.yaml` Blueprint) is the default — see
-[§3a](#3a--deploy-to-render-no-card). **Fly.io** (needs a card) is also
-documented in [§3b](#3b--deploy-to-fly). The container is identical either way.
+**Render** (`render.yaml` Blueprint, Starter plan) is what production runs on —
+see [§3a](#3a--deploy-to-render). **Fly.io** is also documented in
+[§3b](#3b--deploy-to-fly). The container is identical either way.
 
 > **Env var names** (these are what `api/config.py` actually reads):
 > `DATABASE_URL`, `REDIS_URL`, `APP_ENV=production`, `ALLOWED_ORIGINS`
@@ -18,7 +18,8 @@ documented in [§3b](#3b--deploy-to-fly). The container is identical either way.
 |---|---|---|
 | **Neon** | Postgres (with a built-in connection pooler) | yes |
 | **Upstash** | Redis (rate limiting + real-time fan-out) | yes |
-| **Fly.io** | running the container | yes |
+| **Render** | running the container (production) | no — Starter, $7/mo; the free tier spins down |
+| **Fly.io** | running the container (alternative) | yes |
 | Firebase | already set up (auth) | — |
 | Cloudinary | already set up (photos) | — |
 
@@ -37,12 +38,16 @@ documented in [§3b](#3b--deploy-to-fly). The container is identical either way.
    start without it, because rate limiting and real-time events must be shared
    across instances, not held per-process.
 
-## 3a · Deploy to Render (no card)
+## 3a · Deploy to Render
 
-`render.yaml` in the repo root is a Blueprint that defines one free Docker web
-service. Migrations run at container start (`alembic upgrade head && uvicorn …`)
-because Render's free tier has no pre-deploy hook; the free service is a single
-instance, so that's safe.
+`render.yaml` in the repo root is a Blueprint that defines the API as a Docker
+web service on the **Starter** plan, plus the public site as a static site.
+Migrations run at container start (`alembic upgrade head && uvicorn …`); the
+service is a single instance, so that's safe.
+
+> The plan is in `render.yaml` on purpose. The service is Blueprint-managed, so
+> whatever the file says is what Render applies on the next sync — `plan: free`
+> in git would be a live downgrade waiting to happen.
 
 1. Push `render.yaml` to `main` (already committed).
 2. In the [Render dashboard](https://dashboard.render.com) → **New +** →
@@ -59,8 +64,11 @@ instance, so that's safe.
 4. **Apply** → Render builds the image, runs the migrations, and starts the
    service at `https://ecoeats-api.onrender.com` (name may vary).
 
-> Free services **spin down after ~15 min idle**; the next request cold-starts
-> in ~30–60s. Fine for a demo. `/health` is the liveness check Render polls.
+> Starter does not spin down: measured 0.9s for the first request after 17 min
+> idle, versus 43–54s on the free tier. `/health` is the liveness check Render
+> polls. When load-testing, reuse connections — a fresh TLS handshake per
+> request measures the ocean, not the box (8 req/s vs 98 req/s at 50
+> concurrent on the same instance).
 
 ## 3b · Deploy to Fly (needs a card)
 

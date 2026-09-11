@@ -6,6 +6,9 @@ feed, claim a portion, and walk over before it expires.
 
 [![CI](https://github.com/saarvesh0606/ecoeats/actions/workflows/ci.yml/badge.svg)](https://github.com/saarvesh0606/ecoeats/actions/workflows/ci.yml)
 
+iOS, v0.2.0 — passed App Review on 2026-09-10. The privacy policy and support
+pages live at [ecoeats-web.onrender.com](https://ecoeats-web.onrender.com).
+
 Every event on a campus ends the same way: trays of untouched food, a room being
 packed up, and no way to tell anyone within the twenty minutes it stays good.
 EcoEats is that missing twenty-minute channel — a listing lives for at most an
@@ -24,7 +27,7 @@ should be sent to collect.
 | Framework | FastAPI — async end to end |
 | Data | SQLAlchemy 2.0 async + Alembic, PostgreSQL 16 |
 | Redis | Rate limiting and the SSE event bus |
-| Auth | Firebase Auth, verified via the Admin SDK |
+| Auth | Firebase Auth — email, Sign in with Apple, Google — verified via the Admin SDK |
 | Images | Cloudinary, signed direct-to-CDN upload |
 | Push | Expo Push (fronts APNs and FCM) |
 | Errors | Sentry, with URL credential scrubbing |
@@ -50,6 +53,12 @@ should be sent to collect.
 
 ## What it does
 
+**Signing in** — email and password, Sign in with Apple, or Google. Apple's
+*Hide My Email* works as-is because the API accepts any verified address. An
+account made one way can link Apple from Settings, so the same person does not
+end up with two accounts; for the pairs that already exist, `POST
+/users/me/merge` folds one into the other.
+
 **Posting** — photo, title, description, allergens, portion count, dietary tags,
 and a pickup location pinned on a map. The description can be dictated instead
 of typed. Expiry is a fixed choice of 15/20/30/45/60 minutes, and posts can be
@@ -68,6 +77,16 @@ database level, not hopefully in application code.
 **After** — recipients rate the host; hosts see cumulative impact in portions
 and pounds diverted, computed from completed pickups rather than from posts
 created.
+
+**Report and block** — any listing can be reported and any user blocked. A block
+is symmetric: their listings leave your feed and yours leave theirs, and neither
+can claim from the other. Reports land in a queue that `scripts/list_reports.py`
+reads and closes, which is what makes the 24-hour moderation promise true.
+
+**Account** — forgot-password by email, and deletion from Settings that removes
+the row, the Firebase identity and the Sign in with Apple authorisation
+together, so signing up again later gets a full account rather than a nameless
+one.
 
 **Throughout** — an in-app activity feed with unread state, push notifications
 that deep-link to the right screen from a locked phone, role switching between
@@ -153,60 +172,76 @@ ecoeats/
 │   │   └── dev.py              dev:<slug> bypass — cannot start in production
 │   │
 │   ├── models/                 SQLAlchemy tables + constraints
-│   │   ├── user.py             ck_users_asu_email, lowercase email
+│   │   ├── user.py             lowercase email — the domain rule is a setting
 │   │   ├── listing.py          quantity and expiry constraints
 │   │   ├── claim.py            uq_claim_per_recipient — double-claim guard
+│   │   ├── moderation.py       blocks (uq_block_pair) and reports
 │   │   ├── rating.py           saved.py  device.py  notification.py
 │   │   └── enums.py            types.py
 │   │
 │   ├── schemas/                Pydantic request/response shapes
 │   │   ├── user.py             RegisterProfile — deliberately no email or id
-│   │   ├── listing.py          claim.py  rating.py
+│   │   ├── listing.py          claim.py  rating.py  moderation.py
 │   │   └── notification.py     device.py
 │   │
 │   ├── routers/                HTTP surface only — no business logic
 │   │   ├── listings.py         feed, search, saved, impact, SSE stream
 │   │   ├── claims.py           claim, pickup, no-show, cancel, rate
-│   │   ├── users.py            profile, role switch, terms, delete
+│   │   ├── users.py            profile, role, terms, Apple link, merge, delete
+│   │   ├── moderation.py       report a listing, block / unblock, list blocks
 │   │   ├── notifications.py    devices.py  uploads.py
 │   │   └── ...
 │   │
 │   └── services/               the actual behaviour
 │       ├── listings.py         claims.py — ownership and inventory rules
+│       ├── moderation.py       block symmetry, report queue
+│       ├── merge.py            fold two accounts into one — destructive
+│       ├── apple.py            revoke Apple authorisation on delete (5.1.1(v))
 │       ├── notify.py           push.py — fan-out and Expo delivery
 │       ├── scheduler.py        sweeper: release lapsed, retire expired
 │       └── uploads.py          Cloudinary signing, secret never leaves here
 │
 ├── mobile/                     Expo / React Native client
 │   ├── app/                    expo-router — the file tree IS the navigation
-│   │   ├── (auth)/             login, register, verify-email, role, terms
+│   │   ├── (auth)/             login, register, forgot-password, verify-email,
+│   │   │                       role, terms, connection-problem
 │   │   └── (app)/
 │   │       ├── (tabs)/         feed, post, posts, claims, activity, profile
 │   │       ├── listing/[id]    detail + claim
 │   │       ├── manage/[id]     host view of one listing
 │   │       ├── notifications   saved
-│   │       └── settings/       index + [doc] legal pages
+│   │       └── settings/       index, blocked, [doc] legal pages
 │   │
 │   ├── src/
 │   │   ├── screens/            screen implementations behind the routes
 │   │   ├── components/         shared UI, components/ui primitives
 │   │   ├── context/            AuthContext, UnreadContext
 │   │   ├── hooks/              location, speech, audio levels, push nav
-│   │   └── lib/                api, firebase, listingStream, validation,
-│   │                           push, uploads, session, preferences
+│   │   └── lib/                api, firebase, appleAuth, listingStream,
+│   │                           moderation, legal (the terms — one source),
+│   │                           validation, push, uploads, session, preferences
+│   ├── scripts/
+│   │   └── build-legal-site.mjs  legal.ts → web/
 │   └── app.json                native config, plugins, bundle id
+│
+├── web/                        GENERATED public site: support + the three legal
+│                               documents. Never hand-edit — rebuild from legal.ts
 │
 ├── migrations/                 Alembic revisions
 ├── tests/                      backend suite — hard-fails without a database
 ├── scripts/
 │   ├── dev_account.py          Firebase accounts without inbox access
+│   ├── list_reports.py         the moderation queue — read it, close entries
+│   ├── merge_accounts.py       preview by default, --apply to fold accounts
+│   ├── orphaned_profiles.py    rows whose Firebase identity is gone
 │   ├── start.sh                migrate, then exec uvicorn
 │   └── ci_fake_firebase.py     throwaway service account for CI
 │
 ├── flutter_app/                parked prototype — not part of the product
 ├── Dockerfile                  hash-pinned install, non-root user
 ├── requirements.lock           58 packages, digest-verified
-├── render.yaml                 Render blueprint, autoDeploy from main
+├── render.yaml                 Render blueprint: API (Starter) + static site
+├── DEPLOY.md                   the long-form deploy runbook
 └── docker-compose.yml          local Postgres + Redis
 ```
 
@@ -278,7 +313,7 @@ deliverability.
 cd mobile && npx jest
 ```
 
-272 backend tests and 367 client tests. CI runs both on every push, plus `ruff`
+345 backend tests and 446 client tests. CI runs both on every push, plus `ruff`
 and `biome`.
 
 Tests run against a **real PostgreSQL database** — `ecoeats_test`, created
@@ -307,7 +342,13 @@ curl https://ecoeats-api.onrender.com/health/version
 `/health` answers identically before a swap, after it, and when a build failed
 and the previous container kept serving.
 
-Client JavaScript ships **over the air** — no rebuild, no App Store round trip:
+Client JavaScript ships **over the air** — no rebuild, no App Store round trip.
+There are two channels and an update only reaches the one it is sent to: the
+App Store build is on `production`, TestFlight builds are on `preview`.
+
+```bash
+cd mobile && npx eas-cli update --branch production --environment production -m "message"
+```
 
 ```bash
 cd mobile && npx eas-cli update --branch preview --environment preview -m "message"
@@ -315,7 +356,21 @@ cd mobile && npx eas-cli update --branch preview --environment preview -m "messa
 
 Two force-quits to apply: the first launch downloads, the second runs it.
 Settings → About reports the running update and channel. A native rebuild is
-only needed when a native module is added.
+only needed when a native module is added — and a new *capability* (Sign in
+with Apple was one) also needs the provisioning profile regenerated by hand via
+`eas credentials`, because `eas build` validates the certificate and nothing
+else.
+
+The public site is a Render static site served from `web/`. It has no build
+step on Render because the pages are generated locally and committed:
+
+```bash
+cd mobile && npm run build:legal
+```
+
+Run that whenever `mobile/src/lib/legal.ts` changes, in the same commit as the
+`TERMS_VERSION` bump, so the app and the website never disagree about what
+people accepted.
 
 ---
 
