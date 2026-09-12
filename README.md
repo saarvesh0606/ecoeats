@@ -9,11 +9,25 @@ feed, claim a portion, and walk over before it expires.
 iOS, v0.2.0 — passed App Review on 2026-09-10. The privacy policy and support
 pages live at [ecoeats-web.onrender.com](https://ecoeats-web.onrender.com).
 
+<p align="center">
+  <img src="docs/screenshots/feed.png" width="180" alt="Discover feed, sorted by urgency, with dietary filters and allergen notes">
+  <img src="docs/screenshots/listing.png" width="180" alt="Listing detail: allergens, pickup location and time, host rating, claim button">
+  <img src="docs/screenshots/host-dashboard.png" width="180" alt="Host dashboard with impact so far and live listings">
+  <img src="docs/screenshots/claims.png" width="180" alt="My Claims with a pickup countdown and directions">
+  <img src="docs/screenshots/create-post.png" width="180" alt="Create a Post with voice entry for the description">
+</p>
+
 Every event on a campus ends the same way: trays of untouched food, a room being
 packed up, and no way to tell anyone within the twenty minutes it stays good.
 EcoEats is that missing twenty-minute channel — a listing lives for at most an
 hour by design, because food that has been sitting out longer is not food anyone
 should be sent to collect.
+
+This repository is the whole product: the FastAPI backend, the React Native
+client, the migrations, both test suites, the deploy configuration and the
+generated legal site. It is **source-available, not open source** — see
+[Licence and ownership](#licence-and-ownership) — and it is published so the
+work can be read, not so it can be redeployed.
 
 ---
 
@@ -226,6 +240,7 @@ ecoeats/
 │
 ├── web/                        GENERATED public site: support + the three legal
 │                               documents. Never hand-edit — rebuild from legal.ts
+├── docs/screenshots/           the App Store screenshots, at a third size
 │
 ├── migrations/                 Alembic revisions
 ├── tests/                      backend suite — hard-fails without a database
@@ -242,6 +257,7 @@ ecoeats/
 ├── requirements.lock           58 packages, digest-verified
 ├── render.yaml                 Render blueprint: API (Starter) + static site
 ├── DEPLOY.md                   the long-form deploy runbook
+├── SECURITY.md                 how to report a vulnerability privately
 └── docker-compose.yml          local Postgres + Redis
 ```
 
@@ -253,14 +269,26 @@ Uvicorn is pointed at the factory with `--factory`.
 
 ## Running it
 
-Requires Python 3.11+ and Docker.
+Requires Python 3.11+, Node 20+ and Docker. The backend runs end to end with
+nothing but this repository; the client additionally needs a Firebase project
+of your own (free tier is enough) because sign-in is Firebase's.
+
+**Backend**
 
 ```bash
 docker compose up -d db redis
 ```
 
 ```bash
-python -m venv .venv && .venv/Scripts/python.exe -m pip install -e ".[dev]"
+python -m venv .venv
+```
+
+```bash
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+```
+
+```bash
+pip install -e ".[dev]"
 ```
 
 ```bash
@@ -268,7 +296,7 @@ cp .env.example .env
 ```
 
 ```bash
-.venv/Scripts/python.exe -m uvicorn api.main:create_app --factory --reload
+uvicorn api.main:create_app --factory --reload
 ```
 
 | Endpoint | URL |
@@ -283,18 +311,34 @@ Business endpoints are versioned under `/api/v1`, so a future `/api/v2` can
 change shapes without breaking builds already on people's phones. Health and
 docs stay unversioned — orchestrators depend on those paths being stable.
 
-The client talks to production by default, so it needs no local backend:
+**Firebase.** The backend starts without it in development — authentication is
+simply off, which is what lets the test suite run against a fake token issuer.
+To verify real sign-ins it needs a service-account key at
+`secrets/firebase-service-account.json` plus `FIREBASE_PROJECT_ID` and
+`FIREBASE_CREDENTIALS_PATH` in `.env`. In production, missing Firebase config
+is a startup failure, not a degraded mode.
+
+**Client**
 
 ```bash
-cd mobile && npx expo start --web
+cd mobile && npm install --legacy-peer-deps && cp .env.example .env
 ```
 
-Firebase setup needs a service-account key at
-`secrets/firebase-service-account.json` and `FIREBASE_PROJECT_ID` plus
-`FIREBASE_CREDENTIALS_PATH` in `.env`. Without them the app still starts in
-development with authentication disabled, which is what lets the suite run
-against a fake token issuer. In production, missing Firebase config is a startup
-failure.
+Fill `mobile/.env` with your Firebase project's **web** config (Project settings
+→ General → Your apps). Those `EXPO_PUBLIC_*` values are bundled into the app
+and are not secrets — but `config.ts` refuses to start without them, so an
+empty `.env` fails at launch with a message saying which one is missing. The
+API URL defaults to `http://localhost:8000`; a physical phone needs your
+machine's LAN address instead.
+
+```bash
+npm run web
+```
+
+For a full local loop without Firebase verification, set `DEV_AUTH_BYPASS=true`
+on the backend and `EXPO_PUBLIC_DEV_AUTH=true` on the client: the login screen
+gains a one-tap dev sign-in, and the API accepts `dev:<slug>` tokens. The
+backend refuses to boot with that flag in production.
 
 `scripts/dev_account.py` handles Firebase accounts without inbox access — mint a
 verification link without sending mail, mark an address verified, free an
@@ -306,11 +350,11 @@ deliverability.
 ## Tests
 
 ```bash
-.venv/Scripts/python.exe -m pytest
+pytest
 ```
 
 ```bash
-cd mobile && npx jest
+cd mobile && npm test
 ```
 
 345 backend tests and 446 client tests. CI runs both on every push, plus `ruff`
@@ -398,6 +442,22 @@ people accepted.
 
 ---
 
+## Bugs, security and contributions
+
+**Found a bug?** Open an [issue](https://github.com/saarvesh0606/ecoeats/issues)
+with the build number from Settings → About and what you expected to happen.
+
+**Found a security problem?** Please don't file it publicly — this code runs a
+live service with real people's accounts behind it. Email
+**hello@ecoeatsapp.com** instead; see [SECURITY.md](SECURITY.md) for what to
+include and what to expect back.
+
+**Pull requests** are not accepted without prior discussion, because the
+licence below means a contribution can't be merged on the usual open-source
+terms. Open an issue first if you have something in mind.
+
+---
+
 ## Contributors
 
 - [@saarvesh0606](https://github.com/saarvesh0606) — creator and maintainer
@@ -409,7 +469,10 @@ people accepted.
 
 Copyright © 2026 Sarvesh Sunil Jagtap. All rights reserved. See [LICENSE](LICENSE).
 
-This is proprietary source. Reading it grants no right to use it — ask first.
+This is proprietary source, published so it can be read. Reading it grants no
+right to use, copy, modify or deploy it — ask first. GitHub shows no licence
+badge on this repository for exactly that reason: there is no open-source
+licence to show.
 
 Two things the licence deliberately does not cover:
 
