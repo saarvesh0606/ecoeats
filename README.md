@@ -5,9 +5,11 @@ food with a photo, a pickup location and a countdown; recipients browse a live
 feed, claim a portion, and walk over before it expires.
 
 [![CI](https://github.com/saarvesh0606/ecoeats/actions/workflows/ci.yml/badge.svg)](https://github.com/saarvesh0606/ecoeats/actions/workflows/ci.yml)
+[![App Store](https://img.shields.io/itunes/v/6807514492?label=App%20Store&logo=apple&color=0D96F6)](https://apps.apple.com/us/app/eco-eats/id6807514492)
 
-iOS, v0.2.0 — passed App Review on 2026-09-10. The privacy policy and support
-pages live at [ecoeats-web.onrender.com](https://ecoeats-web.onrender.com).
+**Live on the [App Store](https://apps.apple.com/us/app/eco-eats/id6807514492)**
+since 2026-09-13 (iOS 15.1+). The privacy policy and support pages live at
+[ecoeats-web.onrender.com](https://ecoeats-web.onrender.com).
 
 <p align="center">
   <img src="docs/screenshots/feed.png" width="180" alt="Discover feed, sorted by urgency, with dietary filters and allergen notes">
